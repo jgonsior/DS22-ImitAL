@@ -28,7 +28,12 @@ from .experiment_setup_lib import (
     get_param_distribution,
     init_logger,
 )
-from .sampling_strategies import BoundaryPairSampler, RandomSampler, UncertaintySampler
+from .sampling_strategies import (
+    BoundaryPairSampler,
+    RandomSampler,
+    UncertaintySampler,
+    OptimalForecastSampler,
+)
 
 from .weak_supervision import WeakCert, WeakClust
 
@@ -133,6 +138,8 @@ def train_al(
     elif hyper_parameters["SAMPLING"] == "uncertainty_entropy":
         active_learner = UncertaintySampler(**active_learner_params)
         active_learner.set_uncertainty_strategy("entropy")
+    elif hyper_parameters["SAMPLING"] == "optimal_forecast":
+        active_learner = OptimalForecastSampler(**active_learner_params)
     #  elif hyper_parameters['sampling'] == 'committee':
     #  active_learner = CommitteeSampler(hyper_parameters['RANDOM_SEED, hyper_parameters.N_JOBS, hyper_parameters.NR_LEARNING_ITERATIONS)
     else:
