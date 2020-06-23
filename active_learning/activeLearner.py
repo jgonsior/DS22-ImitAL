@@ -55,6 +55,7 @@ class ActiveLearner:
         self.amount_of_user_asked_queries = 0
         self.oracle = oracle
         self.weak_supervision_label_sources = weak_supervision_label_sources
+        self.N_JOBS = N_JOBS
 
     @abc.abstractmethod
     def calculate_next_query_indices(self, X_train_unlabeled_cluster_indices, *args):

@@ -140,6 +140,9 @@ def train_al(
         active_learner.set_uncertainty_strategy("entropy")
     elif hyper_parameters["SAMPLING"] == "optimal_forecast":
         active_learner = OptimalForecastSampler(**active_learner_params)
+        active_learner.set_amount_of_peaked_objects(
+            hyper_parameters["AMOUNT_OF_PEAKED_OBJECTS"]
+        )
     #  elif hyper_parameters['sampling'] == 'committee':
     #  active_learner = CommitteeSampler(hyper_parameters['RANDOM_SEED, hyper_parameters.N_JOBS, hyper_parameters.NR_LEARNING_ITERATIONS)
     else:

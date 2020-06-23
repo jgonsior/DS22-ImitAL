@@ -9,6 +9,9 @@ from ..activeLearner import ActiveLearner
 
 
 class OptimalForecastSampler(ActiveLearner):
+    def set_amount_of_peaked_objects(self, amount_of_peaked_objects):
+        self.amount_of_peaked_objects = amount_of_peaked_objects
+
     def move_labeled_queries(self, X_query, Y_query, query_indices):
         # move new queries from unlabeled to labeled dataset
         self.X_train_labeled = self.X_train_labeled.append(X_query)
@@ -97,7 +100,7 @@ class OptimalForecastSampler(ActiveLearner):
         random.shuffle(X_train_unlabeled_indices)
 
         # parallelisieren
-        with parallel_backend("loky", n_jobs=8):
+        with parallel_backend("loky", n_jobs=self.N_JOBS):
             scores = Parallel()(
                 delayed(self._future_peak)(
                     unlabeled_sample_indice,
@@ -105,7 +108,9 @@ class OptimalForecastSampler(ActiveLearner):
                     copy_of_X_train,
                     copy_of_Y_train,
                 )
-                for unlabeled_sample_indice in X_train_unlabeled_indices[:64]
+                for unlabeled_sample_indice in X_train_unlabeled_indices[
+                    : self.amount_of_peaked_objects
+                ]
             )
 
         scores = sorted(scores, key=lambda tup: tup[1], reverse=True)

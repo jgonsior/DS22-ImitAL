@@ -60,6 +60,7 @@ config = standard_config(
         (["--OUTPUT_DIRECTORY"], {"default": "tmp/"}),
         (["--HYPER_SEARCH_TYPE"], {"default": "random"}),
         (["--USER_QUERY_BUDGET_LIMIT"], {"type": float, "default": 200}),
+        (["--AMOUNT_OF_PEAKED_OBJECTS"], {"type": int, "default": 12}),
     ]
 )
 
