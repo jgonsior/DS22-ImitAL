@@ -269,9 +269,6 @@ def eval_al(
     #      thread_id=threading.get_ident(),
     #      end_time=datetime.datetime.now(),
     #      amount_of_all_labels=amount_of_all_labels,
-    #  )
-    #  experiment_result.save()
-    #  db.close()
 
     return score
 
