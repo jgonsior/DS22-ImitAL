@@ -39,30 +39,22 @@ from .weak_supervision import WeakCert, WeakClust
 
 
 def train_al(
-    X_labeled,
-    Y_labeled,
-    X_unlabeled,
-    label_encoder,
+    DATASETS_NAME,
+    DATASETS_PATH,
     START_SET_SIZE,
     hyper_parameters,
     oracle,
     TEST_FRACTION=None,
-    X_test=None,
-    Y_test=None,
 ):
-    hyper_parameters["LEN_TRAIN_DATA"] = len(X_labeled)
-    dataset_storage = DataStorage(hyper_parameters["RANDOM_SEED"])
-    dataset_storage.set_training_data(
-        X_labeled,
-        Y_labeled,
-        X_unlabeled=X_unlabeled,
-        START_SET_SIZE=START_SET_SIZE,
-        TEST_FRACTION=TEST_FRACTION,
-        label_encoder=label_encoder,
-        hyper_parameters=hyper_parameters,
-        X_test=X_test,
-        Y_test=Y_test,
+    data_storage = DataStorage(
+        hyper_parameters["RANDOM_SEED"],
+        DATASETS_NAME,
+        DATASETS_PATH,
+        START_SET_SIZE,
+        TEST_FRACTION,
+        hyper_parameters,
     )
+    hyper_parameters["LEN_TRAIN_DATA"] = len(data_storage.get_df("train"))
 
     if hyper_parameters["CLUSTER"] == "dummy":
         cluster_strategy = DummyClusterStrategy()
@@ -80,7 +72,7 @@ def train_al(
     elif hyper_parameters["CLUSTER"] == "RoundRobin":
         cluster_strategy = RoundRobinClusterStrategy()
 
-    cluster_strategy.set_data_storage(dataset_storage, hyper_parameters["N_JOBS"])
+    cluster_strategy.set_data_storage(data_storage, hyper_parameters["N_JOBS"])
 
     classifier = RandomForestClassifier(
         n_jobs=hyper_parameters["N_JOBS"], random_state=hyper_parameters["RANDOM_SEED"]
@@ -91,7 +83,7 @@ def train_al(
     if hyper_parameters["WITH_CLUSTER_RECOMMENDATION"]:
         weak_supervision_label_sources.append(
             WeakClust(
-                dataset_storage,
+                data_storage,
                 MINIMUM_CLUSTER_UNITY_SIZE=hyper_parameters[
                     "CLUSTER_RECOMMENDATION_MINIMUM_CLUSTER_UNITY_SIZE"
                 ],
@@ -104,7 +96,7 @@ def train_al(
     if hyper_parameters["WITH_UNCERTAINTY_RECOMMENDATION"]:
         weak_supervision_label_sources.append(
             WeakCert(
-                dataset_storage,
+                data_storage,
                 CERTAINTY_THRESHOLD=hyper_parameters[
                     "UNCERTAINTY_RECOMMENDATION_CERTAINTY_THRESHOLD"
                 ],
@@ -114,7 +106,7 @@ def train_al(
         )
 
     active_learner_params = {
-        "dataset_storage": dataset_storage,
+        "data_storage": data_storage,
         "cluster_strategy": cluster_strategy,
         "N_JOBS": hyper_parameters["N_JOBS"],
         "RANDOM_SEED": hyper_parameters["RANDOM_SEED"],
@@ -159,25 +151,18 @@ def train_al(
         Y_train,
         end - start,
         metrics_per_al_cycle,
-        dataset_storage,
+        data_storage,
         active_learner,
     )
 
 
 def eval_al(
-    X_test,
-    Y_test,
-    label_encoder,
+    data_storage,
     trained_active_clf_list,
     fit_time,
     metrics_per_al_cycle,
-    dataset_storage,
     active_learner,
     hyper_parameters,
-    dataset_name,
-    Y_train_al,
-    X_train,
-    Y_train,
 ):
     hyper_parameters[
         "amount_of_user_asked_queries"
@@ -224,7 +209,7 @@ def eval_al(
     param_list_id = hashlib.md5(unique_params.encode("utf-8")).hexdigest()
     #  db = get_db(db_name_or_type=hyper_parameters["DB_NAME_OR_TYPE"])
 
-    hyper_parameters["DATASET_NAME"] = dataset_name
+    hyper_parameters["DATASET_NAME"] = DATASET_NAME
     print(hyper_parameters.keys())
     hyper_parameters["cores"] = hyper_parameters["N_JOBS"]
     #  del hyper_parameters["N_JOBS"]
@@ -283,51 +268,30 @@ Takes a dataset_path, X, Y, label_encoder and does the following steps:
 
 
 def train_and_eval_dataset(
-    dataset_name,
-    X_train,
-    X_test,
-    Y_train,
-    Y_test,
-    label_encoder_classes,
-    hyper_parameters,
-    oracle,
+    DATASETS_NAME, DATASETS_PATH, hyper_parameters, oracle,
 ):
-    label_encoder = LabelEncoder()
-    label_encoder.fit(label_encoder_classes)
-
     (
         trained_active_clf_list,
-        Y_train_al,
         fit_time,
         metrics_per_al_cycle,
-        dataStorage,
+        data_storage,
         active_learner,
     ) = train_al(
-        X_train,
-        Y_train,
-        X_unlabeled=None,
-        label_encoder=label_encoder,
+        DATASETS_NAME,
+        DATASETS_PATH,
         START_SET_SIZE=hyper_parameters["START_SET_SIZE"],
         hyper_parameters=hyper_parameters,
         oracle=oracle,
         TEST_FRACTION=hyper_parameters["TEST_FRACTION"],
-        X_test=X_test,
-        Y_test=Y_test,
     )
 
     fit_score = eval_al(
-        X_test,
-        Y_test,
-        label_encoder,
+        data_storage,
         trained_active_clf_list,
         fit_time,
         metrics_per_al_cycle,
-        dataStorage,
+        data_storage,
         active_learner,
         hyper_parameters,
-        dataset_name,
-        Y_train_al,
-        X_train,
-        Y_train,
     )
-    return fit_score, Y_train_al
+    return fit_score

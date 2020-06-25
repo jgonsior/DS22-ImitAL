@@ -57,6 +57,8 @@ class OptimalForecastSampler(ActiveLearner):
         copy_of_X_train,
         copy_of_Y_train,
     ):
+
+        # in loop meine WS-Strategien mit einbeziehen -> sinnvolle Cluster berechnen, DAgger vorschlagen pro Cluster nur einmal zu samplen, und den Rest dann weakly zu labeln
         copy_of_X_train = copy_of_X_train.append(
             self.data_storage.X_train_unlabeled.loc[unlabeled_sample_indice]
         )

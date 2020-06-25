@@ -2,7 +2,6 @@ import random
 import numpy as np
 from active_learning.al_cycle_wrapper import train_and_eval_dataset
 from active_learning.experiment_setup_lib import (
-    get_dataset,
     standard_config,
     init_logger,
 )
@@ -71,19 +70,11 @@ if config.RANDOM_SEED == -2:
     np.random.seed(config.RANDOM_SEED)
     random.seed(config.RANDOM_SEED)
 
-X_train, X_test, Y_train, Y_test, label_encoder_classes = get_dataset(
-    config.DATASETS_PATH, config.DATASET_NAME, config.RANDOM_SEED
-)
-
-score, Y_train = train_and_eval_dataset(
+score, df = train_and_eval_dataset(
     config.DATASET_NAME,
-    X_train,
-    X_test,
-    Y_train,
-    Y_test,
-    label_encoder_classes,
+    config.DATASETS_PATH,
     hyper_parameters=vars(config),
     oracle=FakeExperimentOracle(),
 )
 print("Done with ", score)
-print("Labels: ", Y_train)
+print("Labels: ", df["labels"])

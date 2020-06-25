@@ -43,9 +43,10 @@ def plot_distributions(
     sns.set_palette("tab10")
     for selection, label in selection_list:
         #  ax = sns.distplot(selection, label=label, **kwargs)
+        label = "{}-{:>3}: {:.4g}% ".format(label[0], label[1], selection.mean() * 100)
         ax = sns.kdeplot(selection, label=label, **kwargs)
 
-        #  ax.set_xlim(50, 85)
+        ax.set_xlim(0.60, 0.85)
         #  ax.set_xlim(80, 875)
         if axvline:
             mean = selection.mean()
