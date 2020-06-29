@@ -71,6 +71,8 @@ class DataStorage:
         
         """
 
+        self.df.assign(recommendation=np.NaN)
+
         # separate X_labeled into start_set and labeled _rest
         if START_SET_SIZE < len(self.get_df("train")["label"] != -1):
             # randomly select as much samples as needed from start set size
@@ -196,11 +198,9 @@ class DataStorage:
 
         return df[self.feature_columns]
 
-    def get_Y(self, dataset=None):
-        if dataset is None:
-            return self.df["label"]
-        else:
-            return self.df[self.df["dataset"] == dataset]["label"]
+    def get_Y(self, *args, **kwargs):
+        df = self.get_df(*args, **kwargs)
+        return df["label"]
 
     def get_df(self, dataset=None, mask=None, labeled=False, unlabeled=False):
         if dataset is None:
@@ -264,11 +264,5 @@ class DataStorage:
             if len(v) != 0
         }
 
-    def move_labeled_queries(self, X_query, Y_query, query_indices):
-        self._move_queries_from_a_to_b(
-            X_query,
-            Y_query,
-            query_indices,
-            a=(self.X_train_labeled, self.Y_train_labeled),
-            b=(self.X_train_unlabeled, self.Y_train_unlabeled),
-        )
+    def label_samples(self, query_indices, Y_query):
+        self.df.loc[query_indices]["label"] = Y_query

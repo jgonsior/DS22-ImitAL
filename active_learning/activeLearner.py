@@ -63,10 +63,10 @@ class ActiveLearner:
 
     def fit_clf(self):
         self.clf.fit(
-            self.data_storage.X_train_labeled,
-            self.data_storage.Y_train_labeled[0],
+            self.data_storage.get_X("train", labeled=True),
+            self.data_storage.get_Y("train", labeled=True),
             sample_weight=compute_sample_weight(
-                "balanced", self.data_storage.Y_train_labeled[0]
+                "balanced", self.data_storage.get_Y("train", labeled=True)
             ),
         )
 
@@ -77,20 +77,20 @@ class ActiveLearner:
 
         conf_matrix, acc = conf_matrix_and_acc(
             self.clf,
-            self.data_storage.X_test,
-            self.data_storage.Y_test[0],
+            self.data_storage.get_X("test"),
+            self.data_storage.get_Y("test"),
             self.data_storage.label_encoder,
         )
 
         self.metrics_per_al_cycle["test_conf_matrix"].append(conf_matrix)
         self.metrics_per_al_cycle["test_acc"].append(acc)
 
-        if self.data_storage.Y_train_unlabeled.shape[0] > 0:
+        if len(self.data_storage.get_df("train", unlabeled=True)) > 0:
             # experiment
             conf_matrix, acc = conf_matrix_and_acc(
                 self.clf,
-                self.data_storage.X_train_labeled,
-                self.data_storage.Y_train_labeled[0],
+                self.data_storage.get_X("train", labeled=True),
+                self.data_storage.get_Y("train", labeled=True),
                 self.data_storage.label_encoder,
             )
         else:
@@ -134,23 +134,26 @@ class ActiveLearner:
         for i in range(0, self.NR_LEARNING_ITERATIONS):
             # try to actively get at least this amount of data, but if there is only less data available that's just fine as well
             if (
-                self.data_storage.X_train_unlabeled.shape[0]
+                len(self.data_storage.get_X("train", unlabeled=True))
                 < self.nr_queries_per_iteration
             ):
-                self.nr_queries_per_iteration = self.data_storage.X_train_unlabeled.shape[
-                    0
-                ]
+                self.nr_queries_per_iteration = len(
+                    self.data_storage.get_X("train", unlabeled=True)
+                )
             if self.nr_queries_per_iteration == 0:
                 break
 
             # first iteration - add everything from ground truth
             if i == 0:
-                query_indices = self.data_storage.ground_truth_indices
-                X_query = self.data_storage.X_train_unlabeled.loc[query_indices]
-                Y_query = self.data_storage.Y_train_unlabeled.loc[query_indices]
+                query_indices = self.data_storage.get_df("train", labeled=True).index
+                X_query = self.data_storage.get_X("train", labeled=True).loc[
+                    query_indices
+                ]
+                Y_query = self.data_storage.get_df("train", labeled=True).loc[
+                    query_indices
+                ]["label"]
 
                 recommendation_value = "G"
-                Y_query_strong = None
             else:
                 X_query = None
 
@@ -179,13 +182,11 @@ class ActiveLearner:
                     recommendation_value = "A"
                     self.amount_of_user_asked_queries += len(Y_query)
 
-            Y_query = Y_query.assign(source=recommendation_value)
-
             self.metrics_per_al_cycle["recommendation"].append(recommendation_value)
             self.metrics_per_al_cycle["query_length"].append(len(Y_query))
             self.metrics_per_al_cycle["labels_indices"].append(str(query_indices))
 
-            self.data_storage.move_labeled_queries(X_query, Y_query, query_indices)
+            self.data_storage.label_samples(query_indices, Y_query)
 
             self.calculate_pre_metrics(X_query, Y_query)
 
@@ -197,8 +198,8 @@ class ActiveLearner:
             log_it(
                 get_single_al_run_stats_row(
                     i,
-                    self.data_storage.X_train_labeled.shape[0],
-                    self.data_storage.X_train_unlabeled.shape[0],
+                    len(self.data_storage.get_X("train", labeled=True)),
+                    len(self.data_storage.get_X("train", unlabeled=True)),
                     self.metrics_per_al_cycle,
                 )
             )
