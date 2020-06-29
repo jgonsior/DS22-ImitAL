@@ -141,14 +141,13 @@ def train_al(
         ("No Active Learning Strategy specified")
 
     start = timer()
-    trained_active_clf_list, metrics_per_al_cycle, Y_train = active_learner.learn(
+    trained_active_clf_list, metrics_per_al_cycle = active_learner.learn(
         **hyper_parameters
     )
     end = timer()
 
     return (
         trained_active_clf_list,
-        Y_train,
         end - start,
         metrics_per_al_cycle,
         data_storage,
@@ -284,13 +283,12 @@ def train_and_eval_dataset(
         oracle=oracle,
         TEST_FRACTION=hyper_parameters["TEST_FRACTION"],
     )
-
+    print(data_storage.get_df())
     fit_score = eval_al(
         data_storage,
         trained_active_clf_list,
         fit_time,
         metrics_per_al_cycle,
-        data_storage,
         active_learner,
         hyper_parameters,
     )

@@ -228,4 +228,8 @@ class DataStorage:
         return self.df.loc[mask]
 
     def label_samples(self, query_indices, Y_query):
-        self.df.loc[query_indices]["label"] = Y_query
+        #  print(query_indices)
+        #  print(Y_query)
+        #  print(self.df.loc[query_indices])
+        self.df.loc[query_indices, "label"] = Y_query
+        #  print(self.df.loc[query_indices])

@@ -209,8 +209,4 @@ class ActiveLearner:
                 if not ALLOW_RECOMMENDATIONS_AFTER_STOP:
                     break
 
-        return (
-            self.clf,
-            self.metrics_per_al_cycle,
-            self.data_storage.Y_train_labeled,
-        )
+        return (self.clf, self.metrics_per_al_cycle)
