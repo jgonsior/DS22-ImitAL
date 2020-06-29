@@ -202,25 +202,30 @@ class DataStorage:
         df = self.get_df(*args, **kwargs)
         return df["label"]
 
-    def get_df(self, dataset=None, mask=None, labeled=False, unlabeled=False):
-        if dataset is None:
-            df = self.df
-        else:
-            df = self.df[self.df["dataset"] == dataset]
+    def get_df(self, dataset=None, labeled=False, unlabeled=False, clusters=[]):
+
+        if (
+            dataset == None
+            and labeled == False
+            and unlabeled == False
+            and clusters == []
+        ):
+            return self.df
+
+        mask = True
+        if dataset is not None:
+            mask &= self.df["dataset"] == dataset
 
         if labeled:
-            df = df.loc[df["label"] != -1]
+            mask &= self.df["label"] != -1
 
         if unlabeled:
-            df = df.loc[df["label"] == -1]
+            mask &= self.df["label"] == -1
 
-        if mask != None:
-            selection = True
-            for k, v in mask.items():
-                selection &= df[k] == v
-            df = df.loc[selection]
+        for cluster in clusters:
+            mask &= self.df["cluster"] == cluster
 
-        return df
+        return self.df.loc[mask]
 
     def label_samples(self, query_indices, Y_query):
         self.df.loc[query_indices]["label"] = Y_query
