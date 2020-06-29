@@ -85,7 +85,6 @@ class DataStorage:
                 if len(labels_not_in_start_set) == 0:
                     all_label_in_start_set = True
                     break
-            print(self.get_df("train"))
 
             if not all_label_in_start_set:
                 #  if len(self.get_df("train")['label'] != None) == 0:
@@ -95,73 +94,38 @@ class DataStorage:
                 # move more data here from the classes not present
                 for label in labels_not_in_start_set:
                     # select a random sample of this sample which is NOT yet labeled
-                    potential_label_candidates = self.get_df(
-                        "train", {"true_label": label, "label": -1}
+
+                    selected_index = (
+                        self.df.loc[
+                            (self.df["true_label"] == label)
+                            & (self.df["label"] == -1)
+                            & (self.df["dataset"] == "train"),
+                            #  & (
+                            #      self.df[0]
+                            #  ),  # <-- in die Maske mit rein, dass ich nur das erste will :)
+                            #  "label",
+                        ]
+                        .iloc[0:1]
+                        .index
                     )
-                    print("label" + str(label))
-                    print(potential_label_candidates)
-                    if len(potential_label_candidates) == 0:
-                        print(
-                            "Please specify at least one labeled example of each class"
-                        )
-                        exit(-1)
+                    self.df.loc[selected_index, "label"] = label
 
-                    potential_label_candidates.iloc[0]["label"] = label
-            print(self.get_df("train"))
-        if START_SET_SIZE == len(X_labeled):
-            X_labeled_rest = None
-            self.X_train_labeled = X_labeled
-            Y_labeled_rest = None
-            self.Y_train_labeled = Y_labeled
+        print(self.df)
 
-        else:
-            (
-                X_labeled_rest,
-                self.X_train_labeled,
-                Y_labeled_rest,
-                self.Y_train_labeled,
-            ) = train_test_split(X_labeled, Y_labeled, test_size=START_SET_SIZE)
+        len_train_labeled = len(self.get_df("train", labeled=True))
+        len_train_unlabeled = len(self.get_df("train", unlabeled=True))
+        #  len_test = len(self.X_test)
 
-        if X_unlabeled is not None:
-            self.X_train_unlabeled = X_unlabeled
-            self.Y_train_unlabeled = pd.DataFrame(
-                columns=Y_labeled_rest.columns, dtype=int
-            )
+        len_total = len_train_unlabeled + len_train_labeled  # + len_test
 
-            self.X_test = X_labeled_rest
-            self.Y_test = Y_labeled_rest
-        else:
-            # experiment setting!
-            # create some fake unlabeled data
-
-            if X_test is not None:
-                self.X_train_unlabeled = X_labeled_rest
-                self.Y_train_unlabeled = Y_labeled_rest
-                self.X_test = X_test
-                self.Y_test = Y_test
-            else:
-                # further split labeled rest for train_test
-                (
-                    self.X_train_unlabeled,
-                    self.X_test,
-                    self.Y_train_unlabeled,
-                    self.Y_test,
-                ) = train_test_split(X_labeled_rest, Y_labeled_rest, TEST_FRACTION)
-
-        Y_train_labeled_set = set(self.Y_train_labeled[0].to_numpy())
-
-        self._print_data_segmentation()
-
-        self.X_train_unlabeled_cluster_indices = {}
-
-        # remove the labeled data from X_train_labeled and merge it with the unlabeled data
-        # while preserving the labels
-        # and storing the indics of the labeled data
-        # so that the first iteration can be a "fake iteration zero" of the AL cycle
-        # (metrics will than automatically be calculated for this one too)
-        self.prepare_fake_iteration_zero()
-        log_it(self.X_train_labeled.shape)
-        self.label_encoder = label_encoder
+        log_it(
+            "size of train  labeled set: %i = %1.2f"
+            % (len_train_labeled, len_train_labeled / len_total)
+        )
+        log_it(
+            "size of train unlabeled set: %i = %1.2f"
+            % (len_train_unlabeled, len_train_unlabeled / len_total)
+        )
 
         log_it("Loaded " + DATASET_NAME)
 
@@ -241,62 +205,25 @@ class DataStorage:
         else:
             return self.df[self.df["dataset"] == dataset]["label"]
 
-    def get_df(self, dataset=None, column_conditions=None):
+    def get_df(self, dataset=None, mask=None, labeled=False, unlabeled=False):
         if dataset is None:
             df = self.df
         else:
             df = self.df[self.df["dataset"] == dataset]
 
-        if column_conditions != None:
+        if labeled:
+            df = df.loc[df["label"] != -1]
+
+        if unlabeled:
+            df = df.loc[df["label"] == -1]
+
+        if mask != None:
             selection = True
-            for k, v in column_conditions.items():
+            for k, v in mask.items():
                 selection &= df[k] == v
             df = df.loc[selection]
 
         return df
-
-    def prepare_fake_iteration_zero(self):
-        # fake iteration zero where we add the given ground truth labels all at once
-        original_X_train_labeled = self.X_train_labeled
-        original_Y_train_labeled = self.Y_train_labeled
-
-        self.X_train_labeled = pd.DataFrame(
-            columns=original_X_train_labeled.columns, dtype=float
-        )
-
-        if self.X_train_labeled is not None:
-            self.Y_train_labeled = pd.DataFrame(
-                columns=original_Y_train_labeled.columns, dtype=int
-            )
-
-        # this one is a bit tricky:
-        # we merge both back together here -> but solely for the purpose of using them as the first oracle query down below
-        self.X_train_unlabeled = pd.concat(
-            [original_X_train_labeled, self.X_train_unlabeled]
-        )
-
-        self.Y_train_unlabeled = pd.concat(
-            [original_Y_train_labeled, self.Y_train_unlabeled]
-        )
-        self.ground_truth_indices = original_X_train_labeled.index.tolist()
-
-        self.Y_train_strong_labels = pd.DataFrame.copy(original_Y_train_labeled)
-
-    def _print_data_segmentation(self):
-        len_train_labeled = len(self.X_train_labeled)
-        len_train_unlabeled = len(self.X_train_unlabeled)
-        #  len_test = len(self.X_test)
-
-        len_total = len_train_unlabeled + len_train_labeled  # + len_test
-
-        log_it(
-            "size of train  labeled set: %i = %1.2f"
-            % (len_train_labeled, len_train_labeled / len_total)
-        )
-        log_it(
-            "size of train unlabeled set: %i = %1.2f"
-            % (len_train_unlabeled, len_train_unlabeled / len_total)
-        )
 
     def _move_queries_from_a_to_b(self, X_query, Y_query, query_indices, a, b):
         a_X, a_Y = a
