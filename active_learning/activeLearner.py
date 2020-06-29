@@ -27,7 +27,7 @@ class ActiveLearner:
     def __init__(
         self,
         RANDOM_SEED,
-        dataset_storage,
+        data_storage,
         cluster_strategy,
         N_JOBS,
         NR_LEARNING_ITERATIONS,
@@ -36,7 +36,7 @@ class ActiveLearner:
         clf,
         weak_supervision_label_sources=[],
     ):
-        self.data_storage = dataset_storage
+        self.data_storage = data_storage
         self.NR_LEARNING_ITERATIONS = NR_LEARNING_ITERATIONS
         self.nr_queries_per_iteration = NR_QUERIES_PER_ITERATION
         self.clf = clf
@@ -129,11 +129,10 @@ class ActiveLearner:
 
         log_it(get_single_al_run_stats_table_header())
 
-        self.start_set_size = len(self.data_storage.ground_truth_indices)
         early_stop_reached = False
 
         for i in range(0, self.NR_LEARNING_ITERATIONS):
-            # try to actively get at least this amount of data, but if there is only less data available that's just fine
+            # try to actively get at least this amount of data, but if there is only less data available that's just fine as well
             if (
                 self.data_storage.X_train_unlabeled.shape[0]
                 < self.nr_queries_per_iteration

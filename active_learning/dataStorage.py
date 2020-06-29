@@ -110,8 +110,6 @@ class DataStorage:
                     )
                     self.df.loc[selected_index, "label"] = label
 
-        print(self.df)
-
         len_train_labeled = len(self.get_df("train", labeled=True))
         len_train_unlabeled = len(self.get_df("train", unlabeled=True))
         #  len_test = len(self.X_test)
@@ -193,11 +191,10 @@ class DataStorage:
 
         self.df = df
 
-    def get_X(self, dataset=None):
-        if dataset is None:
-            return self.df[self.feature_columns]
-        else:
-            return self.df[self.df["dataset"] == dataset][self.feature_columns]
+    def get_X(self, *args, **kwargs):
+        df = self.get_df(*args, **kwargs)
+
+        return df[self.feature_columns]
 
     def get_Y(self, dataset=None):
         if dataset is None:
