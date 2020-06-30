@@ -32,7 +32,7 @@ class WeakClust(BaseWeakSupervision):
                 ):
                     # contains only unlabeled samples from the cluster
                     certain_X = (
-                        self.data_storage.get_df()
+                        self.data_storage.get_X()
                         .loc[cluster_indices]
                         .loc[self.data_storage.get_df()["label"] == -1]
                     )
@@ -50,4 +50,4 @@ class WeakClust(BaseWeakSupervision):
                     break
 
         # delete this cluster from the list of possible cluster for the next round
-        return certain_X, recommended_labels, certain_indices, "C"
+        return recommended_labels, certain_indices, "C"

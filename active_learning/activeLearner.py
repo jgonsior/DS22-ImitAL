@@ -108,11 +108,10 @@ class ActiveLearner:
         query_indices = self.calculate_next_query_indices(
             X_train_unlabeled_cluster_indices
         )
-        X_query = self.data_storage.get_X("train", unlabeled=True).loc[query_indices]
 
         # ask oracle for new query
         Y_query = self.oracle.get_labeled_samples(query_indices, self.data_storage)
-        return X_query, Y_query, query_indices
+        return Y_query, query_indices, "A"
 
     def learn(
         self,
@@ -145,16 +144,13 @@ class ActiveLearner:
             # first iteration - add everything from ground truth
             if i == 0:
                 query_indices = self.data_storage.get_df("train", labeled=True).index
-                X_query = self.data_storage.get_X("train", labeled=True).loc[
-                    query_indices
-                ]
                 Y_query = self.data_storage.get_df("train", labeled=True).loc[
                     query_indices
                 ]["label"]
 
                 source = "G"
             else:
-                X_query = None
+                Y_query = None
 
                 if (
                     self.metrics_per_al_cycle["test_acc"][-1]
@@ -163,22 +159,20 @@ class ActiveLearner:
                     # iterate over existing WS sources
                     for labelSource in self.weak_supervision_label_sources:
                         (
-                            X_query,
                             Y_query,
                             query_indices,
                             source,
                         ) = labelSource.get_labeled_samples()
 
-                        if X_query is not None:
+                        if Y_query is not None:
                             break
 
-                if early_stop_reached and X_query is None:
+                if early_stop_reached and Y_query is None:
                     break
 
-                if X_query is None:
+                if Y_query is None:
                     # ask oracle for some new labels
-                    X_query, Y_query, query_indices = self.get_newly_labeled_data()
-                    source = "A"
+                    Y_query, query_indices, source = self.get_newly_labeled_data()
                     self.amount_of_user_asked_queries += len(Y_query)
 
             self.metrics_per_al_cycle["source"].append(source)
@@ -186,6 +180,8 @@ class ActiveLearner:
             self.metrics_per_al_cycle["labels_indices"].append(str(query_indices))
 
             self.data_storage.label_samples(query_indices, Y_query, source)
+
+            X_query = self.data_storage.get_X().loc[query_indices]
 
             self.calculate_pre_metrics(X_query, Y_query)
 
