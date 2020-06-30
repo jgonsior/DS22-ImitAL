@@ -32,35 +32,43 @@ class DataStorage:
         log_it("Loading " + DATASET_NAME)
 
         if DATASET_NAME == "dwtc":
-            self._load_dwtc(DATASETS_PATH)
+            df = self._load_dwtc(DATASETS_PATH)
         elif DATASET_NAME == "synthetic":
-            self._load_synthetic()
+            df = self._load_synthetic()
         else:
-            self._load_alc(DATASET_NAME, DATASETS_PATH)
-
+            df = self._load_alc(DATASET_NAME, DATASETS_PATH)
         self.label_encoder = LabelEncoder()
-        self.df["true_label"] = self.label_encoder.fit_transform(self.df["true_label"])
+        df["label"] = self.label_encoder.fit_transform(df["label"])
 
         # feature normalization
         scaler = RobustScaler()
-        self.df[self.feature_columns] = scaler.fit_transform(
-            self.df[self.feature_columns]
-        )
+        df[self.feature_columns] = scaler.fit_transform(df[self.feature_columns])
 
         # scale back to [0,1]
         scaler = MinMaxScaler()
-        self.df[self.feature_columns] = scaler.fit_transform(
-            self.df[self.feature_columns]
-        )
+        df[self.feature_columns] = scaler.fit_transform(df[self.feature_columns])
 
-        #  X_temp = pd.DataFrame(X_temp, dtype=float)
-        #  Y_temp = pd.DataFrame(Y_temp, dtype=int)
-        #
-        #  X_temp = X_temp.apply(pd.to_numeric, downcast="float", errors="ignore")
-        #  Y_temp = Y_temp.apply(pd.to_numeric, downcast="integer", errors="ignore")
-        self.df["dataset"] = ["train"] * self.amount_of_training_samples + ["test"] * (
-            len(self.df) - self.amount_of_training_samples
+        # split dataframe into test, train_labeled, train_unlabeled
+        self.test_X = df[self.amount_of_training_samples :].copy()
+        self.test_Y = pd.DataFrame(
+            data=self.test_X["label"], columns=["label"], index=self.test_X.index
         )
+        del self.test_X["label"]
+
+        train_data = df[: self.amount_of_training_samples].copy()
+        train_labeled_data = pd.DataFrame(data=None, columns=train_data.columns)
+        self.train_labeled_X = train_labeled_data
+        self.train_labeled_Y = pd.DataFrame(
+            data=None, columns=["label"], index=self.train_labeled_X.index
+        )
+        del self.train_labeled_X["label"]
+
+        self.train_unlabeled_X = train_data
+        self.train_unlabeled_Y = pd.DataFrame(
+            data=train_data["label"], columns=["label"], index=train_data.index
+        )
+        del self.train_unlabeled_X["label"]
+
         """ 
         1. get start_set from X_labeled
         2. if X_unlabeled is None : experiment!
@@ -70,26 +78,14 @@ class DataStorage:
            X_unlabeled wird X_unlabeled, rest von X_labeled wird X_train_unlabeled_
         
         """
-
-        self.df["source"] = np.nan
-
-        self.df["dataset"] = self.df["dataset"].astype("category")
-        self.df = self.df.set_index("dataset", append=True)
-
-        # move true_labels of test to labels of test
-        self.df.loc[pd.IndexSlice[:, "test"], "label"] = self.get_df("test")[
-            "true_label"
-        ]
-
         # separate X_labeled into start_set and labeled _rest
-        if START_SET_SIZE < len(self.get_df("train")["label"] != -1):
-            # randomly select as much samples as needed from start set size
+        if START_SET_SIZE >= len(self.train_labeled_Y):
 
             # check if the minimum amount of labeled data is present in the start set size
             labels_not_in_start_set = set(range(0, len(self.label_encoder.classes_)))
             all_label_in_start_set = False
 
-            for Y in self.get_Y("train"):
+            for Y in self.train_labeled_Y:
                 if Y in labels_not_in_start_set:
                     labels_not_in_start_set.remove(Y)
                 if len(labels_not_in_start_set) == 0:
@@ -97,36 +93,30 @@ class DataStorage:
                     break
 
             if not all_label_in_start_set:
-                #  if len(self.get_df("train")['label'] != None) == 0:
+                #  if len(self.train_labeled_data) == 0:
                 #      print("Please specify at least one labeled example of each class")
                 #      exit(-1)
 
                 # move more data here from the classes not present
                 for label in labels_not_in_start_set:
-                    # select a random sample of this sample which is NOT yet labeled
-
+                    # select a random sample which is NOT yet labeled
                     selected_index = (
-                        self.get_df("train")
-                        .loc[
-                            (self.df["true_label"] == label) & (self.df["label"] == -1)
-                        ]
+                        self.train_unlabeled_Y[self.train_unlabeled_Y["label"] == label]
                         .iloc[0:1]
                         .index
                     )
-                    self.df.loc[selected_index, "label"] = label
-                    self.df.loc[selected_index, "source"] = "G"
+                    #  print(
+                    #      pd.DataFrame(data=label, columns="label", index=selected_index),
+                    #  )
+                    self._append_samples_to_labeled(
+                        selected_index,
+                        pd.DataFrame(
+                            data=label, columns=["label"], index=selected_index
+                        ),
+                    )
 
-        #  self.df["label"] = self.df["label"].astype("category")
-        #  self.df["true_label"] = self.df["true_label"].astype("category")
-
-        #  self.df.label.cat.set_categories(
-        #      new_categories=set(range(-1, len(self.label_encoder.classes_))),
-        #      inplace=True,
-        #  )
-
-        #  self.df["source"] = self.df["source"].astype("category")
-        len_train_labeled = len(self.get_df("train", labeled=True))
-        len_train_unlabeled = len(self.get_df("train", unlabeled=True))
+        len_train_labeled = len(self.train_labeled_Y)
+        len_train_unlabeled = len(self.train_unlabeled_Y)
         #  len_test = len(self.X_test)
 
         len_total = len_train_unlabeled + len_train_labeled  # + len_test
@@ -143,23 +133,21 @@ class DataStorage:
         log_it("Loaded " + DATASET_NAME)
 
     def _load_dwtc(self, DATASETS_PATH):
-        self.df = pd.read_csv(DATASETS_PATH + "/dwtc/aft.csv", index_col="id")
+        df = pd.read_csv(DATASETS_PATH + "/dwtc/aft.csv", index_col="id")
 
         # shuffle df
-        self.df = self.df.sample(frac=1, random_state=self.RANDOM_SEED).reset_index(
-            drop=True
-        )
+        df = df.sample(frac=1, random_state=self.RANDOM_SEED).reset_index(drop=True)
 
-        self.feature_columns = self.df.columns.to_list()
+        self.feature_columns = df.columns.to_list()
         self.feature_columns.remove("CLASS")
-        self.df.rename({"CLASS": "true_label"}, axis="columns", inplace=True)
+        df.rename({"CLASS": "label"}, axis="columns", inplace=True)
 
-        self.amount_of_training_samples = int(len(self.df) * 0.5)
-        self.df["label"] = -1
+        self.amount_of_training_samples = int(len(df) * 0.5)
+        return df
 
     def _load_synthetic(self, kwargs):
         self.X_data, self.Y_temp = make_classification(**kwargs)
-        self.df = pd.DataFrame(self.X_data)
+        df = pd.DataFrame(self.X_data)
 
         # replace labels with strings
         Y_temp = Y_temp.astype("str")
@@ -168,8 +156,8 @@ class DataStorage:
 
         # feature_columns fehlt
 
-        self.df["true_label"] = Y_temp
-        self.df["label"] = -1
+        df["label"] = Y_temp
+        return df
 
     def _load_alc(self, DATASET_NAME, DATASETS_PATH):
         df = pd.read_csv(
@@ -191,7 +179,7 @@ class DataStorage:
 
         labels = labels.replace([-1], "A")
         labels = labels.replace([1], "B")
-        df["true_label"] = labels[0]
+        df["label"] = labels[0]
         #  Y_temp = labels[0].to_numpy()
         train_indices = {
             "ibn_sina": 10361,
@@ -202,47 +190,19 @@ class DataStorage:
             "zebra": 30744,
         }
         self.amount_of_training_samples = train_indices[DATASET_NAME]
-        df["label"] = -1
 
-        self.df = df
+        return df
 
-    def get_X(self, *args, **kwargs):
-        df = self.get_df(*args, **kwargs)
+    def _append_samples_to_labeled(self, query_indices, Y_query):
+        self.train_labeled_X = self.train_labeled_X.append(
+            self.train_unlabeled_X.loc[query_indices]
+        )
+        self.train_labeled_Y = self.train_labeled_Y.append(Y_query)
 
-        return df[self.feature_columns]
+    def label_samples(self, query_indices, Y_query):
+        # remove from train_unlabeled_data and add to train_labeled_data
+        self._append_samples_to_labeled(query_indices, Y_query)
+        self.train_unlabeled_data = self.train_unlabeled_data.drop(query_indices)
 
-    def get_Y(self, *args, **kwargs):
-        df = self.get_df(*args, **kwargs)
-        return df["label"]
-
-    def get_df(self, dataset=None, labeled=False, unlabeled=False, clusters=[]):
-
-        if (
-            dataset == None
-            and labeled == False
-            and unlabeled == False
-            and clusters == []
-        ):
-            return self.df
-
-        if dataset is not None:
-            df = self.df.loc[pd.IndexSlice[:, dataset], :]
-
-        if labeled == False and unlabeled == False and clusters == []:
-            return df
-
-        mask = True
-        if labeled:
-            mask &= self.df["label"] != -1
-
-        if unlabeled:
-            mask &= self.df["label"] == -1
-
-        for cluster in clusters:
-            mask &= self.df["cluster"] == cluster
-
-        return df.loc[mask]
-
-    def label_samples(self, query_indices, Y_query, source):
-        self.df.loc[query_indices, "label"] = Y_query
-        self.df.loc[query_indices, "source"] = source
+    def get_true_label(self, query_indice):
+        return self.train_unlabeled_data.loc[query_indice, "true_label"]

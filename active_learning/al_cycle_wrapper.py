@@ -54,7 +54,9 @@ def train_al(
         TEST_FRACTION,
         hyper_parameters,
     )
-    hyper_parameters["LEN_TRAIN_DATA"] = len(data_storage.get_df("train"))
+    hyper_parameters["LEN_TRAIN_DATA"] = len(data_storage.train_unlabeled_Y) + len(
+        data_storage.train_labeled_Y
+    )
 
     if hyper_parameters["CLUSTER"] == "dummy":
         cluster_strategy = DummyClusterStrategy()
@@ -183,7 +185,7 @@ def eval_al(
         / (percentage_user_asked_queries + test_acc)
     )
 
-    amount_of_all_labels = len(data_storage.get_df("train", labeled=True))
+    amount_of_all_labels = len(data_storage.train_labeled_data)
 
     # calculate accuracy for Random Forest only on oracle human expert queries
 

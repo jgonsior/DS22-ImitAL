@@ -38,9 +38,12 @@ class BaseClusterStrategy:
 
     def set_data_storage(self, data_storage, n_jobs=-1):
         self.data_storage = data_storage
-        # first run pca to downsample data
 
-        n_samples, n_features = self.data_storage.get_df("train").shape
+        combined_data = pd.concat(
+            [self.data_storage.train_unlabeled_X, self.data_storage.train_labeled_X,]
+        )
+
+        n_samples, n_features = combined_data.shape
 
         # then cluster it
         self.cluster_model = AgglomerativeClustering(n_clusters=int(n_samples / 8))
@@ -55,11 +58,16 @@ class BaseClusterStrategy:
         #  batch_size=min(int(n_samples / 100), int(n_features)),
         #  )
 
-        self.data_storage.df = self.data_storage.get_df().assign(cluster=np.nan)
+        #  self.data_storage.train_unlabeled_data = self.data_storage.get_df().assign(cluster=np.nan)
+        cluster = self.cluster_model.fit_predict(combined_data)
 
-        self.data_storage.get_df().loc[
-            self.data_storage.get_df("train").index, "cluster"
-        ] = self.cluster_model.fit_predict(self.data_storage.get_X("train"))
+        self.data_storage.train_unlabeled_data["cluster"] = cluster[
+            : len(self.data_storage.train_unlabeled_data)
+        ]
+
+        self.data_storage.train_labeled_data["cluster"] = cluster[
+            len(self.data_storage.train_unlabeled_data) :
+        ]
 
         #  self.cluster_model = OPTICS(min_cluster_size=20, n_jobs=n_jobs)
         #  with np.errstate(divide="ignore"):
@@ -69,7 +77,7 @@ class BaseClusterStrategy:
         #  self.Y_train_unlabeled_cluster = self.cluster_model.labels_[
         #  self.cluster_model.ordering_
         #  ]
-        counter = Counter(self.data_storage.get_df()["cluster"].unique())
+        counter = Counter(cluster)
         self.n_clusters = len([1 for _ in counter.most_common()])
 
         #  log_it(
@@ -93,7 +101,7 @@ class BaseClusterStrategy:
         #          X_train_index
         #      )
 
-        data = []
+        #  data = []
 
         #  for (
         #  cluster_id,

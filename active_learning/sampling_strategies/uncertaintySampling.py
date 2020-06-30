@@ -14,7 +14,6 @@ class UncertaintySampler(ActiveLearner):
         self.classifier_classes = classes
 
     def calculate_next_query_indices(self, X_train_unlabeled_cluster_indices, *args):
-        # merge indices from all clusters together and take the n most uncertain ones from them
         X_of_clusters = self.data_storage.get_X(
             "train", unlabeled=True, clusters=X_train_unlabeled_cluster_indices
         )

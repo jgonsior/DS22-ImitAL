@@ -57,16 +57,39 @@ class ActiveLearner:
         self.weak_supervision_label_sources = weak_supervision_label_sources
         self.N_JOBS = N_JOBS
 
+        # fake iteration zero
+        X_query = self.data_storage.train_labeled_X
+        Y_query = self.data_storage.train_labeled_Y
+        self.metrics_per_al_cycle["source"].append("G")
+        self.metrics_per_al_cycle["query_length"].append(len(Y_query))
+        self.metrics_per_al_cycle["labels_indices"].append(str(X_query.index))
+
+        self.calculate_pre_metrics(X_query, Y_query)
+
+        # retrain CLASSIFIER
+        self.fit_clf()
+
+        self.calculate_post_metrics(X_query, Y_query)
+        log_it(get_single_al_run_stats_table_header())
+        log_it(
+            get_single_al_run_stats_row(
+                0,
+                len(self.data_storage.train_labeled_X),
+                len(self.data_storage.train_unlabeled_X),
+                self.metrics_per_al_cycle,
+            )
+        )
+
     @abc.abstractmethod
     def calculate_next_query_indices(self, X_train_unlabeled_cluster_indices, *args):
         pass
 
     def fit_clf(self):
         self.clf.fit(
-            self.data_storage.get_X("train", labeled=True),
-            self.data_storage.get_Y("train", labeled=True),
+            self.data_storage.train_labeled_X,
+            self.data_storage.train_labeled_Y,
             sample_weight=compute_sample_weight(
-                "balanced", self.data_storage.get_Y("train", labeled=True)
+                "balanced", self.data_storage.train_labeled_Y,
             ),
         )
 
@@ -85,12 +108,12 @@ class ActiveLearner:
         self.metrics_per_al_cycle["test_conf_matrix"].append(conf_matrix)
         self.metrics_per_al_cycle["test_acc"].append(acc)
 
-        if len(self.data_storage.get_df("train", unlabeled=True)) > 0:
+        if len(self.data_storage.train_unlabeled_X) > 0:
             # experiment
             conf_matrix, acc = conf_matrix_and_acc(
                 self.clf,
-                self.data_storage.get_X("train", labeled=True),
-                self.data_storage.get_Y("train", labeled=True),
+                self.data_storage.train_labeled_X,
+                self.data_storage.train_labeled_Y,
                 self.data_storage.label_encoder,
             )
         else:
@@ -125,63 +148,48 @@ class ActiveLearner:
         log_it(vars(self))
         log_it(locals())
 
-        log_it(get_single_al_run_stats_table_header())
-
         early_stop_reached = False
 
         for i in range(0, self.NR_LEARNING_ITERATIONS):
             # try to actively get at least this amount of data, but if there is only less data available that's just fine as well
-            if (
-                len(self.data_storage.get_X("train", unlabeled=True))
-                < self.nr_queries_per_iteration
-            ):
-                self.nr_queries_per_iteration = len(
-                    self.data_storage.get_X("train", unlabeled=True)
-                )
+            if len(self.data_storage.train_unlabeled_X) < self.nr_queries_per_iteration:
+                self.nr_queries_per_iteration = len(self.data_storage.train_unlabeled_X)
             if self.nr_queries_per_iteration == 0:
                 break
 
             # first iteration - add everything from ground truth
-            if i == 0:
-                query_indices = self.data_storage.get_df("train", labeled=True).index
-                Y_query = self.data_storage.get_df("train", labeled=True).loc[
-                    query_indices
-                ]["label"]
+            Y_query = None
 
-                source = "G"
-            else:
-                Y_query = None
+            if (
+                self.metrics_per_al_cycle["test_acc"][-1]
+                > MINIMUM_TEST_ACCURACY_BEFORE_RECOMMENDATIONS
+            ):
+                # iterate over existing WS sources
+                for labelSource in self.weak_supervision_label_sources:
+                    (
+                        Y_query,
+                        query_indices,
+                        source,
+                    ) = labelSource.get_labeled_samples()
 
-                if (
-                    self.metrics_per_al_cycle["test_acc"][-1]
-                    > MINIMUM_TEST_ACCURACY_BEFORE_RECOMMENDATIONS
-                ):
-                    # iterate over existing WS sources
-                    for labelSource in self.weak_supervision_label_sources:
-                        (
-                            Y_query,
-                            query_indices,
-                            source,
-                        ) = labelSource.get_labeled_samples()
+                    if Y_query is not None:
+                        break
 
-                        if Y_query is not None:
-                            break
+            if early_stop_reached and Y_query is None:
+                break
 
-                if early_stop_reached and Y_query is None:
-                    break
-
-                if Y_query is None:
-                    # ask oracle for some new labels
-                    Y_query, query_indices, source = self.get_newly_labeled_data()
-                    self.amount_of_user_asked_queries += len(Y_query)
+            if Y_query is None:
+                # ask oracle for some new labels
+                Y_query, query_indices, source = self.get_newly_labeled_data()
+                self.amount_of_user_asked_queries += len(Y_query)
 
             self.metrics_per_al_cycle["source"].append(source)
             self.metrics_per_al_cycle["query_length"].append(len(Y_query))
             self.metrics_per_al_cycle["labels_indices"].append(str(query_indices))
 
-            self.data_storage.label_samples(query_indices, Y_query, source)
+            self.data_storage.label_samples(query_indices, Y_query)
 
-            X_query = self.data_storage.get_X().loc[query_indices]
+            X_query = self.data_storage.train_labeled_X.loc[query_indices]
 
             self.calculate_pre_metrics(X_query, Y_query)
 
@@ -193,8 +201,8 @@ class ActiveLearner:
             log_it(
                 get_single_al_run_stats_row(
                     i,
-                    len(self.data_storage.get_X("train", labeled=True)),
-                    len(self.data_storage.get_X("train", unlabeled=True)),
+                    len(self.data_storage.train_labeled_X),
+                    len(self.data_storage.train_unlabeled_X),
                     self.metrics_per_al_cycle,
                 )
             )
