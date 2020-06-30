@@ -201,7 +201,23 @@ class DataStorage:
         self._append_samples_to_labeled(query_indices, Y_query)
         self.train_unlabeled_X = self.train_unlabeled_X.drop(query_indices)
         self.train_unlabeled_Y = self.train_unlabeled_Y.drop(query_indices)
-        # remove from clusters
+
+        # remove indices from all clusters in unlabeled and add to labeled
+        for cluster_id in self.train_unlabeled_cluster_indices.keys():
+            list_to_be_removed_and_appended = []
+            for indice in query_indices:
+                if indice in self.train_unlabeled_cluster_indices[cluster_id]:
+                    list_to_be_removed_and_appended.append(indice)
+
+            # don't change a list you're iterating over!
+            for indice in list_to_be_removed_and_appended:
+                self.train_unlabeled_cluster_indices[cluster_id].remove(indice)
+                self.train_labeled_cluster_indices[cluster_id].append(indice)
+
+        # remove possible empty clusters
+        self.train_unlabeled_cluster_indices = {
+            k: v for k, v in self.train_unlabeled_cluster_indices.items() if len(v) != 0
+        }
 
     def get_true_label(self, query_indice):
         return self.train_unlabeled_Y.loc[query_indice, "label"]
