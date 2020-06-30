@@ -47,7 +47,7 @@ class ActiveLearner:
             "train_acc": [],
             "train_conf_matrix": [],
             "query_length": [],
-            "recommendation": [],
+            "source": [],
             "labels_indices": [],
         }
 
@@ -152,7 +152,7 @@ class ActiveLearner:
                     query_indices
                 ]["label"]
 
-                recommendation_value = "G"
+                source = "G"
             else:
                 X_query = None
 
@@ -166,7 +166,7 @@ class ActiveLearner:
                             X_query,
                             Y_query,
                             query_indices,
-                            recommendation_value,
+                            source,
                         ) = labelSource.get_labeled_samples()
 
                         if X_query is not None:
@@ -178,14 +178,14 @@ class ActiveLearner:
                 if X_query is None:
                     # ask oracle for some new labels
                     X_query, Y_query, query_indices = self.get_newly_labeled_data()
-                    recommendation_value = "A"
+                    source = "A"
                     self.amount_of_user_asked_queries += len(Y_query)
 
-            self.metrics_per_al_cycle["recommendation"].append(recommendation_value)
+            self.metrics_per_al_cycle["source"].append(source)
             self.metrics_per_al_cycle["query_length"].append(len(Y_query))
             self.metrics_per_al_cycle["labels_indices"].append(str(query_indices))
 
-            self.data_storage.label_samples(query_indices, Y_query)
+            self.data_storage.label_samples(query_indices, Y_query, source)
 
             self.calculate_pre_metrics(X_query, Y_query)
 

@@ -169,7 +169,7 @@ def get_single_al_run_stats_row(
         metrics_per_al_cycle["query_length"][index],
         metrics_per_al_cycle["test_acc"][index],
         metrics_per_al_cycle["train_acc"][index],
-        metrics_per_al_cycle["recommendation"][index],
+        metrics_per_al_cycle["source"][index],
     )
 
 

@@ -71,7 +71,15 @@ class DataStorage:
         
         """
 
-        self.df.assign(recommendation=np.NaN)
+        self.df["source"] = np.nan
+
+        self.df["dataset"] = self.df["dataset"].astype("category")
+        self.df = self.df.set_index("dataset", append=True)
+
+        # move true_labels of test to labels of test
+        self.df.loc[pd.IndexSlice[:, "test"], "label"] = self.get_df("test")[
+            "true_label"
+        ]
 
         # separate X_labeled into start_set and labeled _rest
         if START_SET_SIZE < len(self.get_df("train")["label"] != -1):
@@ -98,20 +106,25 @@ class DataStorage:
                     # select a random sample of this sample which is NOT yet labeled
 
                     selected_index = (
-                        self.df.loc[
-                            (self.df["true_label"] == label)
-                            & (self.df["label"] == -1)
-                            & (self.df["dataset"] == "train"),
-                            #  & (
-                            #      self.df[0]
-                            #  ),  # <-- in die Maske mit rein, dass ich nur das erste will :)
-                            #  "label",
+                        self.get_df("train")
+                        .loc[
+                            (self.df["true_label"] == label) & (self.df["label"] == -1)
                         ]
                         .iloc[0:1]
                         .index
                     )
                     self.df.loc[selected_index, "label"] = label
+                    self.df.loc[selected_index, "source"] = "G"
 
+        #  self.df["label"] = self.df["label"].astype("category")
+        #  self.df["true_label"] = self.df["true_label"].astype("category")
+
+        #  self.df.label.cat.set_categories(
+        #      new_categories=set(range(-1, len(self.label_encoder.classes_))),
+        #      inplace=True,
+        #  )
+
+        #  self.df["source"] = self.df["source"].astype("category")
         len_train_labeled = len(self.get_df("train", labeled=True))
         len_train_unlabeled = len(self.get_df("train", unlabeled=True))
         #  len_test = len(self.X_test)
@@ -189,7 +202,7 @@ class DataStorage:
             "zebra": 30744,
         }
         self.amount_of_training_samples = train_indices[DATASET_NAME]
-        self.df["label"] = -1
+        df["label"] = -1
 
         self.df = df
 
@@ -212,10 +225,13 @@ class DataStorage:
         ):
             return self.df
 
-        mask = True
         if dataset is not None:
-            mask &= self.df["dataset"] == dataset
+            df = self.df.loc[pd.IndexSlice[:, dataset], :]
 
+        if labeled == False and unlabeled == False and clusters == []:
+            return df
+
+        mask = True
         if labeled:
             mask &= self.df["label"] != -1
 
@@ -225,11 +241,8 @@ class DataStorage:
         for cluster in clusters:
             mask &= self.df["cluster"] == cluster
 
-        return self.df.loc[mask]
+        return df.loc[mask]
 
-    def label_samples(self, query_indices, Y_query):
-        #  print(query_indices)
-        #  print(Y_query)
-        #  print(self.df.loc[query_indices])
+    def label_samples(self, query_indices, Y_query, source):
         self.df.loc[query_indices, "label"] = Y_query
-        #  print(self.df.loc[query_indices])
+        self.df.loc[query_indices, "source"] = source

@@ -14,10 +14,10 @@ class WeakClust(BaseWeakSupervision):
         cluster_found = False
 
         # check if the most prominent label for one cluster can be propagated over to the rest of it's cluster
-        for (
-            cluster_id,
-            cluster_indices,
-        ) in self.data_storage.X_train_labeled_cluster_indices.items():
+        for cluster_id in self.data_storage.get_df("train")["cluster"].unique():
+            cluster_indices = self.data_storage.get_df(
+                "train", clusters=[cluster_id]
+            ).index
             if (
                 cluster_id
                 not in self.data_storage.X_train_unlabeled_cluster_indices.keys()

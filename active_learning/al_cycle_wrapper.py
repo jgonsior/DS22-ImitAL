@@ -183,11 +183,12 @@ def eval_al(
         / (percentage_user_asked_queries + test_acc)
     )
 
-    amount_of_all_labels = len(Y_train_al)
+    amount_of_all_labels = len(data_storage.get_df("train", labeled=True))
 
     # calculate accuracy for Random Forest only on oracle human expert queries
 
     active_rf = RandomForestClassifier(random_state=hyper_parameters["RANDOM_SEED"])
+
     ys_oracle_a = Y_train_al.loc[Y_train_al.source == "A"]
     ys_oracle_g = Y_train_al.loc[Y_train_al.source == "G"]
     ys_oracle = pd.concat([ys_oracle_g, ys_oracle_a])
@@ -284,6 +285,7 @@ def train_and_eval_dataset(
         TEST_FRACTION=hyper_parameters["TEST_FRACTION"],
     )
     print(data_storage.get_df())
+
     fit_score = eval_al(
         data_storage,
         trained_active_clf_list,

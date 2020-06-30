@@ -58,9 +58,8 @@ class BaseClusterStrategy:
         self.data_storage.df = self.data_storage.get_df().assign(cluster=np.nan)
 
         self.data_storage.get_df().loc[
-            (self.data_storage.get_df()["dataset"] == "train"), "cluster"
+            self.data_storage.get_df("train").index, "cluster"
         ] = self.cluster_model.fit_predict(self.data_storage.get_X("train"))
-        #  print(self.data_storage.get_df())
 
         #  self.cluster_model = OPTICS(min_cluster_size=20, n_jobs=n_jobs)
         #  with np.errstate(divide="ignore"):
@@ -94,7 +93,7 @@ class BaseClusterStrategy:
         #          X_train_index
         #      )
 
-        #  data = []
+        data = []
 
         #  for (
         #  cluster_id,
