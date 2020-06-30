@@ -108,12 +108,7 @@ class DataStorage:
                     #  print(
                     #      pd.DataFrame(data=label, columns="label", index=selected_index),
                     #  )
-                    self._append_samples_to_labeled(
-                        selected_index,
-                        pd.DataFrame(
-                            data=label, columns=["label"], index=selected_index
-                        ),
-                    )
+                    self._append_samples_to_labeled(selected_index, label)
 
         len_train_labeled = len(self.train_labeled_Y)
         len_train_unlabeled = len(self.train_unlabeled_Y)
@@ -194,6 +189,8 @@ class DataStorage:
         return df
 
     def _append_samples_to_labeled(self, query_indices, Y_query):
+        Y_query = pd.DataFrame(data=Y_query, columns=["label"], index=query_indices)
+
         self.train_labeled_X = self.train_labeled_X.append(
             self.train_unlabeled_X.loc[query_indices]
         )
@@ -202,7 +199,9 @@ class DataStorage:
     def label_samples(self, query_indices, Y_query):
         # remove from train_unlabeled_data and add to train_labeled_data
         self._append_samples_to_labeled(query_indices, Y_query)
-        self.train_unlabeled_data = self.train_unlabeled_data.drop(query_indices)
+        self.train_unlabeled_X = self.train_unlabeled_X.drop(query_indices)
+        self.train_unlabeled_Y = self.train_unlabeled_Y.drop(query_indices)
+        # remove from clusters
 
     def get_true_label(self, query_indice):
-        return self.train_unlabeled_data.loc[query_indice, "true_label"]
+        return self.train_unlabeled_Y.loc[query_indice, "label"]

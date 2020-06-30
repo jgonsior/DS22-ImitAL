@@ -61,14 +61,6 @@ class BaseClusterStrategy:
         #  self.data_storage.train_unlabeled_data = self.data_storage.get_df().assign(cluster=np.nan)
         cluster = self.cluster_model.fit_predict(combined_data)
 
-        self.data_storage.train_unlabeled_data["cluster"] = cluster[
-            : len(self.data_storage.train_unlabeled_data)
-        ]
-
-        self.data_storage.train_labeled_data["cluster"] = cluster[
-            len(self.data_storage.train_unlabeled_data) :
-        ]
-
         #  self.cluster_model = OPTICS(min_cluster_size=20, n_jobs=n_jobs)
         #  with np.errstate(divide="ignore"):
         #  self.cluster_model.fit(self.data_storage.X_train_unlabeled)
@@ -87,19 +79,15 @@ class BaseClusterStrategy:
         #      + str(counter.most_common())
         #  )
 
-        #  self.data_storage.X_train_unlabeled_cluster_indices = defaultdict(
-        #      lambda: list()
-        #  )
-        #  self.data_storage.X_train_labeled_cluster_indices = defaultdict(lambda: list())
-        #
-        #  for cluster_index, X_train_index in zip(
-        #      self.Y_train_unlabeled_cluster,
-        #      #  self.data_storage.Y_train_unlabeled[0]
-        #      self.data_storage.X_train_unlabeled.index,
-        #  ):
-        #      self.data_storage.X_train_unlabeled_cluster_indices[cluster_index].append(
-        #          X_train_index
-        #      )
+        self.data_storage.train_unlabeled_cluster_indices = defaultdict(lambda: list())
+        self.data_storage.train_labeled_cluster_indices = defaultdict(lambda: list())
+
+        for cluster_index, X_train_index in zip(
+            cluster, self.data_storage.train_unlabeled_X.index,
+        ):
+            self.data_storage.train_unlabeled_cluster_indices[cluster_index].append(
+                X_train_index
+            )
 
         #  data = []
 

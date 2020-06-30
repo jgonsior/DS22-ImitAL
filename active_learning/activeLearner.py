@@ -87,9 +87,9 @@ class ActiveLearner:
     def fit_clf(self):
         self.clf.fit(
             self.data_storage.train_labeled_X,
-            self.data_storage.train_labeled_Y,
+            self.data_storage.train_labeled_Y["label"].to_list(),
             sample_weight=compute_sample_weight(
-                "balanced", self.data_storage.train_labeled_Y,
+                "balanced", self.data_storage.train_labeled_Y["label"].to_list(),
             ),
         )
 
@@ -100,8 +100,8 @@ class ActiveLearner:
 
         conf_matrix, acc = conf_matrix_and_acc(
             self.clf,
-            self.data_storage.get_X("test"),
-            self.data_storage.get_Y("test"),
+            self.data_storage.test_X,
+            self.data_storage.test_Y["label"].to_list(),
             self.data_storage.label_encoder,
         )
 
@@ -113,7 +113,7 @@ class ActiveLearner:
             conf_matrix, acc = conf_matrix_and_acc(
                 self.clf,
                 self.data_storage.train_labeled_X,
-                self.data_storage.train_labeled_Y,
+                self.data_storage.train_labeled_Y["label"].to_list(),
                 self.data_storage.label_encoder,
             )
         else:
