@@ -108,7 +108,7 @@ class DataStorage:
                     #  print(
                     #      pd.DataFrame(data=label, columns="label", index=selected_index),
                     #  )
-                    self._append_samples_to_labeled(selected_index, label)
+                    self._append_samples_to_labeled(selected_index, [label], "G")
 
         len_train_labeled = len(self.train_labeled_Y)
         len_train_unlabeled = len(self.train_unlabeled_Y)
@@ -188,17 +188,20 @@ class DataStorage:
 
         return df
 
-    def _append_samples_to_labeled(self, query_indices, Y_query):
-        Y_query = pd.DataFrame(data=Y_query, columns=["label"], index=query_indices)
+    def _append_samples_to_labeled(self, query_indices, Y_query, source):
+        Y_query = pd.DataFrame(
+            {"label": Y_query, "source": [source for _ in Y_query]},
+            index=query_indices,
+        )
 
         self.train_labeled_X = self.train_labeled_X.append(
             self.train_unlabeled_X.loc[query_indices]
         )
         self.train_labeled_Y = self.train_labeled_Y.append(Y_query)
 
-    def label_samples(self, query_indices, Y_query):
+    def label_samples(self, query_indices, Y_query, source):
         # remove from train_unlabeled_data and add to train_labeled_data
-        self._append_samples_to_labeled(query_indices, Y_query)
+        self._append_samples_to_labeled(query_indices, Y_query, source)
         self.train_unlabeled_X = self.train_unlabeled_X.drop(query_indices)
         self.train_unlabeled_Y = self.train_unlabeled_Y.drop(query_indices)
 

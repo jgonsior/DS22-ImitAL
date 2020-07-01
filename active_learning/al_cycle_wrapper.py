@@ -185,18 +185,29 @@ def eval_al(
         / (percentage_user_asked_queries + test_acc)
     )
 
-    amount_of_all_labels = len(data_storage.train_labeled_data)
+    amount_of_all_labels = len(data_storage.train_labeled_Y)
 
     # calculate accuracy for Random Forest only on oracle human expert queries
 
     active_rf = RandomForestClassifier(random_state=hyper_parameters["RANDOM_SEED"])
 
+    Y_train_al = data_storage.train_labeled_Y
+
     ys_oracle_a = Y_train_al.loc[Y_train_al.source == "A"]
     ys_oracle_g = Y_train_al.loc[Y_train_al.source == "G"]
     ys_oracle = pd.concat([ys_oracle_g, ys_oracle_a])
 
-    active_rf.fit(X_train.iloc[ys_oracle.index], ys_oracle[0])
-    acc_test_oracle = accuracy_score(Y_test, active_rf.predict(X_test))
+    print(data_storage.train_labeled_X)
+    print(data_storage.train_labeled_Y)
+
+    print(data_storage.train_labeled_X.loc[ys_oracle.index])
+    print(ys_oracle)
+    active_rf.fit(
+        data_storage.train_labeled_X.loc[ys_oracle.index], ys_oracle["label"].to_list()
+    )
+    acc_test_oracle = accuracy_score(
+        data_storage.test_Y, active_rf.predict(data_storage.test_X)
+    )
 
     # save labels
     #  Y_train_al.to_pickle(
@@ -286,7 +297,6 @@ def train_and_eval_dataset(
         oracle=oracle,
         TEST_FRACTION=hyper_parameters["TEST_FRACTION"],
     )
-    print(data_storage.get_df())
 
     fit_score = eval_al(
         data_storage,

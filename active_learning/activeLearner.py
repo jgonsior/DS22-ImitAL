@@ -187,7 +187,7 @@ class ActiveLearner:
             self.metrics_per_al_cycle["query_length"].append(len(Y_query))
             self.metrics_per_al_cycle["labels_indices"].append(str(query_indices))
 
-            self.data_storage.label_samples(query_indices, Y_query)
+            self.data_storage.label_samples(query_indices, Y_query, source)
 
             X_query = self.data_storage.train_labeled_X.loc[query_indices]
 
