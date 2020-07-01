@@ -50,6 +50,6 @@ class WeakClust(BaseWeakSupervision):
                     break
 
         # delete this cluster from the list of possible cluster for the next round
-        if cluster_found:
-            self.data_storage.train_labeled_cluster_indices.pop(cluster_id)
+        #  if cluster_found:
+        #      self.data_storage.train_labeled_cluster_indices.pop(cluster_id)
         return recommended_labels, certain_indices, "C"
