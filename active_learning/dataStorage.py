@@ -105,10 +105,8 @@ class DataStorage:
                         .iloc[0:1]
                         .index
                     )
-                    #  print(
-                    #      pd.DataFrame(data=label, columns="label", index=selected_index),
-                    #  )
-                    self._append_samples_to_labeled(selected_index, [label], "G")
+
+                    self._label_samples_without_clusters(selected_index, [label], "G")
 
         len_train_labeled = len(self.train_labeled_Y)
         len_train_unlabeled = len(self.train_unlabeled_Y)
@@ -188,7 +186,7 @@ class DataStorage:
 
         return df
 
-    def _append_samples_to_labeled(self, query_indices, Y_query, source):
+    def _label_samples_without_clusters(self, query_indices, Y_query, source):
         Y_query = pd.DataFrame(
             {"label": Y_query, "source": [source for _ in Y_query]},
             index=query_indices,
@@ -198,12 +196,12 @@ class DataStorage:
             self.train_unlabeled_X.loc[query_indices]
         )
         self.train_labeled_Y = self.train_labeled_Y.append(Y_query)
+        self.train_unlabeled_X = self.train_unlabeled_X.drop(query_indices)
+        self.train_unlabeled_Y = self.train_unlabeled_Y.drop(query_indices)
 
     def label_samples(self, query_indices, Y_query, source):
         # remove from train_unlabeled_data and add to train_labeled_data
-        self._append_samples_to_labeled(query_indices, Y_query, source)
-        self.train_unlabeled_X = self.train_unlabeled_X.drop(query_indices)
-        self.train_unlabeled_Y = self.train_unlabeled_Y.drop(query_indices)
+        self._label_samples_without_clusters(query_indices, Y_query, source)
 
         # remove indices from all clusters in unlabeled and add to labeled
         for cluster_id in self.train_unlabeled_cluster_indices.keys():

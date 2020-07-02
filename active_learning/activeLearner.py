@@ -60,6 +60,7 @@ class ActiveLearner:
         # fake iteration zero
         X_query = self.data_storage.train_labeled_X
         Y_query = self.data_storage.train_labeled_Y
+
         self.metrics_per_al_cycle["source"].append("G")
         self.metrics_per_al_cycle["query_length"].append(len(Y_query))
         self.metrics_per_al_cycle["labels_indices"].append(str(X_query.index))

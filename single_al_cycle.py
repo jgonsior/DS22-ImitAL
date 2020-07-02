@@ -70,11 +70,10 @@ if config.RANDOM_SEED == -2:
     np.random.seed(config.RANDOM_SEED)
     random.seed(config.RANDOM_SEED)
 
-score, df = train_and_eval_dataset(
+score = train_and_eval_dataset(
     config.DATASET_NAME,
     config.DATASETS_PATH,
     hyper_parameters=vars(config),
     oracle=FakeExperimentOracle(),
 )
 print("Done with ", score)
-print("Labels: ", df["labels"])

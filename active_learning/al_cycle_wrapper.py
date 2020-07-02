@@ -197,11 +197,6 @@ def eval_al(
     ys_oracle_g = Y_train_al.loc[Y_train_al.source == "G"]
     ys_oracle = pd.concat([ys_oracle_g, ys_oracle_a])
 
-    print(data_storage.train_labeled_X)
-    print(data_storage.train_labeled_Y)
-
-    print(data_storage.train_labeled_X.loc[ys_oracle.index])
-    print(ys_oracle)
     active_rf.fit(
         data_storage.train_labeled_X.loc[ys_oracle.index], ys_oracle["label"].to_list()
     )
@@ -222,7 +217,7 @@ def eval_al(
     param_list_id = hashlib.md5(unique_params.encode("utf-8")).hexdigest()
     #  db = get_db(db_name_or_type=hyper_parameters["DB_NAME_OR_TYPE"])
 
-    hyper_parameters["DATASET_NAME"] = DATASET_NAME
+    #  hyper_parameters["DATASET_NAME"] = DATASET_NAME
     print(hyper_parameters.keys())
     hyper_parameters["cores"] = hyper_parameters["N_JOBS"]
     #  del hyper_parameters["N_JOBS"]
