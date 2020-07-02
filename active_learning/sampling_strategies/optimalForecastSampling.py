@@ -14,8 +14,8 @@ class OptimalForecastSampler(ActiveLearner):
 
     def move_labeled_queries(self, X_query, Y_query, query_indices):
         # move new queries from unlabeled to labeled dataset
-        self.X_train_labeled = self.X_train_labeled.append(X_query)
-        self.X_train_unlabeled = self.X_train_unlabeled.drop(query_indices)
+        self.train_labeled_X = self.train_labeled_X.append(X_query)
+        self.train_unlabeled_X = self.train_unlabeled_X.drop(query_indices)
 
         try:
             self.Y_train_strong_labels = self.Y_train_strong_labels.append(
@@ -32,21 +32,21 @@ class OptimalForecastSampler(ActiveLearner):
         )
 
         # remove indices from all clusters in unlabeled and add to labeled
-        for cluster_id in self.X_train_unlabeled_cluster_indices.keys():
+        for cluster_id in self.train_unlabeled_X_cluster_indices.keys():
             list_to_be_removed_and_appended = []
             for indice in query_indices:
-                if indice in self.X_train_unlabeled_cluster_indices[cluster_id]:
+                if indice in self.train_unlabeled_X_cluster_indices[cluster_id]:
                     list_to_be_removed_and_appended.append(indice)
 
             # don't change a list you're iterating over!
             for indice in list_to_be_removed_and_appended:
-                self.X_train_unlabeled_cluster_indices[cluster_id].remove(indice)
-                self.X_train_labeled_cluster_indices[cluster_id].append(indice)
+                self.train_unlabeled_X_cluster_indices[cluster_id].remove(indice)
+                self.train_labeled_X_cluster_indices[cluster_id].append(indice)
 
         # remove possible empty clusters
-        self.X_train_unlabeled_cluster_indices = {
+        self.train_unlabeled_X_cluster_indices = {
             k: v
-            for k, v in self.X_train_unlabeled_cluster_indices.items()
+            for k, v in self.train_unlabeled_X_cluster_indices.items()
             if len(v) != 0
         }
 
@@ -60,17 +60,17 @@ class OptimalForecastSampler(ActiveLearner):
 
         # in loop meine WS-Strategien mit einbeziehen -> sinnvolle Cluster berechnen, DAgger vorschlagen pro Cluster nur einmal zu samplen, und den Rest dann weakly zu labeln
         copy_of_X_train = copy_of_X_train.append(
-            self.data_storage.X_train_unlabeled.loc[unlabeled_sample_indice]
+            self.data_storage.train_unlabeled_X.loc[unlabeled_sample_indice]
         )
         copy_of_Y_train = copy_of_Y_train.append(
-            self.data_storage.Y_train_unlabeled.loc[unlabeled_sample_indice]
+            self.data_storage.train_unlabeled_Y.loc[unlabeled_sample_indice]
         )
-        copy_of_classifier.fit(copy_of_X_train, copy_of_Y_train[0])
+        copy_of_classifier.fit(copy_of_X_train, copy_of_Y_train["label"].to_list())
 
-        Y_pred = copy_of_classifier.predict(self.data_storage.X_train_unlabeled)
+        Y_pred = copy_of_classifier.predict(self.data_storage.train_unlabeled_X)
 
         accuracy_with_that_label = accuracy_score(
-            Y_pred, self.data_storage.Y_train_unlabeled[0]
+            Y_pred, self.data_storage.train_unlabeled_Y["label"].to_list()
         )
 
         # remove the indics again
@@ -88,18 +88,18 @@ class OptimalForecastSampler(ActiveLearner):
     We take a "peak" into the future and annotate exactly those samples where we KNOW that they will benefit us the most
     """
 
-    def calculate_next_query_indices(self, X_train_unlabeled_cluster_indices, *args):
+    def calculate_next_query_indices(self, train_unlabeled_X_cluster_indices, *args):
         # merge indices from all clusters together and take the n most uncertain ones from them
-        X_train_unlabeled_indices = list(
-            chain(*list(X_train_unlabeled_cluster_indices.values()))
+        train_unlabeled_X_indices = list(
+            chain(*list(train_unlabeled_X_cluster_indices.values()))
         )
 
         scores = []
         copy_of_classifier = copy.deepcopy(self.clf)
-        copy_of_X_train = copy.deepcopy(self.data_storage.X_train_labeled)
-        copy_of_Y_train = copy.deepcopy(self.data_storage.Y_train_labeled)
+        copy_of_X_train = copy.deepcopy(self.data_storage.train_labeled_X)
+        copy_of_Y_train = copy.deepcopy(self.data_storage.train_labeled_Y)
 
-        random.shuffle(X_train_unlabeled_indices)
+        random.shuffle(train_unlabeled_X_indices)
 
         # parallelisieren
         with parallel_backend("loky", n_jobs=self.N_JOBS):
@@ -110,7 +110,7 @@ class OptimalForecastSampler(ActiveLearner):
                     copy_of_X_train,
                     copy_of_Y_train,
                 )
-                for unlabeled_sample_indice in X_train_unlabeled_indices[
+                for unlabeled_sample_indice in train_unlabeled_X_indices[
                     : self.amount_of_peaked_objects
                 ]
             )
