@@ -29,7 +29,7 @@ config = standard_config(
         (["--START_SET_SIZE"], {"type": int, "default": 1}),
         (
             ["--MINIMUM_TEST_ACCURACY_BEFORE_RECOMMENDATIONS"],
-            {"type": float, "default": 0.7},
+            {"type": float, "default": 0.5},
         ),
         (
             ["--UNCERTAINTY_RECOMMENDATION_CERTAINTY_THRESHOLD"],
@@ -60,6 +60,7 @@ config = standard_config(
         (["--HYPER_SEARCH_TYPE"], {"default": "random"}),
         (["--USER_QUERY_BUDGET_LIMIT"], {"type": float, "default": 200}),
         (["--AMOUNT_OF_PEAKED_OBJECTS"], {"type": int, "default": 12}),
+        (["--MAX_AMOUNT_OF_WS_PEAKS"], {"type": int, "default": 1}),
     ]
 )
 

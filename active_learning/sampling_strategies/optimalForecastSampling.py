@@ -64,12 +64,30 @@ class OptimalForecastSampler(ActiveLearner):
             ],
             "P",
         )
-
-        # in loop meine WS-Strategien mit einbeziehen -> sinnvolle Cluster berechnen, DAgger vorschlagen pro Cluster nur einmal zu samplen, und den Rest dann weakly zu labeln
         copy_of_classifier.fit(
             copy_of_data_storage.train_labeled_X,
             copy_of_data_storage.train_labeled_Y["label"].to_list(),
         )
+        for labelSource in self.weak_supervision_label_sources:
+            labelSource.data_storage = copy_of_data_storage
+
+        # what would happen if we apply WS after this one?
+        for i in range(0, self.MAX_AMOUNT_OF_WS_PEAKS):
+            for labelSource in self.weak_supervision_label_sources:
+                (Y_query, query_indices, source,) = labelSource.get_labeled_samples()
+
+                if Y_query is not None:
+                    break
+            if Y_query is None:
+                ws_still_applicable = False
+                continue
+
+            copy_of_data_storage.label_samples(query_indices, Y_query, source)
+
+            copy_of_classifier.fit(
+                copy_of_data_storage.train_labeled_X,
+                copy_of_data_storage.train_labeled_Y["label"].to_list(),
+            )
 
         Y_pred = copy_of_classifier.predict(copy_of_data_storage.train_unlabeled_X)
 
@@ -106,6 +124,8 @@ class OptimalForecastSampler(ActiveLearner):
                     : self.amount_of_peaked_objects
                 ]
             )
+        for labelSource in self.weak_supervision_label_sources:
+            labelSource.data_storage = self.data_storage
 
         scores = sorted(scores, key=lambda tup: tup[1], reverse=True)
         return [k for k, v in scores[: self.nr_queries_per_iteration]]
