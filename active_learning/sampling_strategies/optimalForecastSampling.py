@@ -1,3 +1,4 @@
+import pandas as pd
 from joblib import Parallel, delayed, parallel_backend
 import random
 from itertools import chain
@@ -50,32 +51,31 @@ class OptimalForecastSampler(ActiveLearner):
             if len(v) != 0
         }
 
-    def _future_peak(
-        self,
-        unlabeled_sample_indice,
-        copy_of_classifier,
-        copy_of_X_train,
-        copy_of_Y_train,
-    ):
+    def _future_peak(self, unlabeled_sample_indice):
+        copy_of_data_storage = copy.deepcopy(self.data_storage)
+        copy_of_classifier = copy.deepcopy(self.clf)
+
+        copy_of_data_storage.label_samples(
+            pd.Index([unlabeled_sample_indice]),
+            [
+                copy_of_data_storage.train_unlabeled_Y.loc[unlabeled_sample_indice][
+                    "label"
+                ]
+            ],
+            "P",
+        )
 
         # in loop meine WS-Strategien mit einbeziehen -> sinnvolle Cluster berechnen, DAgger vorschlagen pro Cluster nur einmal zu samplen, und den Rest dann weakly zu labeln
-        copy_of_X_train = copy_of_X_train.append(
-            self.data_storage.train_unlabeled_X.loc[unlabeled_sample_indice]
+        copy_of_classifier.fit(
+            copy_of_data_storage.train_labeled_X,
+            copy_of_data_storage.train_labeled_Y["label"].to_list(),
         )
-        copy_of_Y_train = copy_of_Y_train.append(
-            self.data_storage.train_unlabeled_Y.loc[unlabeled_sample_indice]
-        )
-        copy_of_classifier.fit(copy_of_X_train, copy_of_Y_train["label"].to_list())
 
-        Y_pred = copy_of_classifier.predict(self.data_storage.train_unlabeled_X)
+        Y_pred = copy_of_classifier.predict(copy_of_data_storage.train_unlabeled_X)
 
         accuracy_with_that_label = accuracy_score(
-            Y_pred, self.data_storage.train_unlabeled_Y["label"].to_list()
+            Y_pred, copy_of_data_storage.train_unlabeled_Y["label"].to_list()
         )
-
-        # remove the indics again
-        copy_of_X_train.drop(unlabeled_sample_indice, inplace=True)
-        copy_of_Y_train.drop(unlabeled_sample_indice, inplace=True)
 
         print(
             "Testing out : {}, acc: {}".format(
@@ -95,21 +95,13 @@ class OptimalForecastSampler(ActiveLearner):
         )
 
         scores = []
-        copy_of_classifier = copy.deepcopy(self.clf)
-        copy_of_X_train = copy.deepcopy(self.data_storage.train_labeled_X)
-        copy_of_Y_train = copy.deepcopy(self.data_storage.train_labeled_Y)
 
         random.shuffle(train_unlabeled_X_indices)
 
         # parallelisieren
         with parallel_backend("loky", n_jobs=self.N_JOBS):
             scores = Parallel()(
-                delayed(self._future_peak)(
-                    unlabeled_sample_indice,
-                    copy_of_classifier,
-                    copy_of_X_train,
-                    copy_of_Y_train,
-                )
+                delayed(self._future_peak)(unlabeled_sample_indice)
                 for unlabeled_sample_indice in train_unlabeled_X_indices[
                     : self.amount_of_peaked_objects
                 ]
