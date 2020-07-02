@@ -14,7 +14,6 @@ from sklearn.model_selection import RandomizedSearchCV, ShuffleSplit
 
 from active_learning.al_cycle_wrapper import train_and_eval_dataset
 from active_learning.experiment_setup_lib import (
-    get_dataset,
     get_param_distribution,
     init_logger,
     log_it,
@@ -68,16 +67,9 @@ class Estimator(BaseEstimator):
                 continue
             #  gc.collect()
 
-            X_train, X_test, Y_train, Y_test, label_encoder_classes = get_dataset(
-                standard_config.DATASETS_PATH, dataset_name, self.RANDOM_SEED
-            )
-            score, Y_train_al = train_and_eval_dataset(
+            score = train_and_eval_dataset(
                 dataset_name,
-                X_train,
-                X_test,
-                Y_train,
-                Y_test,
-                label_encoder_classes,
+                standard_config.DATASETS_PATH,
                 hyper_parameters=vars(self),
                 oracle=FakeExperimentOracle(),
             )
