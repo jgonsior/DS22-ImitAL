@@ -198,6 +198,7 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
     active_learner.set_amount_of_peaked_objects(
         hyper_parameters["AMOUNT_OF_PEAKED_OBJECTS"]
     )
+    active_learner.init_sampling_classifier()
     active_learner.MAX_AMOUNT_OF_WS_PEAKS = hyper_parameters["MAX_AMOUNT_OF_WS_PEAKS"]
 
     start = timer()

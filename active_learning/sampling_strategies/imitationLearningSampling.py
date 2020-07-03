@@ -1,4 +1,5 @@
 import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
 from joblib import Parallel, delayed, parallel_backend
 import random
 from itertools import chain
@@ -12,6 +13,30 @@ from ..activeLearner import ActiveLearner
 class ImitationLearner(ActiveLearner):
     def set_amount_of_peaked_objects(self, amount_of_peaked_objects):
         self.amount_of_peaked_objects = amount_of_peaked_objects
+
+    def init_sampling_classifier(self):
+        self.sampling_classifier = RandomForestClassifier(
+            n_jobs=self.N_JOBS, random_state=self.RANDOM_SEED
+        )
+        self.states = pd.DataFrame(
+            data=None,
+            columns=[
+                str(i) + "_proba_1" for i in range(0, self.nr_queries_per_iteration)
+            ]
+            + [str(i) + "_proba_2" for i in range(0, self.nr_queries_per_iteration)],
+        )
+        self.optimal_policies = pd.DataFrame(
+            data=None,
+            columns=[
+                str(i) + "_true_best_sample"
+                for i in range(0, self.nr_queries_per_iteration)
+            ],
+        )
+
+    def fit_sampling_classifier(self):
+        self.sampling_classifier.fit(
+            self.data_storage.states, self.data_storage.optimal_policies
+        )
 
     def move_labeled_queries(self, X_query, Y_query, query_indices):
         # move new queries from unlabeled to labeled dataset
@@ -115,17 +140,34 @@ class ImitationLearner(ActiveLearner):
         scores = []
 
         random.shuffle(train_unlabeled_X_indices)
+        possible_samples_indices = train_unlabeled_X_indices[
+            : self.amount_of_peaked_objects
+        ]
 
         # parallelisieren
         with parallel_backend("loky", n_jobs=self.N_JOBS):
             scores = Parallel()(
                 delayed(self._future_peak)(unlabeled_sample_indice)
-                for unlabeled_sample_indice in train_unlabeled_X_indices[
-                    : self.amount_of_peaked_objects
-                ]
+                for unlabeled_sample_indice in possible_samples_indices
             )
         for labelSource in self.weak_supervision_label_sources:
             labelSource.data_storage = self.data_storage
 
         scores = sorted(scores, key=lambda tup: tup[1], reverse=True)
+
+        X_pred = self.clf.predict_proba(
+            self.data_storage.train_unlabeled_X.loc[possible_samples_indices]
+        )
+        print(X_pred)
+        #  Y_pred = self.sampling_classifier.predict(X_pred)
+
+        # take first and second most examples from X_pred and append them then to states
+        self.states.append(X_pred)
+
+        # save the indices of the n_best possible states, order doesn't matter
+        self.optimal_policies.append(scores)
+
+        return Y_pred
+
+        # hier dann stattdessen die Antwort vom hier trainiertem classifier zurückgeben
         return [k for k, v in scores[: self.nr_queries_per_iteration]]
