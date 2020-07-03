@@ -23,6 +23,7 @@ class DataStorage:
         START_SET_SIZE,
         TEST_FRACTION,
         hyper_parameters,
+        **kwargs
     ):
         if RANDOM_SEED != -1:
             np.random.seed(RANDOM_SEED)
@@ -34,7 +35,7 @@ class DataStorage:
         if DATASET_NAME == "dwtc":
             df = self._load_dwtc(DATASETS_PATH)
         elif DATASET_NAME == "synthetic":
-            df = self._load_synthetic()
+            df = self._load_synthetic(**kwargs)
         else:
             df = self._load_alc(DATASET_NAME, DATASETS_PATH)
         self.label_encoder = LabelEncoder()
@@ -138,9 +139,9 @@ class DataStorage:
         self.amount_of_training_samples = int(len(df) * 0.5)
         return df
 
-    def _load_synthetic(self, kwargs):
-        self.X_data, self.Y_temp = make_classification(**kwargs)
-        df = pd.DataFrame(self.X_data)
+    def _load_synthetic(self, **kwargs):
+        X_data, Y_temp = make_classification(**kwargs)
+        df = pd.DataFrame(X_data)
 
         # replace labels with strings
         Y_temp = Y_temp.astype("str")
@@ -148,8 +149,11 @@ class DataStorage:
             np.place(Y_temp, Y_temp == str(i), chr(65 + i))
 
         # feature_columns fehlt
+        self.feature_columns = df.columns.to_list()
+        self.amount_of_training_samples = int(len(df) * 0.5)
 
         df["label"] = Y_temp
+
         return df
 
     def _load_alc(self, DATASET_NAME, DATASETS_PATH):

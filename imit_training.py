@@ -33,12 +33,10 @@ from active_learning.sampling_strategies import (
     RandomSampler,
     UncertaintySampler,
     OptimalForecastSampler,
-    ImitationLearner
+    ImitationLearner,
 )
 
 from active_learning.weak_supervision import WeakCert, WeakClust
-
-
 
 
 import random
@@ -54,10 +52,7 @@ config = standard_config(
     [
         (
             ["--SAMPLING"],
-            {
-                "required": True,
-                "help": "Possible values: uncertainty, random, committe, boundary",
-            },
+            {"help": "Possible values: uncertainty, random, committe, boundary",},
         ),
         (["--DATASET_NAME"], {"required": True,}),
         (
@@ -115,15 +110,62 @@ if config.RANDOM_SEED == -2:
     np.random.seed(config.RANDOM_SEED)
     random.seed(config.RANDOM_SEED)
 
+hyper_parameters = vars(config)
 
-for i in range config.AMOUNT_OF_LEARN_ITERATIONS:
+for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
+    print("Learn iteration {}".format(i))
+
+    MAX_USED_N_SAMPLES = 1000
+    N_SAMPLES = 1000
+    N_FEATURES = random.randint(10, 100)
+    N_INFORMATIVE, N_REDUNDANT, N_REPEATED = [
+        int(N_FEATURES * i) for i in np.random.dirichlet(np.ones(3), size=1).tolist()[0]
+    ]
+
+    N_CLASSES = random.randint(2, 10)
+    N_CLUSTERS_PER_CLASS = random.randint(
+        1, min(max(1, int(2 ** N_INFORMATIVE / N_CLASSES)), 10)
+    )
+
+    if N_CLASSES * N_CLUSTERS_PER_CLASS > 2 ** N_INFORMATIVE:
+        i -= 1
+        continue
+
+    WEIGHTS = np.random.dirichlet(np.ones(N_CLASSES), size=1).tolist()[
+        0
+    ]  # list of weights, len(WEIGHTS) = N_CLASSES, sum(WEIGHTS)=1
+    FLIP_Y = (
+        np.random.pareto(2.0) + 1
+    ) * 0.01  # amount of noise, larger values make it harder
+    CLASS_SEP = random.uniform(
+        0, 10
+    )  # larger values spread out the clusters and make it easier
+    HYPERCUBE = True  # if false random polytope
+    SCALE = 0.01  # features should be between 0 and 1 now
+
+    synthetic_creation_args = {
+        "n_samples": N_SAMPLES,
+        "n_features": N_FEATURES,
+        "n_informative": N_INFORMATIVE,
+        "n_redundant": N_REDUNDANT,
+        "n_repeated": N_REPEATED,
+        "n_classes": N_CLASSES,
+        "n_clusters_per_class": N_CLUSTERS_PER_CLASS,
+        "weights": WEIGHTS,
+        "flip_y": FLIP_Y,
+        "class_sep": CLASS_SEP,
+        "hypercube": HYPERCUBE,
+        "scale": SCALE,
+    }
+
     data_storage = DataStorage(
         hyper_parameters["RANDOM_SEED"],
-        DATASETS_NAME,
-        DATASETS_PATH,
-        START_SET_SIZE,
-        TEST_FRACTION,
+        hyper_parameters["DATASET_NAME"],
+        hyper_parameters["DATASETS_PATH"],
+        hyper_parameters["START_SET_SIZE"],
+        hyper_parameters["TEST_FRACTION"],
         hyper_parameters,
+        **synthetic_creation_args
     )
 
     hyper_parameters["LEN_TRAIN_DATA"] = len(data_storage.train_unlabeled_Y) + len(
@@ -137,6 +179,8 @@ for i in range config.AMOUNT_OF_LEARN_ITERATIONS:
     )
 
     weak_supervision_label_sources = []
+
+    oracle = FakeExperimentOracle()
 
     active_learner_params = {
         "data_storage": data_storage,
@@ -157,7 +201,9 @@ for i in range config.AMOUNT_OF_LEARN_ITERATIONS:
     active_learner.MAX_AMOUNT_OF_WS_PEAKS = hyper_parameters["MAX_AMOUNT_OF_WS_PEAKS"]
 
     start = timer()
-    trained_active_clf_list, metrics_per_al_cycle = active_learner.learn(**hyper_parameters)
+    trained_active_clf_list, metrics_per_al_cycle = active_learner.learn(
+        **hyper_parameters
+    )
     end = timer()
 
 # do some evaluation on a real world dataset?

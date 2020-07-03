@@ -9,7 +9,7 @@ from sklearn.metrics import accuracy_score
 from ..activeLearner import ActiveLearner
 
 
-class OptimalForecastSampler(ActiveLearner):
+class ImitationLearner(ActiveLearner):
     def set_amount_of_peaked_objects(self, amount_of_peaked_objects):
         self.amount_of_peaked_objects = amount_of_peaked_objects
 
