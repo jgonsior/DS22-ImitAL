@@ -159,8 +159,10 @@ class ImitationLearner(ActiveLearner):
             self.data_storage.train_unlabeled_X.loc[possible_samples_indices]
         )
         print(X_pred)
+
         print(np.argmax(X_pred, axis=1))
         print(np.argsort(X_pred, axis=1, kind="quicksort", order=None))
+
         #  Y_pred = self.sampling_classifier.predict(X_pred)
 
         # take first and second most examples from X_pred and append them then to states
