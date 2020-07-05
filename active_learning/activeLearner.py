@@ -50,12 +50,12 @@ class ActiveLearner:
             "source": [],
             "labels_indices": [],
         }
-
         self.cluster_strategy = cluster_strategy
         self.amount_of_user_asked_queries = 0
         self.oracle = oracle
         self.weak_supervision_label_sources = weak_supervision_label_sources
         self.N_JOBS = N_JOBS
+        self.RANDOM_SEED = RANDOM_SEED
 
         # fake iteration zero
         X_query = self.data_storage.train_labeled_X
