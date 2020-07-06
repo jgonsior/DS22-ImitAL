@@ -8,6 +8,64 @@ import numpy as np
 from scipy.stats import entropy
 from sklearn.metrics import accuracy_score
 from ..activeLearner import ActiveLearner
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+import os
+
+
+def _future_peak(
+    unlabeled_sample_indice,
+    weak_supervision_label_sources,
+    data_storage,
+    clf,
+    MAX_AMOUNT_OF_WS_PEAKS,
+):
+    copy_of_data_storage = copy.deepcopy(data_storage)
+    copy_of_classifier = copy.deepcopy(clf)
+
+    copy_of_data_storage.label_samples(
+        pd.Index([unlabeled_sample_indice]),
+        [copy_of_data_storage.train_unlabeled_Y.loc[unlabeled_sample_indice]["label"]],
+        "P",
+    )
+    copy_of_classifier.fit(
+        copy_of_data_storage.train_labeled_X,
+        copy_of_data_storage.train_labeled_Y["label"].to_list(),
+    )
+    for labelSource in weak_supervision_label_sources:
+        labelSource.data_storage = copy_of_data_storage
+
+    # what would happen if we apply WS after this one?
+    for i in range(0, MAX_AMOUNT_OF_WS_PEAKS):
+        for labelSource in weak_supervision_label_sources:
+            (Y_query, query_indices, source,) = labelSource.get_labeled_samples()
+
+            if Y_query is not None:
+                break
+        if Y_query is None:
+            ws_still_applicable = False
+            continue
+
+        copy_of_data_storage.label_samples(query_indices, Y_query, source)
+
+        copy_of_classifier.fit(
+            copy_of_data_storage.train_labeled_X,
+            copy_of_data_storage.train_labeled_Y["label"].to_list(),
+        )
+
+    Y_pred = copy_of_classifier.predict(copy_of_data_storage.train_unlabeled_X)
+
+    accuracy_with_that_label = accuracy_score(
+        Y_pred, copy_of_data_storage.train_unlabeled_Y["label"].to_list()
+    )
+
+    print(
+        "Testing out : {}, acc: {}".format(
+            unlabeled_sample_indice, accuracy_with_that_label
+        )
+    )
+    return unlabeled_sample_indice, accuracy_with_that_label
 
 
 class ImitationLearner(ActiveLearner):
@@ -15,21 +73,60 @@ class ImitationLearner(ActiveLearner):
         self.amount_of_peaked_objects = amount_of_peaked_objects
 
     def init_sampling_classifier(self):
-        self.sampling_classifier = RandomForestClassifier(
-            n_jobs=self.N_JOBS, random_state=self.RANDOM_SEED
+        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
+        os.environ["CUDA_VISIBLE_DEVICES"] = ""
+        model = keras.Sequential(
+            [
+                layers.Dense(
+                    2 * self.amount_of_peaked_objects,
+                    input_dim=2 * self.amount_of_peaked_objects,
+                    activation="relu",
+                ),
+                layers.Dense(2 * self.amount_of_peaked_objects, activation="relu"),
+                layers.Dense(2 * self.amount_of_peaked_objects, activation="relu"),
+                layers.Dense(
+                    self.nr_queries_per_iteration, activation="softmax"
+                ),  # muss das softmax sein?!
+            ]
         )
+        model.compile(
+            loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"]
+        )
+
+        print(model.summary())
+        #  inputs = keras.Input(input_dim=2*self.amount_of_peaked_objects)
+        #
+        #  x = layers.Dense(units=self.amount_of_peaked_objects)
+        #  outputs=layers.Dense(self.nr_queries_per_iteration, activation="softmax")(x)
+        #  self.sampling_classifier = keras.Model(inputs=inputs, outputs=outputs
+        self.sampling_classifier = model
+        #  self.sampling_classifier = RandomForestClassifier(
+        #      n_jobs=self.N_JOBS, random_state=self.RANDOM_SEED
+        #  )
+        #  init_x = np.zeros(
+        #      (self.nr_queries_per_iteration, self.amount_of_peaked_objects)
+        #  )
+        #  init_y = [i for i in range(0, self.nr_queries_per_iteration)]
+        #  print(init_x)
+        #  print(init_y)
+        #  self.sampling_classifier.fit(init_x, init_y)
+
         self.states = pd.DataFrame(
             data=None,
             columns=[
-                str(i) + "_proba_1" for i in range(0, self.nr_queries_per_iteration)
+                str(i) + "_proba_1" for i in range(0, self.amount_of_peaked_objects)
             ]
-            + [str(i) + "_proba_2" for i in range(0, self.nr_queries_per_iteration)],
+            + [str(i) + "_proba_2" for i in range(0, self.amount_of_peaked_objects)],
         )
         self.optimal_policies = pd.DataFrame(
             data=None,
             columns=[
-                str(i) + "_true_best_sample"
-                for i in range(0, self.nr_queries_per_iteration)
+                str(i) + "_true_best_sample_indice"
+                for i in range(0, self.amount_of_peaked_objects)
+            ]
+            + [
+                str(i) + "_true_best_sample_acc"
+                for i in range(0, self.amount_of_peaked_objects)
             ],
         )
 
@@ -76,57 +173,6 @@ class ImitationLearner(ActiveLearner):
             if len(v) != 0
         }
 
-    def _future_peak(self, unlabeled_sample_indice):
-        copy_of_data_storage = copy.deepcopy(self.data_storage)
-        copy_of_classifier = copy.deepcopy(self.clf)
-
-        copy_of_data_storage.label_samples(
-            pd.Index([unlabeled_sample_indice]),
-            [
-                copy_of_data_storage.train_unlabeled_Y.loc[unlabeled_sample_indice][
-                    "label"
-                ]
-            ],
-            "P",
-        )
-        copy_of_classifier.fit(
-            copy_of_data_storage.train_labeled_X,
-            copy_of_data_storage.train_labeled_Y["label"].to_list(),
-        )
-        for labelSource in self.weak_supervision_label_sources:
-            labelSource.data_storage = copy_of_data_storage
-
-        # what would happen if we apply WS after this one?
-        for i in range(0, self.MAX_AMOUNT_OF_WS_PEAKS):
-            for labelSource in self.weak_supervision_label_sources:
-                (Y_query, query_indices, source,) = labelSource.get_labeled_samples()
-
-                if Y_query is not None:
-                    break
-            if Y_query is None:
-                ws_still_applicable = False
-                continue
-
-            copy_of_data_storage.label_samples(query_indices, Y_query, source)
-
-            copy_of_classifier.fit(
-                copy_of_data_storage.train_labeled_X,
-                copy_of_data_storage.train_labeled_Y["label"].to_list(),
-            )
-
-        Y_pred = copy_of_classifier.predict(copy_of_data_storage.train_unlabeled_X)
-
-        accuracy_with_that_label = accuracy_score(
-            Y_pred, copy_of_data_storage.train_unlabeled_Y["label"].to_list()
-        )
-
-        print(
-            "Testing out : {}, acc: {}".format(
-                unlabeled_sample_indice, accuracy_with_that_label
-            )
-        )
-        return unlabeled_sample_indice, accuracy_with_that_label
-
     """
     We take a "peak" into the future and annotate exactly those samples where we KNOW that they will benefit us the most
     """
@@ -147,7 +193,13 @@ class ImitationLearner(ActiveLearner):
         # parallelisieren
         with parallel_backend("loky", n_jobs=self.N_JOBS):
             scores = Parallel()(
-                delayed(self._future_peak)(unlabeled_sample_indice)
+                delayed(_future_peak)(
+                    unlabeled_sample_indice,
+                    self.weak_supervision_label_sources,
+                    self.data_storage,
+                    self.clf,
+                    self.MAX_AMOUNT_OF_WS_PEAKS,
+                )
                 for unlabeled_sample_indice in possible_samples_indices
             )
         for labelSource in self.weak_supervision_label_sources:
@@ -155,22 +207,39 @@ class ImitationLearner(ActiveLearner):
 
         scores = sorted(scores, key=lambda tup: tup[1], reverse=True)
 
-        X_pred = self.clf.predict_proba(
+        possible_samples_probas = self.clf.predict_proba(
             self.data_storage.train_unlabeled_X.loc[possible_samples_indices]
         )
-        print(X_pred)
+        arg_sorted_probas = np.argsort(
+            -possible_samples_probas, axis=1, kind="quicksort", order=None
+        )
+        argmax_probas = arg_sorted_probas[:, 0]
+        argsecond_probas = arg_sorted_probas[:, 1]
 
-        print(np.argmax(X_pred, axis=1))
-        print(np.argsort(X_pred, axis=1, kind="quicksort", order=None))
-
-        #  Y_pred = self.sampling_classifier.predict(X_pred)
-
-        # take first and second most examples from X_pred and append them then to states
-        self.states.append(X_pred)
+        x_policy = np.array([*argmax_probas, *argsecond_probas])
+        # take first and second most examples from possible_samples_probas and append them then to states
+        self.states = self.states.append(
+            pd.Series(dict(zip(self.states.columns, x_policy))), ignore_index=True,
+        )
+        print(self.states)
 
         # save the indices of the n_best possible states, order doesn't matter
-        self.optimal_policies.append(scores)
+        self.optimal_policies = self.optimal_policies.append(
+            pd.Series(
+                dict(
+                    zip(
+                        self.optimal_policies.columns,
+                        [a for a, _ in scores] + [b for _, b in scores],
+                    )
+                )
+            ),
+            ignore_index=True,
+        )
+        print(self.optimal_policies)
 
+        print(x_policy)
+        Y_pred = self.sampling_classifier.predict(x_policy)
+        print(Y_pred)
         return Y_pred
 
         # hier dann stattdessen die Antwort vom hier trainiertem classifier zurückgeben

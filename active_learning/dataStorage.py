@@ -196,6 +196,7 @@ class DataStorage:
             index=query_indices,
         )
 
+        # @todo: liber .loc[index_location] verwenden, bessere performance als append
         self.train_labeled_X = self.train_labeled_X.append(
             self.train_unlabeled_X.loc[query_indices]
         )
