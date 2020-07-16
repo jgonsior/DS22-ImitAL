@@ -75,11 +75,12 @@ class ImitationLearner(ActiveLearner):
     def init_sampling_classifier(self):
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
+
         model = keras.Sequential(
             [
                 layers.Dense(
                     2 * self.amount_of_peaked_objects,
-                    input_dim=2 * self.amount_of_peaked_objects,
+                    input_shape=(2 * self.amount_of_peaked_objects,),
                     activation="relu",
                 ),
                 layers.Dense(2 * self.amount_of_peaked_objects, activation="relu"),
@@ -94,29 +95,14 @@ class ImitationLearner(ActiveLearner):
         )
 
         print(model.summary())
-        #  inputs = keras.Input(input_dim=2*self.amount_of_peaked_objects)
-        #
-        #  x = layers.Dense(units=self.amount_of_peaked_objects)
-        #  outputs=layers.Dense(self.nr_queries_per_iteration, activation="softmax")(x)
-        #  self.sampling_classifier = keras.Model(inputs=inputs, outputs=outputs
         self.sampling_classifier = model
-        #  self.sampling_classifier = RandomForestClassifier(
-        #      n_jobs=self.N_JOBS, random_state=self.RANDOM_SEED
-        #  )
-        #  init_x = np.zeros(
-        #      (self.nr_queries_per_iteration, self.amount_of_peaked_objects)
-        #  )
-        #  init_y = [i for i in range(0, self.nr_queries_per_iteration)]
-        #  print(init_x)
-        #  print(init_y)
-        #  self.sampling_classifier.fit(init_x, init_y)
 
         self.states = pd.DataFrame(
             data=None,
             columns=[
-                str(i) + "_proba_1" for i in range(0, self.amount_of_peaked_objects)
+                str(i) + "_proba_0" for i in range(0, self.amount_of_peaked_objects)
             ]
-            + [str(i) + "_proba_2" for i in range(0, self.amount_of_peaked_objects)],
+            + [str(i) + "_proba_1" for i in range(0, self.amount_of_peaked_objects)],
         )
         self.optimal_policies = pd.DataFrame(
             data=None,
@@ -210,18 +196,15 @@ class ImitationLearner(ActiveLearner):
         possible_samples_probas = self.clf.predict_proba(
             self.data_storage.train_unlabeled_X.loc[possible_samples_indices]
         )
-        arg_sorted_probas = np.argsort(
-            -possible_samples_probas, axis=1, kind="quicksort", order=None
-        )
-        argmax_probas = arg_sorted_probas[:, 0]
-        argsecond_probas = arg_sorted_probas[:, 1]
+        sorted_probas = -np.sort(-possible_samples_probas, axis=1)
+        argmax_probas = sorted_probas[:, 0]
+        argsecond_probas = sorted_probas[:, 1]
 
-        x_policy = np.array([*argmax_probas, *argsecond_probas])
+        X_state = np.array([*argmax_probas, *argsecond_probas])
         # take first and second most examples from possible_samples_probas and append them then to states
         self.states = self.states.append(
-            pd.Series(dict(zip(self.states.columns, x_policy))), ignore_index=True,
+            pd.Series(dict(zip(self.states.columns, X_state))), ignore_index=True,
         )
-        print(self.states)
 
         # save the indices of the n_best possible states, order doesn't matter
         self.optimal_policies = self.optimal_policies.append(
@@ -236,9 +219,10 @@ class ImitationLearner(ActiveLearner):
             ignore_index=True,
         )
         print(self.optimal_policies)
-
-        print(x_policy)
-        Y_pred = self.sampling_classifier.predict(x_policy)
+        X_state = np.reshape(X_state, (1, len(X_state)))
+        print(X_state)
+        print(np.shape(X_state))
+        Y_pred = self.sampling_classifier.predict(X_state)
         print(Y_pred)
         return Y_pred
 
