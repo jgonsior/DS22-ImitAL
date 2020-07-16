@@ -1,3 +1,4 @@
+from sklearn.preprocessing import MinMaxScaler
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from joblib import Parallel, delayed, parallel_backend
@@ -61,11 +62,11 @@ def _future_peak(
     )
 
     print(
-        "Testing out : {}, acc: {}".format(
+        "Testing out : {}, train acc: {}".format(
             unlabeled_sample_indice, accuracy_with_that_label
         )
     )
-    return unlabeled_sample_indice, accuracy_with_that_label
+    return accuracy_with_that_label
 
 
 class ImitationLearner(ActiveLearner):
@@ -86,7 +87,7 @@ class ImitationLearner(ActiveLearner):
                 layers.Dense(2 * self.amount_of_peaked_objects, activation="relu"),
                 layers.Dense(2 * self.amount_of_peaked_objects, activation="relu"),
                 layers.Dense(
-                    self.nr_queries_per_iteration, activation="softmax"
+                    self.amount_of_peaked_objects, activation="softmax"
                 ),  # muss das softmax sein?!
             ]
         )
@@ -107,11 +108,7 @@ class ImitationLearner(ActiveLearner):
         self.optimal_policies = pd.DataFrame(
             data=None,
             columns=[
-                str(i) + "_true_best_sample_indice"
-                for i in range(0, self.amount_of_peaked_objects)
-            ]
-            + [
-                str(i) + "_true_best_sample_acc"
+                str(i) + "_true_peaked_normalised_acc"
                 for i in range(0, self.amount_of_peaked_objects)
             ],
         )
@@ -169,7 +166,7 @@ class ImitationLearner(ActiveLearner):
             chain(*list(train_unlabeled_X_cluster_indices.values()))
         )
 
-        scores = []
+        future_peak_acc = []
 
         random.shuffle(train_unlabeled_X_indices)
         possible_samples_indices = train_unlabeled_X_indices[
@@ -178,7 +175,7 @@ class ImitationLearner(ActiveLearner):
 
         # parallelisieren
         with parallel_backend("loky", n_jobs=self.N_JOBS):
-            scores = Parallel()(
+            future_peak_acc = Parallel()(
                 delayed(_future_peak)(
                     unlabeled_sample_indice,
                     self.weak_supervision_label_sources,
@@ -188,14 +185,15 @@ class ImitationLearner(ActiveLearner):
                 )
                 for unlabeled_sample_indice in possible_samples_indices
             )
+
         for labelSource in self.weak_supervision_label_sources:
             labelSource.data_storage = self.data_storage
-
-        scores = sorted(scores, key=lambda tup: tup[1], reverse=True)
 
         possible_samples_probas = self.clf.predict_proba(
             self.data_storage.train_unlabeled_X.loc[possible_samples_indices]
         )
+
+        print(possible_samples_probas)
         sorted_probas = -np.sort(-possible_samples_probas, axis=1)
         argmax_probas = sorted_probas[:, 0]
         argsecond_probas = sorted_probas[:, 1]
@@ -206,25 +204,34 @@ class ImitationLearner(ActiveLearner):
             pd.Series(dict(zip(self.states.columns, X_state))), ignore_index=True,
         )
 
+        # the output of the net is one neuron per possible unlabeled sample, and the output should be:
+        # a) 0 for label this, do not label that (how to determine how many, how to forbid how many labeled samples are allowed?)
+        # b) predict accuracy gain by labeling sample x -> I can compare it directly to the values I could predict -> normalize values as 0 -> smallest possible gain, 1 -> highest possible gain
+        future_peak_accs = [[b] for b in future_peak_acc]
+
+        # min max scaling of output
+        scaler = MinMaxScaler()
+        future_peak_accs = [a[0] for a in scaler.fit_transform(future_peak_accs)]
+
         # save the indices of the n_best possible states, order doesn't matter
         self.optimal_policies = self.optimal_policies.append(
-            pd.Series(
-                dict(
-                    zip(
-                        self.optimal_policies.columns,
-                        [a for a, _ in scores] + [b for _, b in scores],
-                    )
-                )
-            ),
+            pd.Series(dict(zip(self.optimal_policies.columns, future_peak_accs))),
             ignore_index=True,
         )
-        print(self.optimal_policies)
+
         X_state = np.reshape(X_state, (1, len(X_state)))
         print(X_state)
-        print(np.shape(X_state))
         Y_pred = self.sampling_classifier.predict(X_state)
         print(Y_pred)
+        print(self.optimal_policies)
+        # @todo: train network
+        # @todo: save state/future_peaks_output_results for later training
+
+        # parse Y_pred: use it as sorting
+        print(possible_samples_indices)
+        # parse optimal peaked results, after that the result of NN
         return Y_pred
 
         # hier dann stattdessen die Antwort vom hier trainiertem classifier zurückgeben
-        return [k for k, v in scores[: self.nr_queries_per_iteration]]
+        future_peak_acc = sorted(future_peak_acc, key=lambda tup: tup[1], reverse=True)
+        return [k for k, v in future_peak_acc[: self.nr_queries_per_iteration]]

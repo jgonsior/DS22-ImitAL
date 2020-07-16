@@ -71,6 +71,7 @@ class ActiveLearner:
         self.fit_clf()
 
         self.calculate_post_metrics(X_query, Y_query)
+
         log_it(get_single_al_run_stats_table_header())
         log_it(
             get_single_al_run_stats_row(
