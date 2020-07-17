@@ -61,11 +61,11 @@ def _future_peak(
         Y_pred, copy_of_data_storage.train_unlabeled_Y["label"].to_list()
     )
 
-    print(
-        "Testing out : {}, train acc: {}".format(
-            unlabeled_sample_indice, accuracy_with_that_label
-        )
-    )
+    #  print(
+    #      "Testing out : {}, train acc: {}".format(
+    #          unlabeled_sample_indice, accuracy_with_that_label
+    #      )
+    #  )
     return accuracy_with_that_label
 
 
@@ -95,7 +95,7 @@ class ImitationLearner(ActiveLearner):
             loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"]
         )
 
-        print(model.summary())
+        #  print(model.summary())
         self.sampling_classifier = model
 
         self.states = pd.DataFrame(
@@ -193,7 +193,6 @@ class ImitationLearner(ActiveLearner):
             self.data_storage.train_unlabeled_X.loc[possible_samples_indices]
         )
 
-        print(possible_samples_probas)
         sorted_probas = -np.sort(-possible_samples_probas, axis=1)
         argmax_probas = sorted_probas[:, 0]
         argsecond_probas = sorted_probas[:, 1]
@@ -220,17 +219,28 @@ class ImitationLearner(ActiveLearner):
         )
 
         X_state = np.reshape(X_state, (1, len(X_state)))
-        print(X_state)
+
         Y_pred = self.sampling_classifier.predict(X_state)
-        print(Y_pred)
-        print(self.optimal_policies)
+
         # @todo: train network
         # @todo: save state/future_peaks_output_results for later training
 
-        # parse Y_pred: use it as sorting
-        print(possible_samples_indices)
-        # parse optimal peaked results, after that the result of NN
-        return Y_pred
+        # use the results of the ann
+        sorting = Y_pred[0]
+        #  sorting = self.optimal_policies.iloc[-1, :].to_numpy()
+
+        # use the optimal values
+        zero_to_one_values_and_index = list(zip(sorting, possible_samples_indices))
+        ordered_list_of_possible_sample_indices = sorted(
+            zero_to_one_values_and_index, key=lambda tup: tup[0], reverse=True
+        )
+
+        return [
+            v
+            for k, v in ordered_list_of_possible_sample_indices[
+                : self.nr_queries_per_iteration
+            ]
+        ]
 
         # hier dann stattdessen die Antwort vom hier trainiertem classifier zurückgeben
         future_peak_acc = sorted(future_peak_acc, key=lambda tup: tup[1], reverse=True)
