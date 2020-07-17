@@ -73,7 +73,7 @@ class ImitationLearner(ActiveLearner):
     def set_amount_of_peaked_objects(self, amount_of_peaked_objects):
         self.amount_of_peaked_objects = amount_of_peaked_objects
 
-    def init_sampling_classifier(self):
+    def init_sampling_classifier(self, DATA_PATH):
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
@@ -92,31 +92,40 @@ class ImitationLearner(ActiveLearner):
             ]
         )
         model.compile(
-            loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"]
+            loss="MeanSquaredError", optimizer="adam", metrics=["MeanSquaredError"]
         )
 
         #  print(model.summary())
         self.sampling_classifier = model
 
-        self.states = pd.DataFrame(
-            data=None,
-            columns=[
-                str(i) + "_proba_0" for i in range(0, self.amount_of_peaked_objects)
-            ]
-            + [str(i) + "_proba_1" for i in range(0, self.amount_of_peaked_objects)],
-        )
-        self.optimal_policies = pd.DataFrame(
-            data=None,
-            columns=[
-                str(i) + "_true_peaked_normalised_acc"
-                for i in range(0, self.amount_of_peaked_objects)
-            ],
-        )
+        # check if states and optimal policies file got provided or if we need to create a new one
+        if os.path.isfile(DATA_PATH + "/states.csv"):
+            self.states = pd.read_csv(DATA_PATH + "/states.csv")
+            self.optimal_policies = pd.read_csv(DATA_PATH + "/opt_pol.csv")
+            print(self.states)
+            print(self.optimal_policies)
 
-    def fit_sampling_classifier(self):
-        self.sampling_classifier.fit(
-            self.data_storage.states, self.data_storage.optimal_policies
-        )
+        else:
+            self.states = pd.DataFrame(
+                data=None,
+                columns=[
+                    str(i) + "_proba_0" for i in range(0, self.amount_of_peaked_objects)
+                ]
+                + [
+                    str(i) + "_proba_1" for i in range(0, self.amount_of_peaked_objects)
+                ],
+            )
+            self.optimal_policies = pd.DataFrame(
+                data=None,
+                columns=[
+                    str(i) + "_true_peaked_normalised_acc"
+                    for i in range(0, self.amount_of_peaked_objects)
+                ],
+            )
+
+    def save_nn_training_data(self, DATA_PATH):
+        self.states.to_csv(DATA_PATH + "/states.csv", index=False)
+        self.optimal_policies.to_csv(DATA_PATH + "/opt_pol.csv", index=False)
 
     def move_labeled_queries(self, X_query, Y_query, query_indices):
         # move new queries from unlabeled to labeled dataset
@@ -222,8 +231,23 @@ class ImitationLearner(ActiveLearner):
 
         Y_pred = self.sampling_classifier.predict(X_state)
 
-        # @todo: train network
-        # @todo: save state/future_peaks_output_results for later training
+        # train using the knowledge
+
+        self.sampling_classifier.fit(
+            x=self.states,
+            y=self.optimal_policies,
+            use_multiprocessing=True,
+            epochs=1,
+            batch_size=32,
+        )
+
+        #  print(self.states)
+        #  print(self.optimal_policies)
+        # @todo print " self calculated mean squared loss on real values
+        # @todo print self calculated loss purely based on ordering -> use that as the real loss!
+        # 1. @todo: restart using different synthetic datasets
+        # @todo: discounting factor etc. to not always use the action by the NN but also the "true" result
+        # 2. @todo: start big run on server which just generatse training data (peak 40 samples into future), without ann
 
         # use the results of the ann
         sorting = Y_pred[0]

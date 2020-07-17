@@ -10,6 +10,7 @@ import threading
 from timeit import default_timer as timer
 from sklearn.metrics import accuracy_score
 from sklearn.ensemble import RandomForestClassifier
+from active_learning.al_cycle_wrapper import eval_al
 
 #  import np.random.distributions as dists
 from json_tricks import dumps
@@ -104,15 +105,15 @@ config = standard_config(
 )
 
 init_logger("console")
-
-if config.RANDOM_SEED == -2:
-    config.RANDOM_SEED = random.randint(0, 2147483647)
-    np.random.seed(config.RANDOM_SEED)
-    random.seed(config.RANDOM_SEED)
-
-hyper_parameters = vars(config)
-
 for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
+
+    if config.RANDOM_SEED == -2:
+        config.RANDOM_SEED = random.randint(0, 2147483647)
+        np.random.seed(config.RANDOM_SEED)
+        random.seed(config.RANDOM_SEED)
+
+    hyper_parameters = vars(config)
+
     print("Learn iteration {}".format(i))
 
     MAX_USED_N_SAMPLES = 1000
@@ -198,7 +199,7 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
     active_learner.set_amount_of_peaked_objects(
         hyper_parameters["AMOUNT_OF_PEAKED_OBJECTS"]
     )
-    active_learner.init_sampling_classifier()
+    active_learner.init_sampling_classifier(hyper_parameters["OUTPUT_DIRECTORY"])
     active_learner.MAX_AMOUNT_OF_WS_PEAKS = hyper_parameters["MAX_AMOUNT_OF_WS_PEAKS"]
 
     start = timer()
@@ -207,4 +208,13 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
     )
     end = timer()
 
-# do some evaluation on a real world dataset?
+    active_learner.save_nn_training_data(hyper_parameters["OUTPUT_DIRECTORY"])
+
+eval_al(
+    data_storage,
+    trained_active_clf_list,
+    end - start,
+    metrics_per_al_cycle,
+    active_learner,
+    hyper_parameters,
+)
