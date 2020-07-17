@@ -73,30 +73,32 @@ class ImitationLearner(ActiveLearner):
     def set_amount_of_peaked_objects(self, amount_of_peaked_objects):
         self.amount_of_peaked_objects = amount_of_peaked_objects
 
-    def init_sampling_classifier(self, DATA_PATH):
-        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
-        os.environ["CUDA_VISIBLE_DEVICES"] = ""
+    def init_sampling_classifier(self, DATA_PATH, USE_OPTIMAL_ONLY):
+        self.USE_OPTIMAL_ONLY = USE_OPTIMAL_ONLY
+        if not USE_OPTIMAL_ONLY:
+            os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
+            os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-        model = keras.Sequential(
-            [
-                layers.Dense(
-                    2 * self.amount_of_peaked_objects,
-                    input_shape=(2 * self.amount_of_peaked_objects,),
-                    activation="relu",
-                ),
-                layers.Dense(2 * self.amount_of_peaked_objects, activation="relu"),
-                layers.Dense(2 * self.amount_of_peaked_objects, activation="relu"),
-                layers.Dense(
-                    self.amount_of_peaked_objects, activation="softmax"
-                ),  # muss das softmax sein?!
-            ]
-        )
-        model.compile(
-            loss="MeanSquaredError", optimizer="adam", metrics=["MeanSquaredError"]
-        )
+            model = keras.Sequential(
+                [
+                    layers.Dense(
+                        2 * self.amount_of_peaked_objects,
+                        input_shape=(2 * self.amount_of_peaked_objects,),
+                        activation="relu",
+                    ),
+                    layers.Dense(2 * self.amount_of_peaked_objects, activation="relu"),
+                    layers.Dense(2 * self.amount_of_peaked_objects, activation="relu"),
+                    layers.Dense(
+                        self.amount_of_peaked_objects, activation="softmax"
+                    ),  # muss das softmax sein?!
+                ]
+            )
+            model.compile(
+                loss="MeanSquaredError", optimizer="adam", metrics=["MeanSquaredError"]
+            )
 
-        #  print(model.summary())
-        self.sampling_classifier = model
+            #  print(model.summary())
+            self.sampling_classifier = model
 
         # check if states and optimal policies file got provided or if we need to create a new one
         if os.path.isfile(DATA_PATH + "/states.csv"):
@@ -228,18 +230,18 @@ class ImitationLearner(ActiveLearner):
         )
 
         X_state = np.reshape(X_state, (1, len(X_state)))
+        if not self.USE_OPTIMAL_ONLY:
+            Y_pred = self.sampling_classifier.predict(X_state)
 
-        Y_pred = self.sampling_classifier.predict(X_state)
+            # train using the knowledge
 
-        # train using the knowledge
-
-        self.sampling_classifier.fit(
-            x=self.states,
-            y=self.optimal_policies,
-            use_multiprocessing=True,
-            epochs=1,
-            batch_size=32,
-        )
+            self.sampling_classifier.fit(
+                x=self.states,
+                y=self.optimal_policies,
+                use_multiprocessing=True,
+                epochs=1,
+                batch_size=32,
+            )
 
         #  print(self.states)
         #  print(self.optimal_policies)
@@ -250,8 +252,10 @@ class ImitationLearner(ActiveLearner):
         # 2. @todo: start big run on server which just generatse training data (peak 40 samples into future), without ann
 
         # use the results of the ann
-        sorting = Y_pred[0]
-        #  sorting = self.optimal_policies.iloc[-1, :].to_numpy()
+        if not self.USE_OPTIMAL_ONLY:
+            sorting = Y_pred[0]
+        else:
+            sorting = self.optimal_policies.iloc[-1, :].to_numpy()
 
         # use the optimal values
         zero_to_one_values_and_index = list(zip(sorting, possible_samples_indices))

@@ -101,6 +101,7 @@ config = standard_config(
         (["--AMOUNT_OF_PEAKED_OBJECTS"], {"type": int, "default": 12}),
         (["--MAX_AMOUNT_OF_WS_PEAKS"], {"type": int, "default": 1}),
         (["--AMOUNT_OF_LEARN_ITERATIONS"], {"type": int, "default": 1}),
+        (["--USE_OPTIMAL_ONLY"], {"action": "store_true"}),
     ]
 )
 
@@ -199,7 +200,10 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
     active_learner.set_amount_of_peaked_objects(
         hyper_parameters["AMOUNT_OF_PEAKED_OBJECTS"]
     )
-    active_learner.init_sampling_classifier(hyper_parameters["OUTPUT_DIRECTORY"])
+
+    active_learner.init_sampling_classifier(
+        hyper_parameters["OUTPUT_DIRECTORY"], hyper_parameters["USE_OPTIMAL_ONLY"]
+    )
     active_learner.MAX_AMOUNT_OF_WS_PEAKS = hyper_parameters["MAX_AMOUNT_OF_WS_PEAKS"]
 
     start = timer()
