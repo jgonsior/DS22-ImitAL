@@ -86,8 +86,10 @@ class ImitationLearner(ActiveLearner):
                         input_shape=(2 * self.amount_of_peaked_objects,),
                         activation="relu",
                     ),
-                    layers.Dense(2 * self.amount_of_peaked_objects, activation="relu"),
-                    layers.Dense(2 * self.amount_of_peaked_objects, activation="relu"),
+                    layers.Dense(4 * self.amount_of_peaked_objects, activation="relu"),
+                    layers.Dense(4 * self.amount_of_peaked_objects, activation="relu"),
+                    layers.Dense(4 * self.amount_of_peaked_objects, activation="relu"),
+                    layers.Dense(4 * self.amount_of_peaked_objects, activation="relu"),
                     layers.Dense(
                         self.amount_of_peaked_objects, activation="softmax"
                     ),  # muss das softmax sein?!
@@ -239,8 +241,8 @@ class ImitationLearner(ActiveLearner):
                 x=self.states,
                 y=self.optimal_policies,
                 use_multiprocessing=True,
-                epochs=1,
-                batch_size=32,
+                epochs=100,
+                batch_size=128,
             )
 
         #  print(self.states)
