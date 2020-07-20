@@ -102,6 +102,7 @@ config = standard_config(
         (["--MAX_AMOUNT_OF_WS_PEAKS"], {"type": int, "default": 1}),
         (["--AMOUNT_OF_LEARN_ITERATIONS"], {"type": int, "default": 1}),
         (["--USE_OPTIMAL_ONLY"], {"action": "store_true"}),
+        (["--TRAIN_ONCE"], {"action": "store_true"}),
     ]
 )
 
@@ -202,7 +203,9 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
     )
 
     active_learner.init_sampling_classifier(
-        hyper_parameters["OUTPUT_DIRECTORY"], hyper_parameters["USE_OPTIMAL_ONLY"]
+        hyper_parameters["OUTPUT_DIRECTORY"],
+        hyper_parameters["USE_OPTIMAL_ONLY"],
+        hyper_parameters["TRAIN_ONCE"],
     )
     active_learner.MAX_AMOUNT_OF_WS_PEAKS = hyper_parameters["MAX_AMOUNT_OF_WS_PEAKS"]
 

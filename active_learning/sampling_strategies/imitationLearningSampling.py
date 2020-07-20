@@ -1,3 +1,4 @@
+from scipy.stats import spearmanr, kendalltau
 from sklearn.preprocessing import MinMaxScaler
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
@@ -7,7 +8,7 @@ from itertools import chain
 import copy
 import numpy as np
 from scipy.stats import entropy
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, mean_squared_error
 from ..activeLearner import ActiveLearner
 import tensorflow as tf
 from tensorflow import keras
@@ -73,8 +74,9 @@ class ImitationLearner(ActiveLearner):
     def set_amount_of_peaked_objects(self, amount_of_peaked_objects):
         self.amount_of_peaked_objects = amount_of_peaked_objects
 
-    def init_sampling_classifier(self, DATA_PATH, USE_OPTIMAL_ONLY):
+    def init_sampling_classifier(self, DATA_PATH, USE_OPTIMAL_ONLY, TRAIN_ONCE):
         self.USE_OPTIMAL_ONLY = USE_OPTIMAL_ONLY
+        self.TRAIN_ONCE = TRAIN_ONCE
         if not USE_OPTIMAL_ONLY:
             os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
             os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -86,17 +88,37 @@ class ImitationLearner(ActiveLearner):
                         input_shape=(2 * self.amount_of_peaked_objects,),
                         activation="relu",
                     ),
-                    layers.Dense(4 * self.amount_of_peaked_objects, activation="relu"),
-                    layers.Dense(4 * self.amount_of_peaked_objects, activation="relu"),
-                    layers.Dense(4 * self.amount_of_peaked_objects, activation="relu"),
+                    *[
+                        layers.Dense(
+                            4 * self.amount_of_peaked_objects, activation="relu"
+                        )
+                        for _ in range(1, 5)
+                    ],
                     layers.Dense(4 * self.amount_of_peaked_objects, activation="relu"),
                     layers.Dense(
                         self.amount_of_peaked_objects, activation="softmax"
                     ),  # muss das softmax sein?!
                 ]
             )
+
+            def tau_loss(Y_true, Y_pred):
+                return tf.py_function(
+                    kendalltau,
+                    [tf.cast(Y_pred, tf.float32), tf.cast(Y_true, tf.float32)],
+                    Tout=tf.float32,
+                )
+
+            def spearman_loss(Y_true, Y_pred):
+                return tf.py_function(
+                    spearmanr,
+                    [tf.cast(Y_pred, tf.float32), tf.cast(Y_true, tf.float32)],
+                    Tout=tf.float32,
+                )
+
             model.compile(
-                loss="MeanSquaredError", optimizer="adam", metrics=["MeanSquaredError"]
+                loss=spearman_loss,
+                optimizer="adam",
+                metrics=["MeanSquaredError", "accuracy", tau_loss],
             )
 
             #  print(model.summary())
@@ -126,6 +148,18 @@ class ImitationLearner(ActiveLearner):
                     for i in range(0, self.amount_of_peaked_objects)
                 ],
             )
+
+        self.train_nn()
+
+    def train_nn(self):
+        self.sampling_classifier.fit(
+            x=self.states,
+            y=self.optimal_policies,
+            use_multiprocessing=True,
+            #  epochs=1,
+            epochs=10,
+            batch_size=128,
+        )
 
     def save_nn_training_data(self, DATA_PATH):
         self.states.to_csv(DATA_PATH + "/states.csv", index=False)
@@ -237,17 +271,30 @@ class ImitationLearner(ActiveLearner):
 
             # train using the knowledge
 
-            self.sampling_classifier.fit(
-                x=self.states,
-                y=self.optimal_policies,
-                use_multiprocessing=True,
-                epochs=100,
-                batch_size=128,
-            )
+        if not self.TRAIN_ONCE:
+            self.train_nn()
 
         #  print(self.states)
         #  print(self.optimal_policies)
         # @todo print " self calculated mean squared loss on real values
+        def order_metric(Y_pred, Y_true):
+            print(Y_pred)
+            print(Y_true)
+            true_ordering = sorted(range(len(Y_true)), key=Y_true.__getitem__)
+            pred_ordering = sorted(range(len(Y_pred)), key=Y_pred.__getitem__)
+
+            print(pred_ordering)
+            print(true_ordering)
+
+            print("ACC:", accuracy_score(true_ordering, pred_ordering))
+            print("MSE:", mean_squared_error(Y_true, Y_pred))
+            print("TAU:", kendalltau(true_ordering, pred_ordering))
+            print("SPEAR:", spearmanr(true_ordering, pred_ordering))
+
+            #
+
+        # @todo: compare real result with an order_metric result of a random ordering!!!!
+        order_metric(Y_pred[0], self.optimal_policies.iloc[-1, :].to_numpy())
         # @todo print self calculated loss purely based on ordering -> use that as the real loss!
         # 1. @todo: restart using different synthetic datasets
         # @todo: discounting factor etc. to not always use the action by the NN but also the "true" result
