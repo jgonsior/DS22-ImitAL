@@ -30,6 +30,7 @@ seaborn = "*"
 keras = "*"
 tensorflow = "*"
 statsmodels = "*"
+tensorflow-ranking = "*"
 
 [requires]
 python_version = "3"
