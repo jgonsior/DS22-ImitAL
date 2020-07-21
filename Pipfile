@@ -31,6 +31,7 @@ keras = "*"
 tensorflow = "*"
 statsmodels = "*"
 tensorflow-ranking = "*"
+scikeras = "*"
 
 [requires]
 python_version = "3"
