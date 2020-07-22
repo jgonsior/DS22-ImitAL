@@ -1,3 +1,4 @@
+from sklearn.metrics import make_scorer
 import sys
 import argparse
 from sklearn.utils.multiclass import type_of_target
@@ -81,8 +82,6 @@ DATA_PATH = config.DATA_PATH
 def _binarize_targets(df, TOP_N=5):
     df = df.assign(threshold=np.sort(df.values)[:, -TOP_N : -(TOP_N - 1)])
 
-    print(df)
-
     for column_name in df.columns:
         if column_name == "threshold":
             continue
@@ -92,8 +91,33 @@ def _binarize_targets(df, TOP_N=5):
     return df
 
 
+def _evaluate_top_k(Y_true, Y_pred):
+    # evaluate based on accuracy of correct top five
+    if config.TARGET_ENCODING == "binary":
+        Y_true_binarized = Y_true
+    else:
+        Y_true_binarized = _binarize_targets(Y_true)
+
+    Y_pred = pd.DataFrame(data=Y_pred, columns=Y_true.columns)
+
+    Y_pred_binarized = _binarize_targets(Y_pred)
+
+    accs = []
+    for i in range(0, 20):
+        accs.append(
+            accuracy_score(
+                Y_true_binarized[str(i) + "_true_peaked_normalised_acc"].to_numpy(),
+                Y_pred_binarized[str(i) + "_true_peaked_normalised_acc"].to_numpy(),
+            )
+        )
+    return np.mean(accs)
+
+
 states = pd.read_csv(DATA_PATH + "/states.csv")
 optimal_policies = pd.read_csv(DATA_PATH + "/opt_pol.csv")
+
+states = states[0:100]
+optimal_policies = optimal_policies[0:100]
 
 print(config.TARGET_ENCODING)
 
@@ -101,27 +125,7 @@ if config.TARGET_ENCODING == "regression":
     # congrats, default values
     pass
 elif config.TARGET_ENCODING == "binary":
-    if os.path.isfile(DATA_PATH + "/opt_pol_binary.csv"):
-        optimal_policies = pd.read_csv(DATA_PATH + "/opt_pol_binary.csv")
-    else:
-        regression_encoding = _binarize_targets(optimal_policies)
-        #  print(optimal_policies)
-        #  # convert top five to binary 1 and the rest to binary 0
-        #  optimal_policies = pd.DataFrame(columns=regression_encoding.columns)
-        #
-        #  for index, row in regression_encoding.iterrows():
-        #      threshold = min(row.nlargest(5))
-        #
-        #      zeros = row < threshold
-        #      ones = row >= threshold
-        #
-        #      row.loc[zeros] = 0
-        #      row.loc[ones] = 1
-        #
-        #      optimal_policies.loc[index] = row
-        #  print(optimal_policies)
-        #  optimal_policies.to_csv(DATA_PATH + "/opt_pol_binary.csv", index=False)
-        exit(-1)
+    optimal_policies = _binarize_targets(optimal_policies)
 else:
     print("Not a valid TARGET_ENCODING")
     exit(-1)
@@ -207,18 +211,24 @@ def build_nn(
         optimizer=optimizer,
         metrics=["MeanSquaredError", "accuracy"],  # , tau_loss, spearman_loss],
     )
-    print(model.summary())
 
     return model
 
 
 if config.HYPER_SEARCH:
     param_grid = {
-        "loss": ["MeanSquaredError", spearman_loss, tau_loss],
+        "loss": [
+            "MeanSquaredError",
+            #  "CategoricalCrossentropy",
+            #  "BinaryCrossentropy",
+            #  "CosineSimilarity",
+            # spearman_loss,
+            # tau_loss,
+        ],
         "regular_dropout_rate": [0, 0.1, 0.2, 0.3],
         #  "recurrentDropoutRate": [0, 0.1, 0.2],
         "nr_hidden_neurons": [10, 20, 40, 80],
-        "epochs": [1000],  # <- early stopping :)
+        "epochs": [1],  # [1000],  # <- early stopping :)
         "nr_hidden_layers": [1, 2, 4, 8, 16, 32, 64],  # , 2],
         "batch_size": [16, 32, 64, 128],
         #  "nTs": [15000],
@@ -235,53 +245,35 @@ if config.HYPER_SEARCH:
         "activation": ["softmax", "elu", "relu", "tanh", "sigmoid"],
     }
 
-    if config.TARGET_ENCODING == "binary":
-        model = KerasClassifier(
-            build_fn=build_nn,
-            verbose=0,
-            activation=None,
-            validation_split=0.3,
-            loss=None,
-            regular_dropout_rate=None,
-            nr_hidden_layers=None,
-            nr_epochs=None,
-            nr_hidden_neurons=None,
-            optimizer=None,
-            epochs=None,
-            batch_size=None,
-            callbacks=[
-                EarlyStopping(monitor="val_loss", patience=5, verbose=1),
-                ReduceLROnPlateau(monitor="val_loss", patience=3, verbose=1),
-            ],
-        )
-    else:
-        model = KerasRegressor(
-            build_fn=build_nn,
-            verbose=0,
-            activation=None,
-            validation_split=0.3,
-            loss=None,
-            regular_dropout_rate=None,
-            nr_hidden_layers=None,
-            nr_epochs=None,
-            nr_hidden_neurons=None,
-            optimizer=None,
-            epochs=None,
-            batch_size=None,
-            callbacks=[
-                EarlyStopping(monitor="val_loss", patience=5, verbose=1),
-                ReduceLROnPlateau(monitor="val_loss", patience=3, verbose=1),
-            ],
-        )
+    model = KerasRegressor(
+        build_fn=build_nn,
+        verbose=0,
+        activation=None,
+        validation_split=0.3,
+        loss=None,
+        regular_dropout_rate=None,
+        nr_hidden_layers=None,
+        nr_epochs=None,
+        nr_hidden_neurons=None,
+        optimizer=None,
+        epochs=None,
+        batch_size=None,
+        callbacks=[
+            EarlyStopping(monitor="val_loss", patience=5, verbose=1),
+            ReduceLROnPlateau(monitor="val_loss", patience=3, verbose=1),
+        ],
+    )
 
     gridsearch = RandomizedSearchCV(
         estimator=model,
         param_distributions=param_grid,
         cv=3,
         n_jobs=-1,
-        scoring="neg_mean_squared_error",
+        scoring=make_scorer(
+            _evaluate_top_k, greater_is_better=True
+        ),  # "neg_mean_squared_error"
         verbose=2,
-        n_iter=100,
+        n_iter=8,
     )
 
     fitted_model = gridsearch.fit(X_train, Y_train)
@@ -291,42 +283,23 @@ if config.HYPER_SEARCH:
     print(fitted_model.best_params_)
     print(fitted_model.cv_results_)
 else:
-    if config.TARGET_ENCODING == "binary":
-        model = KerasClassifier(
-            build_fn=build_nn,
-            verbose=1,
-            activation=config.ACTIVATION,
-            validation_split=0.3,
-            loss=config.LOSS,
-            regular_dropout_rate=config.REGULAR_DROPOUT_RATE,
-            nr_hidden_layers=config.NR_HIDDEN_LAYERS,
-            nr_hidden_neurons=config.NR_HIDDEN_NEURONS,
-            optimizer=config.OPTIMIZER,
-            epochs=config.EPOCHS,
-            batch_size=config.BATCH_SIZE,
-            callbacks=[
-                EarlyStopping(monitor="val_loss", patience=5, verbose=1),
-                ReduceLROnPlateau(monitor="val_loss", patience=3, verbose=1),
-            ],
-        )
-    else:
-        model = KerasRegressor(
-            build_fn=build_nn,
-            verbose=1,
-            activation=config.ACTIVATION,
-            validation_split=0.3,
-            loss=config.LOSS,
-            regular_dropout_rate=config.REGULAR_DROPOUT_RATE,
-            nr_hidden_layers=config.NR_HIDDEN_LAYERS,
-            nr_hidden_neurons=config.NR_HIDDEN_NEURONS,
-            optimizer=config.OPTIMIZER,
-            epochs=config.EPOCHS,
-            batch_size=config.BATCH_SIZE,
-            callbacks=[
-                EarlyStopping(monitor="val_loss", patience=5, verbose=1),
-                ReduceLROnPlateau(monitor="val_loss", patience=3, verbose=1),
-            ],
-        )
+    model = KerasRegressor(
+        build_fn=build_nn,
+        verbose=1,
+        activation=config.ACTIVATION,
+        validation_split=0.3,
+        loss=config.LOSS,
+        regular_dropout_rate=config.REGULAR_DROPOUT_RATE,
+        nr_hidden_layers=config.NR_HIDDEN_LAYERS,
+        nr_hidden_neurons=config.NR_HIDDEN_NEURONS,
+        optimizer=config.OPTIMIZER,
+        epochs=config.EPOCHS,
+        batch_size=config.BATCH_SIZE,
+        callbacks=[
+            EarlyStopping(monitor="val_loss", patience=5, verbose=1),
+            ReduceLROnPlateau(monitor="val_loss", patience=3, verbose=1),
+        ],
+    )
 
     fitted_model = model.fit(
         X=X_train, y=Y_train, epochs=config.EPOCHS, batch_size=config.BATCH_SIZE,
@@ -355,6 +328,7 @@ else:
         )
     print(accs)
     print(np.mean(accs))
+
     history = fitted_model.history_
     print(history.history)
 
