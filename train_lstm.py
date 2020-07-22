@@ -51,7 +51,15 @@ parser.add_argument("--EPOCHS", type=int, default=1000)
 parser.add_argument("--BATCH_SIZE", type=int, default=16)
 parser.add_argument("--ACTIVATION", type=str, default="elu")
 parser.add_argument("--HYPER_SEARCH", action="store_true")
-
+parser.add_argument(
+    "--STATE_ENCODING",
+    type=str,
+    help="pointwise, pairwise, listwise",
+    default="listwise",
+)
+parser.add_argument(
+    "--TARGET_ENCODING", type=str, help="regression, binary", default="regression"
+)
 config = parser.parse_args()
 
 if len(sys.argv[:-1]) == 0:
@@ -69,9 +77,72 @@ os.environ["CUDA_VISIBLE_DEVICES"] = ""
 AMOUNT_OF_PEAKED_OBJECTS = 20
 DATA_PATH = config.DATA_PATH
 
-# check if states and optimal policies file got provided or if we need to create a new one
+
+def _binarize_targets(df, TOP_N=5):
+    df = df.assign(threshold=np.sort(df.values)[:, -TOP_N : -(TOP_N - 1)])
+
+    print(df)
+
+    for column_name in df.columns:
+        if column_name == "threshold":
+            continue
+        df[column_name].loc[df[column_name] < df.threshold] = 0
+        df[column_name].loc[df[column_name] >= df.threshold] = 1
+    del df["threshold"]
+    return df
+
+
 states = pd.read_csv(DATA_PATH + "/states.csv")
 optimal_policies = pd.read_csv(DATA_PATH + "/opt_pol.csv")
+
+print(config.TARGET_ENCODING)
+
+if config.TARGET_ENCODING == "regression":
+    # congrats, default values
+    pass
+elif config.TARGET_ENCODING == "binary":
+    if os.path.isfile(DATA_PATH + "/opt_pol_binary.csv"):
+        optimal_policies = pd.read_csv(DATA_PATH + "/opt_pol_binary.csv")
+    else:
+        regression_encoding = _binarize_targets(optimal_policies)
+        #  print(optimal_policies)
+        #  # convert top five to binary 1 and the rest to binary 0
+        #  optimal_policies = pd.DataFrame(columns=regression_encoding.columns)
+        #
+        #  for index, row in regression_encoding.iterrows():
+        #      threshold = min(row.nlargest(5))
+        #
+        #      zeros = row < threshold
+        #      ones = row >= threshold
+        #
+        #      row.loc[zeros] = 0
+        #      row.loc[ones] = 1
+        #
+        #      optimal_policies.loc[index] = row
+        #  print(optimal_policies)
+        #  optimal_policies.to_csv(DATA_PATH + "/opt_pol_binary.csv", index=False)
+        exit(-1)
+else:
+    print("Not a valid TARGET_ENCODING")
+    exit(-1)
+
+print(config.STATE_ENCODING)
+if config.STATE_ENCODING == "listwise":
+    # congrats, the states are already in the correct form
+    pass
+elif config.STATE_ENCODING == "pointwise":
+    print(states)
+    #  states_new =
+    states.to_csv(DATA_PATH + "/states_pointwise.csv", index=False)
+    exit(-1)
+elif config.STATE_ENCODING == "pairwise":
+    print("Not yet implemented")
+    states.to_csv(DATA_PATH + "/states_pairwise.csv", index=False)
+    exit(-1)
+else:
+    print("Not a valid STATE_ENCODING")
+    exit(-1)
+
 print(states)
 print(optimal_policies)
 
@@ -120,7 +191,7 @@ def build_nn(
 
     model.add(Dense(units=X.shape[1], input_shape=X.shape[1:], activation=activation,))
 
-    for _ in range(1, nr_hidden_layers):
+    for _ in range(0, nr_hidden_layers):
         model.add(
             Dense(
                 units=nr_hidden_neurons,
@@ -129,13 +200,14 @@ def build_nn(
             )
         )
         model.add(Dropout(regular_dropout_rate))
-    model.add(Dense(AMOUNT_OF_PEAKED_OBJECTS, activation="softmax"))
+    model.add(Dense(len(Y_train.columns), activation="sigmoid"))
 
     model.compile(
         loss=loss,
         optimizer=optimizer,
         metrics=["MeanSquaredError", "accuracy"],  # , tau_loss, spearman_loss],
     )
+    print(model.summary())
 
     return model
 
@@ -163,25 +235,44 @@ if config.HYPER_SEARCH:
         "activation": ["softmax", "elu", "relu", "tanh", "sigmoid"],
     }
 
-    #  model = KerasClassifier(build_fn=build_nn, verbose=0)
-    model = KerasRegressor(
-        build_fn=build_nn,
-        verbose=0,
-        activation=None,
-        validation_split=0.3,
-        loss=None,
-        regular_dropout_rate=None,
-        nr_hidden_layers=None,
-        nr_epochs=None,
-        nr_hidden_neurons=None,
-        optimizer=None,
-        epochs=None,
-        batch_size=None,
-        callbacks=[
-            EarlyStopping(monitor="val_loss", patience=5, verbose=1),
-            ReduceLROnPlateau(monitor="val_loss", patience=3, verbose=1),
-        ],
-    )
+    if config.TARGET_ENCODING == "binary":
+        model = KerasClassifier(
+            build_fn=build_nn,
+            verbose=0,
+            activation=None,
+            validation_split=0.3,
+            loss=None,
+            regular_dropout_rate=None,
+            nr_hidden_layers=None,
+            nr_epochs=None,
+            nr_hidden_neurons=None,
+            optimizer=None,
+            epochs=None,
+            batch_size=None,
+            callbacks=[
+                EarlyStopping(monitor="val_loss", patience=5, verbose=1),
+                ReduceLROnPlateau(monitor="val_loss", patience=3, verbose=1),
+            ],
+        )
+    else:
+        model = KerasRegressor(
+            build_fn=build_nn,
+            verbose=0,
+            activation=None,
+            validation_split=0.3,
+            loss=None,
+            regular_dropout_rate=None,
+            nr_hidden_layers=None,
+            nr_epochs=None,
+            nr_hidden_neurons=None,
+            optimizer=None,
+            epochs=None,
+            batch_size=None,
+            callbacks=[
+                EarlyStopping(monitor="val_loss", patience=5, verbose=1),
+                ReduceLROnPlateau(monitor="val_loss", patience=3, verbose=1),
+            ],
+        )
 
     gridsearch = RandomizedSearchCV(
         estimator=model,
@@ -200,39 +291,70 @@ if config.HYPER_SEARCH:
     print(fitted_model.best_params_)
     print(fitted_model.cv_results_)
 else:
-    model = KerasRegressor(
-        build_fn=build_nn,
-        verbose=1,
-        activation=config.ACTIVATION,
-        validation_split=0.3,
-        loss=config.LOSS,
-        regular_dropout_rate=config.REGULAR_DROPOUT_RATE,
-        nr_hidden_layers=config.NR_HIDDEN_LAYERS,
-        nr_hidden_neurons=config.NR_HIDDEN_NEURONS,
-        optimizer=config.OPTIMIZER,
-        epochs=config.EPOCHS,
-        batch_size=config.BATCH_SIZE,
-        callbacks=[
-            EarlyStopping(monitor="val_loss", patience=5, verbose=1),
-            ReduceLROnPlateau(monitor="val_loss", patience=3, verbose=1),
-        ],
-    )
+    if config.TARGET_ENCODING == "binary":
+        model = KerasClassifier(
+            build_fn=build_nn,
+            verbose=1,
+            activation=config.ACTIVATION,
+            validation_split=0.3,
+            loss=config.LOSS,
+            regular_dropout_rate=config.REGULAR_DROPOUT_RATE,
+            nr_hidden_layers=config.NR_HIDDEN_LAYERS,
+            nr_hidden_neurons=config.NR_HIDDEN_NEURONS,
+            optimizer=config.OPTIMIZER,
+            epochs=config.EPOCHS,
+            batch_size=config.BATCH_SIZE,
+            callbacks=[
+                EarlyStopping(monitor="val_loss", patience=5, verbose=1),
+                ReduceLROnPlateau(monitor="val_loss", patience=3, verbose=1),
+            ],
+        )
+    else:
+        model = KerasRegressor(
+            build_fn=build_nn,
+            verbose=1,
+            activation=config.ACTIVATION,
+            validation_split=0.3,
+            loss=config.LOSS,
+            regular_dropout_rate=config.REGULAR_DROPOUT_RATE,
+            nr_hidden_layers=config.NR_HIDDEN_LAYERS,
+            nr_hidden_neurons=config.NR_HIDDEN_NEURONS,
+            optimizer=config.OPTIMIZER,
+            epochs=config.EPOCHS,
+            batch_size=config.BATCH_SIZE,
+            callbacks=[
+                EarlyStopping(monitor="val_loss", patience=5, verbose=1),
+                ReduceLROnPlateau(monitor="val_loss", patience=3, verbose=1),
+            ],
+        )
 
-    #  print(model.summary())
     fitted_model = model.fit(
-        X=X_train,
-        y=Y_train,
-        #  epochs=1,
-        epochs=config.EPOCHS,
-        batch_size=config.BATCH_SIZE,
+        X=X_train, y=Y_train, epochs=config.EPOCHS, batch_size=config.BATCH_SIZE,
     )
 
     Y_pred = fitted_model.predict(X_test)
 
-    print(Y_pred)
     print(Y_test)
+    print(Y_pred)
+    print(mean_squared_error(Y_test, Y_pred))
 
-    print(spearman_loss(Y_test, Y_pred))
+    # evaluate based on accuracy of correct top five
+    Y_test_binarized = _binarize_targets(Y_test)
+
+    Y_pred = pd.DataFrame(data=Y_pred, index=Y_test.index, columns=Y_test.columns)
+
+    Y_pred_binarized = _binarize_targets(Y_pred)
+
+    accs = []
+    for i in range(0, 20):
+        accs.append(
+            accuracy_score(
+                Y_test_binarized[str(i) + "_true_peaked_normalised_acc"].to_numpy(),
+                Y_pred_binarized[str(i) + "_true_peaked_normalised_acc"].to_numpy(),
+            )
+        )
+    print(accs)
+    print(np.mean(accs))
     history = fitted_model.history_
     print(history.history)
 
@@ -242,9 +364,4 @@ else:
     plt.ylabel("Loss")
     plt.xlabel("Epoch")
     plt.legend(["Train", "Test"], loc="upper left")
-    plt.show()
-
-
-def save_nn_training_data(DATA_PATH):
-    states.to_csv(DATA_PATH + "/states.csv", index=False)
-    optimal_policies.to_csv(DATA_PATH + "/opt_pol.csv", index=False)
+    #  plt.show()
