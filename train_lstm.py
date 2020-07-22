@@ -116,8 +116,8 @@ def _evaluate_top_k(Y_true, Y_pred):
 states = pd.read_csv(DATA_PATH + "/states.csv")
 optimal_policies = pd.read_csv(DATA_PATH + "/opt_pol.csv")
 
-states = states[0:100]
-optimal_policies = optimal_policies[0:100]
+#  states = states[0:100]
+#  optimal_policies = optimal_policies[0:100]
 
 print(config.TARGET_ENCODING)
 
@@ -219,16 +219,16 @@ if config.HYPER_SEARCH:
     param_grid = {
         "loss": [
             "MeanSquaredError",
-            #  "CategoricalCrossentropy",
-            #  "BinaryCrossentropy",
-            #  "CosineSimilarity",
+            "CategoricalCrossentropy",
+            "BinaryCrossentropy",
+            "CosineSimilarity",
             # spearman_loss,
             # tau_loss,
         ],
         "regular_dropout_rate": [0, 0.1, 0.2, 0.3],
         #  "recurrentDropoutRate": [0, 0.1, 0.2],
         "nr_hidden_neurons": [10, 20, 40, 80],
-        "epochs": [1],  # [1000],  # <- early stopping :)
+        "epochs": [1000],  # <- early stopping :)
         "nr_hidden_layers": [1, 2, 4, 8, 16, 32, 64],  # , 2],
         "batch_size": [16, 32, 64, 128],
         #  "nTs": [15000],
@@ -269,11 +269,9 @@ if config.HYPER_SEARCH:
         param_distributions=param_grid,
         cv=3,
         n_jobs=-1,
-        scoring=make_scorer(
-            _evaluate_top_k, greater_is_better=True
-        ),  # "neg_mean_squared_error"
+        scoring=make_scorer(_evaluate_top_k, greater_is_better=True),
         verbose=2,
-        n_iter=8,
+        n_iter=100,
     )
 
     fitted_model = gridsearch.fit(X_train, Y_train)
