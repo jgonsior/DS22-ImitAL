@@ -110,12 +110,13 @@ def _evaluate_top_k(Y_true, Y_pred):
                 Y_pred_binarized[str(i) + "_true_peaked_normalised_acc"].to_numpy(),
             )
         )
+    print(accs)
     return np.mean(accs)
 
 
 states = pd.read_csv(DATA_PATH + "/states.csv")
 optimal_policies = pd.read_csv(DATA_PATH + "/opt_pol.csv")
-
+#
 #  states = states[0:100]
 #  optimal_policies = optimal_policies[0:100]
 
@@ -309,23 +310,33 @@ else:
     print(Y_pred)
     print(mean_squared_error(Y_test, Y_pred))
 
-    # evaluate based on accuracy of correct top five
-    Y_test_binarized = _binarize_targets(Y_test)
+    def random_sampling_probas(X_test):
+        result = np.random.uniform(
+            low=0, high=1, size=(len(X_test), AMOUNT_OF_PEAKED_OBJECTS)
+        )
+        return result
 
-    Y_pred = pd.DataFrame(data=Y_pred, index=Y_test.index, columns=Y_test.columns)
-
-    Y_pred_binarized = _binarize_targets(Y_pred)
-
-    accs = []
-    for i in range(0, 20):
-        accs.append(
-            accuracy_score(
-                Y_test_binarized[str(i) + "_true_peaked_normalised_acc"].to_numpy(),
-                Y_pred_binarized[str(i) + "_true_peaked_normalised_acc"].to_numpy(),
+    def random_sampling(X_test):
+        result = np.array(
+            list(
+                ([1] * 5 + [0] * (AMOUNT_OF_PEAKED_OBJECTS - 5))
+                for _ in range(0, len(X_test))
             )
         )
-    print(accs)
-    print(np.mean(accs))
+        list(map(np.random.shuffle, result))
+        return result
+
+    def uncertainty_sampling(X_test):
+        print(X_test)
+        return result
+
+    Y_pred_random_probas = random_sampling_probas(X_test)
+    Y_pred_random = random_sampling(X_test)
+    Y_pred_uncertainty = uncertainty_sampling(X_test)
+
+    print("Y_pred:\t\t", _evaluate_top_k(Y_test, Y_pred))
+    print("Y_pred_random:\t", _evaluate_top_k(Y_test, Y_pred_random))
+    print("Y_pred_probas:\t", _evaluate_top_k(Y_test, Y_pred_random_probas))
 
     history = fitted_model.history_
     print(history.history)
@@ -336,4 +347,4 @@ else:
     plt.ylabel("Loss")
     plt.xlabel("Epoch")
     plt.legend(["Train", "Test"], loc="upper left")
-    plt.show()
+    #  plt.show()
