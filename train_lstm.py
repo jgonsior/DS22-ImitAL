@@ -327,15 +327,17 @@ else:
         return result
 
     def uncertainty_sampling(X_test, strategy="least_confident"):
-        print(strategy)
         df = X_test
         if strategy == "least_confident":
             df = df.loc[:, ~df.columns.str.endswith("_proba_1")]
-            return df.to_numpy()
             return _binarize_targets(df).to_numpy()
         elif strategy == "max_margin":
-            margin = np.partition(-Y_temp_proba, 1, axis=1)
-            result = -np.abs(margin[:, 0] - margin[:, 1])
+            for i in df.columns:
+                if i.endswith("1"):
+                    continue
+                df[i[0 : i.find("_")]] = df[i] - df[i[:-1] + "1"]
+            df = df.loc[:, ~df.columns.str.contains("_")]
+            return _binarize_targets(df).to_numpy()
         elif strategy == "entropy":
             result = np.apply_along_axis(entropy, 1, Y_temp_proba)
 
@@ -362,12 +364,16 @@ else:
 
     Y_pred_random_probas = random_sampling_probas(X_test)
     Y_pred_random = random_sampling(X_test)
-    Y_pred_uncertainty = uncertainty_sampling(X_test)
+    Y_pred_uncertainty_lc = uncertainty_sampling(X_test, strategy="least_confident")
+    Y_pred_uncertainty_mm = uncertainty_sampling(X_test, strategy="max_margin")
+    #  Y_pred_uncertainty_ent = uncertainty_sampling(X_test, strategy="entropy")
 
     print("Y_pred:\t\t", _evaluate_top_k(Y_test, Y_pred))
     print("Y_pred_random:\t", _evaluate_top_k(Y_test, Y_pred_random))
     print("Y_pred_probas:\t", _evaluate_top_k(Y_test, Y_pred_random_probas))
-    print("Y_pred_unc:\t", _evaluate_top_k(Y_test, Y_pred_uncertainty))
+    print("Y_pred_unc_lc:\t", _evaluate_top_k(Y_test, Y_pred_uncertainty_lc))
+    print("Y_pred_unc_mm:\t", _evaluate_top_k(Y_test, Y_pred_uncertainty_mm))
+    print("Y_pred_unc_ent:\t", _evaluate_top_k(Y_test, Y_pred_uncertainty_ent))
 
     history = fitted_model.history_
     print(history.history)
