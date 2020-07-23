@@ -117,8 +117,8 @@ def _evaluate_top_k(Y_true, Y_pred):
 states = pd.read_csv(DATA_PATH + "/states.csv")
 optimal_policies = pd.read_csv(DATA_PATH + "/opt_pol.csv")
 
-#  states = states[0:100]
-#  optimal_policies = optimal_policies[0:100]
+states = states[0:100]
+optimal_policies = optimal_policies[0:100]
 
 print(config.TARGET_ENCODING)
 
@@ -330,37 +330,17 @@ else:
         df = X_test
         if strategy == "least_confident":
             df = df.loc[:, ~df.columns.str.endswith("_proba_1")]
-            return _binarize_targets(df).to_numpy()
         elif strategy == "max_margin":
             for i in df.columns:
                 if i.endswith("1"):
                     continue
                 df[i[0 : i.find("_")]] = df[i] - df[i[:-1] + "1"]
             df = df.loc[:, ~df.columns.str.contains("_")]
-            return _binarize_targets(df).to_numpy()
-        elif strategy == "entropy":
-            result = np.apply_along_axis(entropy, 1, Y_temp_proba)
+        # for entropy we are lacking the other classes
+        #  elif strategy == "entropy":
+        #      result = np.apply_along_axis(entropy, 1, Y_temp_proba)
 
-        Y_temp_proba = X_test.to_numpy()
-        print(Y_temp_proba)
-        if strategy == "least_confident":
-            result = 1 - np.amax(Y_temp_proba, axis=1)
-        elif strategy == "max_margin":
-            margin = np.partition(-Y_temp_proba, 1, axis=1)
-            result = -np.abs(margin[:, 0] - margin[:, 1])
-        elif strategy == "entropy":
-            result = np.apply_along_axis(entropy, 1, Y_temp_proba)
-        print(result)
-        # sort indices_of_cluster by argsort
-        argsort = np.argsort(-result)
-        print(argsort)
-
-        query_indices = np.array(X_train_unlabeled_indices)[argsort]
-
-        # return smallest probabilities
-        return query_indices[: self.nr_queries_per_iteration]
-
-        return X_test
+        return _binarize_targets(df).to_numpy()
 
     Y_pred_random_probas = random_sampling_probas(X_test)
     Y_pred_random = random_sampling(X_test)
@@ -368,12 +348,15 @@ else:
     Y_pred_uncertainty_mm = uncertainty_sampling(X_test, strategy="max_margin")
     #  Y_pred_uncertainty_ent = uncertainty_sampling(X_test, strategy="entropy")
 
+    print(
+        "Pleas note: uncertainty measures in real AL have access to ALL data from all samples, not just only from a small subset of only 20 samples!"
+    )
     print("Y_pred:\t\t", _evaluate_top_k(Y_test, Y_pred))
     print("Y_pred_random:\t", _evaluate_top_k(Y_test, Y_pred_random))
     print("Y_pred_probas:\t", _evaluate_top_k(Y_test, Y_pred_random_probas))
     print("Y_pred_unc_lc:\t", _evaluate_top_k(Y_test, Y_pred_uncertainty_lc))
     print("Y_pred_unc_mm:\t", _evaluate_top_k(Y_test, Y_pred_uncertainty_mm))
-    print("Y_pred_unc_ent:\t", _evaluate_top_k(Y_test, Y_pred_uncertainty_ent))
+    #  print("Y_pred_unc_ent:\t", _evaluate_top_k(Y_test, Y_pred_uncertainty_ent))
 
     history = fitted_model.history_
     print(history.history)
