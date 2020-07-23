@@ -1,4 +1,4 @@
-for i in $(seq 1 10);
+for i in $(seq 1 40);
 do 
     python single_al_cycle.py --DATASETS_PATH ../datasets --OUTPUT_DIRECTORY tmp/ --DATA_PATH ../datasets/il_training_data --SAMPLING uncertainty_lc --CLUSTER dummy --NR_QUERIES_PER_ITERATION 5 --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 50 --RANDOM_SEED -2 --N_JOBS 8 --AMOUNT_OF_PEAKED_OBJECTS 20 --MAX_AMOUNT_OF_WS_PEAKS 0& 
     python single_al_cycle.py --DATASETS_PATH ../datasets --OUTPUT_DIRECTORY tmp/ --DATA_PATH ../datasets/il_training_data --SAMPLING uncertainty_lc --CLUSTER dummy --NR_QUERIES_PER_ITERATION 5 --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 50 --RANDOM_SEED -2 --N_JOBS 8 --AMOUNT_OF_PEAKED_OBJECTS 20 --MAX_AMOUNT_OF_WS_PEAKS 0& 

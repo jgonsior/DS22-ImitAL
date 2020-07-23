@@ -143,8 +143,7 @@ class DataStorage:
         no_valid_synthetic_arguments_found = True
         # randomly generate synthetic arguments
         while no_valid_synthetic_arguments_found:
-            MAX_USED_N_SAMPLES = 1000
-            N_SAMPLES = 3000
+            N_SAMPLES = random.randint(500, 20000)
             N_FEATURES = random.randint(10, 100)
             N_INFORMATIVE, N_REDUNDANT, N_REPEATED = [
                 int(N_FEATURES * i)
@@ -157,7 +156,6 @@ class DataStorage:
             )
 
             if N_CLASSES * N_CLUSTERS_PER_CLASS > 2 ** N_INFORMATIVE:
-                i -= 1
                 continue
             no_valid_synthetic_arguments_found = False
 
@@ -187,6 +185,7 @@ class DataStorage:
                 "hypercube": HYPERCUBE,
                 "scale": SCALE,
             }
+            self.synthetic_creation_args = synthetic_creation_args
 
         X_data, Y_temp = make_classification(**synthetic_creation_args)
         df = pd.DataFrame(X_data)

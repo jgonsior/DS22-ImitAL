@@ -37,26 +37,32 @@ class TrainedNNLearner(ActiveLearner):
             chain(*list(train_unlabeled_X_cluster_indices.values()))
         )
 
-        random.shuffle(train_unlabeled_X_indices)
-        possible_samples_indices = train_unlabeled_X_indices[
-            : self.amount_of_peaked_objects
-        ]
+        # do this n couple of times to make out of the semi pairwise a real listwise???
 
-        possible_samples_probas = self.clf.predict_proba(
-            self.data_storage.train_unlabeled_X.loc[possible_samples_indices]
-        )
+        zero_to_one_values_and_index = []
+        for _ in range(0, 5):
+            random.shuffle(train_unlabeled_X_indices)
+            possible_samples_indices = train_unlabeled_X_indices[
+                : self.amount_of_peaked_objects
+            ]
 
-        sorted_probas = -np.sort(-possible_samples_probas, axis=1)
-        argmax_probas = sorted_probas[:, 0]
-        argsecond_probas = sorted_probas[:, 1]
+            possible_samples_probas = self.clf.predict_proba(
+                self.data_storage.train_unlabeled_X.loc[possible_samples_indices]
+            )
 
-        X_state = np.array([*argmax_probas, *argsecond_probas])
-        X_state = np.reshape(X_state, (1, len(X_state)))
-        Y_pred = self.sampling_classifier.predict(X_state)
+            sorted_probas = -np.sort(-possible_samples_probas, axis=1)
+            argmax_probas = sorted_probas[:, 0]
+            argsecond_probas = sorted_probas[:, 1]
 
-        sorting = Y_pred
+            X_state = np.array([*argmax_probas, *argsecond_probas])
+            X_state = np.reshape(X_state, (1, len(X_state)))
+            Y_pred = self.sampling_classifier.predict(X_state)
 
-        zero_to_one_values_and_index = list(zip(sorting, possible_samples_indices))
+            sorting = Y_pred
+
+            zero_to_one_values_and_index += list(zip(sorting, possible_samples_indices))
+
+        #  print(zero_to_one_values_and_index)
         ordered_list_of_possible_sample_indices = sorted(
             zero_to_one_values_and_index, key=lambda tup: tup[0], reverse=True
         )

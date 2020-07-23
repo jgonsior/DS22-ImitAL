@@ -250,6 +250,9 @@ def eval_al(
     hyper_parameters["end_time"] = datetime.datetime.now()
     hyper_parameters["amount_of_all_labels"] = amount_of_all_labels
 
+    if hyper_parameters["dataset_name"] == "synthetic":
+        hyper_parameters = {**hyper_parameters, **data_storage.synthetic_creation_args}
+
     # save hyper parameter results in csv file
     output_hyper_parameter_file = Path(
         hyper_parameters["output_directory"] + "/hyper_parameters.csv"
