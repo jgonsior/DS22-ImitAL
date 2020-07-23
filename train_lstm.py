@@ -116,7 +116,7 @@ def _evaluate_top_k(Y_true, Y_pred):
 
 states = pd.read_csv(DATA_PATH + "/states.csv")
 optimal_policies = pd.read_csv(DATA_PATH + "/opt_pol.csv")
-#
+
 #  states = states[0:100]
 #  optimal_policies = optimal_policies[0:100]
 
@@ -326,9 +326,39 @@ else:
         list(map(np.random.shuffle, result))
         return result
 
-    def uncertainty_sampling(X_test):
-        print(X_test)
-        return result
+    def uncertainty_sampling(X_test, strategy="least_confident"):
+        print(strategy)
+        df = X_test
+        if strategy == "least_confident":
+            df = df.loc[:, ~df.columns.str.endswith("_proba_1")]
+            return df.to_numpy()
+            return _binarize_targets(df).to_numpy()
+        elif strategy == "max_margin":
+            margin = np.partition(-Y_temp_proba, 1, axis=1)
+            result = -np.abs(margin[:, 0] - margin[:, 1])
+        elif strategy == "entropy":
+            result = np.apply_along_axis(entropy, 1, Y_temp_proba)
+
+        Y_temp_proba = X_test.to_numpy()
+        print(Y_temp_proba)
+        if strategy == "least_confident":
+            result = 1 - np.amax(Y_temp_proba, axis=1)
+        elif strategy == "max_margin":
+            margin = np.partition(-Y_temp_proba, 1, axis=1)
+            result = -np.abs(margin[:, 0] - margin[:, 1])
+        elif strategy == "entropy":
+            result = np.apply_along_axis(entropy, 1, Y_temp_proba)
+        print(result)
+        # sort indices_of_cluster by argsort
+        argsort = np.argsort(-result)
+        print(argsort)
+
+        query_indices = np.array(X_train_unlabeled_indices)[argsort]
+
+        # return smallest probabilities
+        return query_indices[: self.nr_queries_per_iteration]
+
+        return X_test
 
     Y_pred_random_probas = random_sampling_probas(X_test)
     Y_pred_random = random_sampling(X_test)
@@ -337,6 +367,7 @@ else:
     print("Y_pred:\t\t", _evaluate_top_k(Y_test, Y_pred))
     print("Y_pred_random:\t", _evaluate_top_k(Y_test, Y_pred_random))
     print("Y_pred_probas:\t", _evaluate_top_k(Y_test, Y_pred_random_probas))
+    print("Y_pred_unc:\t", _evaluate_top_k(Y_test, Y_pred_uncertainty))
 
     history = fitted_model.history_
     print(history.history)
