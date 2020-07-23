@@ -1,4 +1,6 @@
+import dill
 from scipy.stats import spearmanr, kendalltau
+from scikeras.wrappers import KerasClassifier, KerasRegressor
 from sklearn.preprocessing import MinMaxScaler
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
@@ -14,6 +16,22 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 import os
+
+
+def _binarize_targets(Y_pred, TOP_N=5):
+    print(Y_pred)
+    df = pd.DataFrame(data=Y_pred)
+    print(df)
+    df = df.assign(threshold=np.sort(df.values)[:, -TOP_N : -(TOP_N - 1)])
+    print(df)
+
+    for column_name in df.columns:
+        if column_name == "threshold":
+            continue
+        df[column_name].loc[df[column_name] < df.threshold] = 0
+        df[column_name].loc[df[column_name] >= df.threshold] = 1
+    del df["threshold"]
+    return df
 
 
 def _future_peak(
@@ -81,47 +99,9 @@ class ImitationLearner(ActiveLearner):
             os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
             os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-            model = keras.Sequential(
-                [
-                    layers.Dense(
-                        2 * self.amount_of_peaked_objects,
-                        input_shape=(2 * self.amount_of_peaked_objects,),
-                        activation="relu",
-                    ),
-                    *[
-                        layers.Dense(
-                            4 * self.amount_of_peaked_objects, activation="relu"
-                        )
-                        for _ in range(1, 5)
-                    ],
-                    layers.Dense(4 * self.amount_of_peaked_objects, activation="relu"),
-                    layers.Dense(
-                        self.amount_of_peaked_objects, activation="softmax"
-                    ),  # muss das softmax sein?!
-                ]
-            )
+            with open(DATA_PATH + "/trained_binary.pickle", "rb") as handle:
+                model = dill.load(handle)
 
-            def tau_loss(Y_true, Y_pred):
-                return tf.py_function(
-                    kendalltau,
-                    [tf.cast(Y_pred, tf.float32), tf.cast(Y_true, tf.float32)],
-                    Tout=tf.float32,
-                )
-
-            def spearman_loss(Y_true, Y_pred):
-                return tf.py_function(
-                    spearmanr,
-                    [tf.cast(Y_pred, tf.float32), tf.cast(Y_true, tf.float32)],
-                    Tout=tf.float32,
-                )
-
-            model.compile(
-                loss=spearman_loss,
-                optimizer="adam",
-                metrics=["MeanSquaredError", "accuracy", tau_loss],
-            )
-
-            #  print(model.summary())
             self.sampling_classifier = model
 
         # check if states and optimal policies file got provided or if we need to create a new one
@@ -149,16 +129,15 @@ class ImitationLearner(ActiveLearner):
                 ],
             )
 
-        self.train_nn()
+        #  self.train_nn()
 
     def train_nn(self):
         self.sampling_classifier.fit(
-            x=self.states,
+            X=self.states,
             y=self.optimal_policies,
-            use_multiprocessing=True,
-            #  epochs=1,
-            epochs=10,
-            batch_size=128,
+            #  use_multiprocessing=True,
+            epochs=100,
+            batch_size=32,
         )
 
     def save_nn_training_data(self, DATA_PATH):
@@ -269,40 +248,12 @@ class ImitationLearner(ActiveLearner):
         if not self.USE_OPTIMAL_ONLY:
             Y_pred = self.sampling_classifier.predict(X_state)
 
-            # train using the knowledge
-
-        if not self.TRAIN_ONCE:
-            self.train_nn()
-
-        #  print(self.states)
-        #  print(self.optimal_policies)
-        # @todo print " self calculated mean squared loss on real values
-        def order_metric(Y_pred, Y_true):
-            print(Y_pred)
-            print(Y_true)
-            true_ordering = sorted(range(len(Y_true)), key=Y_true.__getitem__)
-            pred_ordering = sorted(range(len(Y_pred)), key=Y_pred.__getitem__)
-
-            print(pred_ordering)
-            print(true_ordering)
-
-            print("ACC:", accuracy_score(true_ordering, pred_ordering))
-            print("MSE:", mean_squared_error(Y_true, Y_pred))
-            print("TAU:", kendalltau(true_ordering, pred_ordering))
-            print("SPEAR:", spearmanr(true_ordering, pred_ordering))
-
-            #
-
-        # @todo: compare real result with an order_metric result of a random ordering!!!!
-        order_metric(Y_pred[0], self.optimal_policies.iloc[-1, :].to_numpy())
-        # @todo print self calculated loss purely based on ordering -> use that as the real loss!
-        # 1. @todo: restart using different synthetic datasets
-        # @todo: discounting factor etc. to not always use the action by the NN but also the "true" result
-        # 2. @todo: start big run on server which just generatse training data (peak 40 samples into future), without ann
+        #  if not self.TRAIN_ONCE:
+        #  self.train_nn()
 
         # use the results of the ann
         if not self.USE_OPTIMAL_ONLY:
-            sorting = Y_pred[0]
+            sorting = Y_pred
         else:
             sorting = self.optimal_policies.iloc[-1, :].to_numpy()
 

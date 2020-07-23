@@ -33,6 +33,7 @@ from .sampling_strategies import (
     RandomSampler,
     UncertaintySampler,
     OptimalForecastSampler,
+    TrainedNNLearner,
 )
 
 from .weak_supervision import WeakCert, WeakClust
@@ -134,6 +135,15 @@ def train_al(
         active_learner.set_uncertainty_strategy("entropy")
     elif hyper_parameters["SAMPLING"] == "optimal_forecast":
         active_learner = OptimalForecastSampler(**active_learner_params)
+        active_learner.set_amount_of_peaked_objects(
+            hyper_parameters["AMOUNT_OF_PEAKED_OBJECTS"]
+        )
+        active_learner.MAX_AMOUNT_OF_WS_PEAKS = hyper_parameters[
+            "MAX_AMOUNT_OF_WS_PEAKS"
+        ]
+    elif hyper_parameters["SAMPLING"] == "trained_nn":
+        active_learner = TrainedNNLearner(**active_learner_params)
+        active_learner.init_sampling_classifier(hyper_parameters["DATA_PATH"])
         active_learner.set_amount_of_peaked_objects(
             hyper_parameters["AMOUNT_OF_PEAKED_OBJECTS"]
         )

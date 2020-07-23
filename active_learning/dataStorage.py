@@ -140,12 +140,60 @@ class DataStorage:
         return df
 
     def _load_synthetic(self, **kwargs):
-        X_data, Y_temp = make_classification(**kwargs)
+        no_valid_synthetic_arguments_found = True
+        # randomly generate synthetic arguments
+        while no_valid_synthetic_arguments_found:
+            MAX_USED_N_SAMPLES = 1000
+            N_SAMPLES = 1000
+            N_FEATURES = random.randint(10, 100)
+            N_INFORMATIVE, N_REDUNDANT, N_REPEATED = [
+                int(N_FEATURES * i)
+                for i in np.random.dirichlet(np.ones(3), size=1).tolist()[0]
+            ]
+
+            N_CLASSES = random.randint(2, 10)
+            N_CLUSTERS_PER_CLASS = random.randint(
+                1, min(max(1, int(2 ** N_INFORMATIVE / N_CLASSES)), 10)
+            )
+
+            if N_CLASSES * N_CLUSTERS_PER_CLASS > 2 ** N_INFORMATIVE:
+                i -= 1
+                continue
+            no_valid_synthetic_arguments_found = False
+
+            WEIGHTS = np.random.dirichlet(np.ones(N_CLASSES), size=1).tolist()[
+                0
+            ]  # list of weights, len(WEIGHTS) = N_CLASSES, sum(WEIGHTS)=1
+            FLIP_Y = (
+                np.random.pareto(2.0) + 1
+            ) * 0.01  # amount of noise, larger values make it harder
+            CLASS_SEP = random.uniform(
+                0, 10
+            )  # larger values spread out the clusters and make it easier
+            HYPERCUBE = True  # if false random polytope
+            SCALE = 0.01  # features should be between 0 and 1 now
+
+            synthetic_creation_args = {
+                "n_samples": N_SAMPLES,
+                "n_features": N_FEATURES,
+                "n_informative": N_INFORMATIVE,
+                "n_redundant": N_REDUNDANT,
+                "n_repeated": N_REPEATED,
+                "n_classes": N_CLASSES,
+                "n_clusters_per_class": N_CLUSTERS_PER_CLASS,
+                "weights": WEIGHTS,
+                "flip_y": FLIP_Y,
+                "class_sep": CLASS_SEP,
+                "hypercube": HYPERCUBE,
+                "scale": SCALE,
+            }
+
+        X_data, Y_temp = make_classification(**synthetic_creation_args)
         df = pd.DataFrame(X_data)
 
         # replace labels with strings
         Y_temp = Y_temp.astype("str")
-        for i in range(0, kwargs["n_classes"]):
+        for i in range(0, synthetic_creation_args["n_classes"]):
             np.place(Y_temp, Y_temp == str(i), chr(65 + i))
 
         # feature_columns fehlt

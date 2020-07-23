@@ -32,6 +32,7 @@ tensorflow = "*"
 statsmodels = "*"
 tensorflow-ranking = "*"
 scikeras = "*"
+dill = "*"
 
 [requires]
 python_version = "3"

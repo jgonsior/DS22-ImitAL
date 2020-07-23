@@ -1,3 +1,5 @@
+import dill
+import pickle
 from sklearn.metrics import make_scorer
 import sys
 import argparse
@@ -61,6 +63,7 @@ parser.add_argument(
 parser.add_argument(
     "--TARGET_ENCODING", type=str, help="regression, binary", default="regression"
 )
+parser.add_argument("--SAVE_DESTINATION", type=str)
 config = parser.parse_args()
 
 if len(sys.argv[:-1]) == 0:
@@ -117,8 +120,8 @@ def _evaluate_top_k(Y_true, Y_pred):
 states = pd.read_csv(DATA_PATH + "/states.csv")
 optimal_policies = pd.read_csv(DATA_PATH + "/opt_pol.csv")
 
-states = states[0:100]
-optimal_policies = optimal_policies[0:100]
+#  states = states[0:100]
+#  optimal_policies = optimal_policies[0:100]
 
 print(config.TARGET_ENCODING)
 
@@ -327,7 +330,7 @@ else:
         return result
 
     def uncertainty_sampling(X_test, strategy="least_confident"):
-        df = X_test
+        df = X_test.copy()
         if strategy == "least_confident":
             df = df.loc[:, ~df.columns.str.endswith("_proba_1")]
         elif strategy == "max_margin":
@@ -368,3 +371,13 @@ else:
     plt.xlabel("Epoch")
     plt.legend(["Train", "Test"], loc="upper left")
     #  plt.show()
+
+    if config.SAVE_DESTINATION:
+        with open(config.SAVE_DESTINATION, "wb") as handle:
+            dill.dump(fitted_model, handle)
+
+        with open(config.SAVE_DESTINATION, "rb") as handle:
+            new_model = dill.load(handle)
+
+            Y_pred2 = new_model.predict(X_test)
+            print("Y_pred_random:\t", _evaluate_top_k(Y_test, Y_pred2))
