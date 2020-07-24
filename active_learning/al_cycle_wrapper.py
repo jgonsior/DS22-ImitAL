@@ -33,6 +33,7 @@ from .sampling_strategies import (
     RandomSampler,
     UncertaintySampler,
     OptimalForecastSampler,
+    TrainedNNLearner,
 )
 
 from .weak_supervision import WeakCert, WeakClust
@@ -140,6 +141,15 @@ def train_al(
         active_learner.MAX_AMOUNT_OF_WS_PEAKS = hyper_parameters[
             "MAX_AMOUNT_OF_WS_PEAKS"
         ]
+    elif hyper_parameters["SAMPLING"] == "trained_nn":
+        active_learner = TrainedNNLearner(**active_learner_params)
+        active_learner.init_sampling_classifier(hyper_parameters["DATA_PATH"])
+        active_learner.set_amount_of_peaked_objects(
+            hyper_parameters["AMOUNT_OF_PEAKED_OBJECTS"]
+        )
+        active_learner.MAX_AMOUNT_OF_WS_PEAKS = hyper_parameters[
+            "MAX_AMOUNT_OF_WS_PEAKS"
+        ]
     #  elif hyper_parameters['sampling'] == 'committee':
     #  active_learner = CommitteeSampler(hyper_parameters['RANDOM_SEED, hyper_parameters.N_JOBS, hyper_parameters.NR_LEARNING_ITERATIONS)
     else:
@@ -239,6 +249,9 @@ def eval_al(
     hyper_parameters["thread_id"] = threading.get_ident()
     hyper_parameters["end_time"] = datetime.datetime.now()
     hyper_parameters["amount_of_all_labels"] = amount_of_all_labels
+
+    if hyper_parameters["dataset_name"] == "synthetic":
+        hyper_parameters = {**hyper_parameters, **data_storage.synthetic_creation_args}
 
     # save hyper parameter results in csv file
     output_hyper_parameter_file = Path(

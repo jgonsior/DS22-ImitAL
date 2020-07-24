@@ -61,6 +61,7 @@ config = standard_config(
         (["--USER_QUERY_BUDGET_LIMIT"], {"type": float, "default": 200}),
         (["--AMOUNT_OF_PEAKED_OBJECTS"], {"type": int, "default": 12}),
         (["--MAX_AMOUNT_OF_WS_PEAKS"], {"type": int, "default": 1}),
+        (["--DATA_PATH"], {"type": str}),
     ]
 )
 

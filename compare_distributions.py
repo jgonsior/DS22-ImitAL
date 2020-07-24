@@ -46,7 +46,7 @@ def plot_distributions(
         label = "{}-{:>3}: {:.4g}% ".format(label[0], label[1], selection.mean() * 100)
         ax = sns.kdeplot(selection, label=label, **kwargs)
 
-        ax.set_xlim(0.45, 0.65)
+        #  ax.set_xlim(0.45, 0.65)
         #  ax.set_xlim(0.60, 0.85)
         #  ax.set_xlim(80, 875)
         if axvline:
