@@ -17,22 +17,6 @@ from tensorflow.keras import layers
 import os
 
 
-def _binarize_targets(Y_pred, TOP_N=5):
-    print(Y_pred)
-    df = pd.DataFrame(data=Y_pred)
-    print(df)
-    df = df.assign(threshold=np.sort(df.values)[:, -TOP_N : -(TOP_N - 1)])
-    print(df)
-
-    for column_name in df.columns:
-        if column_name == "threshold":
-            continue
-        df[column_name].loc[df[column_name] < df.threshold] = 0
-        df[column_name].loc[df[column_name] >= df.threshold] = 1
-    del df["threshold"]
-    return df
-
-
 def _future_peak(
     unlabeled_sample_indice,
     weak_supervision_label_sources,
@@ -79,11 +63,11 @@ def _future_peak(
         Y_pred, copy_of_data_storage.train_unlabeled_Y["label"].to_list()
     )
 
-    #  print(
-    #      "Testing out : {}, train acc: {}".format(
-    #          unlabeled_sample_indice, accuracy_with_that_label
-    #      )
-    #  )
+    print(
+        "Testing out : {}, train acc: {}".format(
+            unlabeled_sample_indice, accuracy_with_that_label
+        )
+    )
     return accuracy_with_that_label
 
 
