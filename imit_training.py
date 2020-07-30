@@ -1,3 +1,5 @@
+import pandas as pd
+import os
 import csv
 from pathlib import Path
 import pandas as pd
@@ -101,10 +103,26 @@ config = standard_config(
         (["--AMOUNT_OF_PEAKED_OBJECTS"], {"type": int, "default": 12}),
         (["--MAX_AMOUNT_OF_WS_PEAKS"], {"type": int, "default": 1}),
         (["--AMOUNT_OF_LEARN_ITERATIONS"], {"type": int, "default": 1}),
-        (["--USE_OPTIMAL_ONLY"], {"action": "store_true"}),
-        (["--TRAIN_ONCE"], {"action": "store_true"}),
     ]
 )
+
+if not os.path.isfile(config.OUTPUT_DIRECTORY + "/states.csv"):
+    states = pd.DataFrame(
+        data=None,
+        columns=[str(i) + "_proba_0" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)]
+        + [str(i) + "_proba_1" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)],
+    )
+
+    optimal_policies = pd.DataFrame(
+        data=None,
+        columns=[
+            str(i) + "_true_peaked_normalised_acc"
+            for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
+        ],
+    )
+    states.to_csv(config.OUTPUT_DIRECTORY + "/states.csv", index=False)
+    optimal_policies.to_csv(config.OUTPUT_DIRECTORY + "/opt_pol.csv", index=False)
+
 
 init_logger("console")
 for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
@@ -158,11 +176,7 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
         hyper_parameters["AMOUNT_OF_PEAKED_OBJECTS"]
     )
 
-    active_learner.init_sampling_classifier(
-        hyper_parameters["OUTPUT_DIRECTORY"],
-        hyper_parameters["USE_OPTIMAL_ONLY"],
-        hyper_parameters["TRAIN_ONCE"],
-    )
+    active_learner.init_sampling_classifier(hyper_parameters["OUTPUT_DIRECTORY"],)
     active_learner.MAX_AMOUNT_OF_WS_PEAKS = hyper_parameters["MAX_AMOUNT_OF_WS_PEAKS"]
 
     start = timer()
