@@ -2,7 +2,7 @@
 
 #Submit this script with: sbatch thefilename
 
-#SBATCH --time=00:00:05   # walltime
+#SBATCH --time=16:00:05   # walltime
 #SBATCH --ntasks=256      # limit to one node
 #SBATCH --cpus-per-task=1  # number of processor cores (i.e. threads)
 #SBATCH --mem-per-cpu=1024M   # memory per CPU core
@@ -21,9 +21,9 @@ do
     for j in $(seq 1 256);
     do
         if [ "$j" -eq "256" ]; then
-            MPLCONFIGDIR=/lustre/ssd/ws/s5968580-IL_TD/cache python3 -m pipenv run python /lustre/ssd/ws/s5968580-IL_TD/imitating-weakal/imit_training.py --DATASETS_PATH ../datasets --OUTPUT_DIRECTORY ../synthetic_5_100_80  --CLUSTER dummy --NR_QUERIES_PER_ITERATION 5 --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 100 --RANDOM_SEED -2 --N_JOBS 1 --AMOUNT_OF_PEAKED_OBJECTS 80 --MAX_AMOUNT_OF_WS_PEAKS 0 --AMOUNT_OF_LEARN_ITERATIONS 500000000 --USE_OPTIMAL_ONLY --LOG_FILE /lustre/ssd/ws/s5968580-IL_TD/synthetic_5_100_80/output.txt&
+            MPLCONFIGDIR=/lustre/ssd/ws/s5968580-IL_TD/cache python3 -m pipenv run python /lustre/ssd/ws/s5968580-IL_TD/imitating-weakal/imit_training.py --DATASETS_PATH ../datasets --OUTPUT_DIRECTORY ../synthetic_5_100_40 --CLUSTER dummy --NR_QUERIES_PER_ITERATION 5 --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 100 --RANDOM_SEED -2 --N_JOBS 1 --AMOUNT_OF_PEAKED_OBJECTS 40--MAX_AMOUNT_OF_WS_PEAKS 0 --AMOUNT_OF_LEARN_ITERATIONS 500000000 --USE_OPTIMAL_ONLY --LOG_FILE /lustre/ssd/ws/s5968580-IL_TD/variable_synthetic_5_100_40/output.txt&
         else
-            MPLCONFIGDIR=/lustre/ssd/ws/s5968580-IL_TD/cache python3 -m pipenv run python /lustre/ssd/ws/s5968580-IL_TD/imitating-weakal/imit_training.py --DATASETS_PATH ../datasets --OUTPUT_DIRECTORY ../synthetic_5_100_80  --CLUSTER dummy --NR_QUERIES_PER_ITERATION 5 --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 100 --RANDOM_SEED -2 --N_JOBS 1 --AMOUNT_OF_PEAKED_OBJECTS 80 --MAX_AMOUNT_OF_WS_PEAKS 0 --AMOUNT_OF_LEARN_ITERATIONS 500000000 --USE_OPTIMAL_ONLY --LOG_FILE /lustre/ssd/ws/s5968580-IL_TD/synthetic_5_100_80/output.txt&
+            MPLCONFIGDIR=/lustre/ssd/ws/s5968580-IL_TD/cache python3 -m pipenv run python /lustre/ssd/ws/s5968580-IL_TD/imitating-weakal/imit_training.py --DATASETS_PATH ../datasets --OUTPUT_DIRECTORY ../synthetic_5_100_40 --CLUSTER dummy --NR_QUERIES_PER_ITERATION 5 --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 100 --RANDOM_SEED -2 --N_JOBS 1 --AMOUNT_OF_PEAKED_OBJECTS 40--MAX_AMOUNT_OF_WS_PEAKS 0 --AMOUNT_OF_LEARN_ITERATIONS 500000000 --USE_OPTIMAL_ONLY --LOG_FILE /lustre/ssd/ws/s5968580-IL_TD/variable_synthetic_5_100_40/output.txt&
         fi
     done
 done
