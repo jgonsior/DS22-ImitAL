@@ -124,7 +124,7 @@ if not os.path.isfile(config.OUTPUT_DIRECTORY + "/states.csv"):
     optimal_policies.to_csv(config.OUTPUT_DIRECTORY + "/opt_pol.csv", index=False)
 
 
-init_logger("console")
+init_logger(config.LOG_FILE)
 for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
 
     if config.RANDOM_SEED == -2:
