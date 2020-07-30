@@ -1,6 +1,5 @@
 import dill
 from scipy.stats import spearmanr, kendalltau
-from scikeras.wrappers import KerasClassifier, KerasRegressor
 from sklearn.preprocessing import MinMaxScaler
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
@@ -92,57 +91,22 @@ class ImitationLearner(ActiveLearner):
     def set_amount_of_peaked_objects(self, amount_of_peaked_objects):
         self.amount_of_peaked_objects = amount_of_peaked_objects
 
-    def init_sampling_classifier(self, DATA_PATH, USE_OPTIMAL_ONLY, TRAIN_ONCE):
-        self.USE_OPTIMAL_ONLY = USE_OPTIMAL_ONLY
-        self.TRAIN_ONCE = TRAIN_ONCE
-        if not USE_OPTIMAL_ONLY:
-            os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
-            os.environ["CUDA_VISIBLE_DEVICES"] = ""
-
-            with open(DATA_PATH + "/trained_binary.pickle", "rb") as handle:
-                model = dill.load(handle)
-
-            self.sampling_classifier = model
-
+    def init_sampling_classifier(self, DATA_PATH):
         # check if states and optimal policies file got provided or if we need to create a new one
-        if os.path.isfile(DATA_PATH + "/states.csv"):
-            self.states = pd.read_csv(DATA_PATH + "/states.csv")
-            self.optimal_policies = pd.read_csv(DATA_PATH + "/opt_pol.csv")
-            print(self.states)
-            print(self.optimal_policies)
-
-        else:
-            self.states = pd.DataFrame(
-                data=None,
-                columns=[
-                    str(i) + "_proba_0" for i in range(0, self.amount_of_peaked_objects)
-                ]
-                + [
-                    str(i) + "_proba_1" for i in range(0, self.amount_of_peaked_objects)
-                ],
-            )
-            self.optimal_policies = pd.DataFrame(
-                data=None,
-                columns=[
-                    str(i) + "_true_peaked_normalised_acc"
-                    for i in range(0, self.amount_of_peaked_objects)
-                ],
-            )
-
-        #  self.train_nn()
-
-    def train_nn(self):
-        self.sampling_classifier.fit(
-            X=self.states,
-            y=self.optimal_policies,
-            #  use_multiprocessing=True,
-            epochs=100,
-            batch_size=32,
+        self.states = pd.DataFrame(
+            data=None,
+            columns=[
+                str(i) + "_proba_0" for i in range(0, self.amount_of_peaked_objects)
+            ]
+            + [str(i) + "_proba_1" for i in range(0, self.amount_of_peaked_objects)],
         )
-
-    def save_nn_training_data(self, DATA_PATH):
-        self.states.to_csv(DATA_PATH + "/states.csv", index=False)
-        self.optimal_policies.to_csv(DATA_PATH + "/opt_pol.csv", index=False)
+        self.optimal_policies = pd.DataFrame(
+            data=None,
+            columns=[
+                str(i) + "_true_peaked_normalised_acc"
+                for i in range(0, self.amount_of_peaked_objects)
+            ],
+        )
 
     def move_labeled_queries(self, X_query, Y_query, query_indices):
         # move new queries from unlabeled to labeled dataset
@@ -181,6 +145,14 @@ class ImitationLearner(ActiveLearner):
             for k, v in self.train_unlabeled_X_cluster_indices.items()
             if len(v) != 0
         }
+
+    def save_nn_training_data(self, DATA_PATH):
+        self.states.to_csv(
+            DATA_PATH + "/states.csv", index=False, header=False, mode="a"
+        )
+        self.optimal_policies.to_csv(
+            DATA_PATH + "/opt_pol.csv", index=False, header=False, mode="a"
+        )
 
     """
     We take a "peak" into the future and annotate exactly those samples where we KNOW that they will benefit us the most
@@ -244,18 +216,7 @@ class ImitationLearner(ActiveLearner):
             ignore_index=True,
         )
 
-        X_state = np.reshape(X_state, (1, len(X_state)))
-        if not self.USE_OPTIMAL_ONLY:
-            Y_pred = self.sampling_classifier.predict(X_state)
-
-        #  if not self.TRAIN_ONCE:
-        #  self.train_nn()
-
-        # use the results of the ann
-        if not self.USE_OPTIMAL_ONLY:
-            sorting = Y_pred
-        else:
-            sorting = self.optimal_policies.iloc[-1, :].to_numpy()
+        sorting = self.optimal_policies.iloc[-1, :].to_numpy()
 
         # use the optimal values
         zero_to_one_values_and_index = list(zip(sorting, possible_samples_indices))
@@ -269,7 +230,3 @@ class ImitationLearner(ActiveLearner):
                 : self.nr_queries_per_iteration
             ]
         ]
-
-        # hier dann stattdessen die Antwort vom hier trainiertem classifier zurückgeben
-        future_peak_acc = sorted(future_peak_acc, key=lambda tup: tup[1], reverse=True)
-        return [k for k, v in future_peak_acc[: self.nr_queries_per_iteration]]
