@@ -78,8 +78,16 @@ if config.RANDOM_SEED != -1 and config.RANDOM_SEED != -2:
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-AMOUNT_OF_PEAKED_OBJECTS = 20
+
 DATA_PATH = config.DATA_PATH
+states = pd.read_csv(DATA_PATH + "/states.csv")
+optimal_policies = pd.read_csv(DATA_PATH + "/opt_pol.csv")
+
+#  states = states[0:100]
+#  optimal_policies = optimal_policies[0:100]
+
+
+AMOUNT_OF_PEAKED_OBJECTS = int(len(states.columns) / 2)
 
 
 def _binarize_targets(df, TOP_N=5):
@@ -106,7 +114,7 @@ def _evaluate_top_k(Y_true, Y_pred):
     Y_pred_binarized = _binarize_targets(Y_pred)
 
     accs = []
-    for i in range(0, 20):
+    for i in range(0, AMOUNT_OF_PEAKED_OBJECTS):
         accs.append(
             accuracy_score(
                 Y_true_binarized[str(i) + "_true_peaked_normalised_acc"].to_numpy(),
@@ -116,12 +124,6 @@ def _evaluate_top_k(Y_true, Y_pred):
     print(accs)
     return np.mean(accs)
 
-
-states = pd.read_csv(DATA_PATH + "/states.csv")
-optimal_policies = pd.read_csv(DATA_PATH + "/opt_pol.csv")
-
-#  states = states[0:100]
-#  optimal_policies = optimal_policies[0:100]
 
 print(config.TARGET_ENCODING)
 
