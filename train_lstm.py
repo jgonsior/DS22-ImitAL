@@ -52,6 +52,7 @@ parser.add_argument("--NR_HIDDEN_LAYERS", type=int, default=4)
 parser.add_argument("--LOSS", type=str, default="MeanSquaredError")
 parser.add_argument("--EPOCHS", type=int, default=1000)
 parser.add_argument("--BATCH_SIZE", type=int, default=32)
+parser.add_argument("--N_ITER", type=int, default=100)
 parser.add_argument("--ACTIVATION", type=str, default="elu")
 parser.add_argument("--HYPER_SEARCH", action="store_true")
 parser.add_argument(
@@ -277,7 +278,7 @@ if config.HYPER_SEARCH:
         n_jobs=-1,
         scoring=make_scorer(_evaluate_top_k, greater_is_better=True),
         verbose=2,
-        n_iter=100,
+        n_iter=config.N_ITER,
     )
 
     fitted_model = gridsearch.fit(X_train, Y_train)
