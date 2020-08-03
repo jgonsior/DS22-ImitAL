@@ -235,7 +235,7 @@ if config.HYPER_SEARCH:
         "regular_dropout_rate": [0, 0.1, 0.2, 0.3],
         #  "recurrentDropoutRate": [0, 0.1, 0.2],
         "nr_hidden_neurons": [10, 20, 40, 80, 120],
-        "epochs": [10],  # <- early stopping :)
+        "epochs": [1000],  # <- early stopping :)
         "nr_hidden_layers": [1, 2, 4, 8, 16],  # 16, 32, 64],  # , 2],
         "batch_size": [16, 32, 64],  # , 128],
         #  "nTs": [15000],
