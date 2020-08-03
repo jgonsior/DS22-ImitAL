@@ -226,18 +226,18 @@ if config.HYPER_SEARCH:
     param_grid = {
         "loss": [
             "MeanSquaredError",
-            "CategoricalCrossentropy",
-            "BinaryCrossentropy",
+            #  "CategoricalCrossentropy",
+            #  "BinaryCrossentropy",
             "CosineSimilarity",
             # spearman_loss,
             # tau_loss,
         ],
         "regular_dropout_rate": [0, 0.1, 0.2, 0.3],
         #  "recurrentDropoutRate": [0, 0.1, 0.2],
-        "nr_hidden_neurons": [10, 20, 40, 80],
+        "nr_hidden_neurons": [10, 20, 40, 80, 120],
         "epochs": [1000],  # <- early stopping :)
-        "nr_hidden_layers": [1, 2, 4, 8, 16, 32, 64],  # , 2],
-        "batch_size": [16, 32, 64, 128],
+        "nr_hidden_layers": [1, 2, 4, 8, 16],  # 16, 32, 64],  # , 2],
+        "batch_size": [16, 32, 64],  # , 128],
         #  "nTs": [15000],
         #  "k2": [1000],
         #  "diff": [False],
@@ -249,7 +249,8 @@ if config.HYPER_SEARCH:
         #      "he_normal",
         #      "he_uniform",
         #  ],
-        "activation": ["softmax", "elu", "relu", "tanh", "sigmoid"],
+        #  "activation": ["softmax", "elu", "relu", "tanh", "sigmoid"],
+        "activation": ["elu", "relu", "tanh"],
     }
 
     model = KerasRegressor(
@@ -274,7 +275,7 @@ if config.HYPER_SEARCH:
     gridsearch = RandomizedSearchCV(
         estimator=model,
         param_distributions=param_grid,
-        cv=3,
+        cv=5,
         n_jobs=-1,
         scoring=make_scorer(_evaluate_top_k, greater_is_better=True),
         verbose=2,
