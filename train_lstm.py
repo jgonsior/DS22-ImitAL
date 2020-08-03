@@ -288,6 +288,16 @@ if config.HYPER_SEARCH:
     print(fitted_model.best_score_)
     print(fitted_model.best_params_)
     print(fitted_model.cv_results_)
+
+    with open(config.DATA_PATH + "/best_model.pickle", "wb") as handle:
+        dill.dump(fitted_model, handle)
+
+    with open(config.DATA_PATH + "/hyper_results.txt", "w") as handle:
+        handle.write(fitted_model.best_score_)
+        handle.write(fitted_model.best_params_)
+        handle.write(fitted_model.cv_results_)
+
+
 else:
     model = KerasRegressor(
         build_fn=build_nn,
