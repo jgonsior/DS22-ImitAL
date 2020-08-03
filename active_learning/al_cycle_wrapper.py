@@ -251,9 +251,7 @@ def eval_al(
         hyper_parameters = {**hyper_parameters, **data_storage.synthetic_creation_args}
 
     # save hyper parameter results in csv file
-    output_hyper_parameter_file = Path(
-        hyper_parameters["output_directory"] + "/evaluation_hyper_parameters.csv"
-    )
+    output_hyper_parameter_file = Path(hyper_parameters["output_directory"])
     if not output_hyper_parameter_file.is_file():
         output_hyper_parameter_file.touch()
         with output_hyper_parameter_file.open("a") as f:

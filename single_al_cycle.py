@@ -74,7 +74,9 @@ if config.RANDOM_SEED == -2:
     random.seed(config.RANDOM_SEED)
 
 if config.OUTPUT_DIRECTORY == "NN_BINARY":
-    config.OUTPUT_DIRECTORY = os.path.dirname(config.NN_BINARY)
+    config.OUTPUT_DIRECTORY = os.path.dirname(
+        config.NN_BINARY + "/evaluation_hyper_parameters.csv"
+    )
 
 score = train_and_eval_dataset(
     config.DATASET_NAME,
