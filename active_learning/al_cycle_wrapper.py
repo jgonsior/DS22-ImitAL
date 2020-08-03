@@ -143,10 +143,7 @@ def train_al(
         ]
     elif hyper_parameters["SAMPLING"] == "trained_nn":
         active_learner = TrainedNNLearner(**active_learner_params)
-        active_learner.init_sampling_classifier(hyper_parameters["DATA_PATH"])
-        active_learner.set_amount_of_peaked_objects(
-            hyper_parameters["AMOUNT_OF_PEAKED_OBJECTS"]
-        )
+        active_learner.init_sampling_classifier(hyper_parameters["NN_BINARY"])
         active_learner.MAX_AMOUNT_OF_WS_PEAKS = hyper_parameters[
             "MAX_AMOUNT_OF_WS_PEAKS"
         ]
@@ -254,7 +251,9 @@ def eval_al(
         hyper_parameters = {**hyper_parameters, **data_storage.synthetic_creation_args}
 
     # save hyper parameter results in csv file
-    output_hyper_parameter_file = Path(hyper_parameters["output_csv"])
+    output_hyper_parameter_file = Path(
+        hyper_parameters["output_directory"] + "/evaluation_hyper_parameters.csv"
+    )
     if not output_hyper_parameter_file.is_file():
         output_hyper_parameter_file.touch()
         with output_hyper_parameter_file.open("a") as f:

@@ -1,3 +1,4 @@
+import os
 import random
 import numpy as np
 from active_learning.al_cycle_wrapper import train_and_eval_dataset
@@ -56,12 +57,12 @@ config = standard_config(
             ["--ALLOW_RECOMMENDATIONS_AFTER_STOP"],
             {"action": "store_true", "default": False},
         ),
-        (["--OUTPUT_CSV"], {"default": "tmp/hyper_parameters.csv"}),
+        (["--OUTPUT_DIRECTORY"], {"default": "tmp/"}),
         (["--HYPER_SEARCH_TYPE"], {"default": "random"}),
         (["--USER_QUERY_BUDGET_LIMIT"], {"type": float, "default": 200}),
         (["--AMOUNT_OF_PEAKED_OBJECTS"], {"type": int, "default": 12}),
         (["--MAX_AMOUNT_OF_WS_PEAKS"], {"type": int, "default": 1}),
-        (["--DATA_PATH"], {"type": str}),
+        (["--NN_BINARY"], {"type": str}),
     ]
 )
 
@@ -71,6 +72,9 @@ if config.RANDOM_SEED == -2:
     config.RANDOM_SEED = random.randint(0, 2147483647)
     np.random.seed(config.RANDOM_SEED)
     random.seed(config.RANDOM_SEED)
+
+if config.OUTPUT_DIRECTORY == "NN_BINARY":
+    config.OUTPUT_DIRECTORY = os.path.dirname(config.NN_BINARY)
 
 score = train_and_eval_dataset(
     config.DATASET_NAME,

@@ -19,14 +19,11 @@ import os
 
 
 class TrainedNNLearner(ActiveLearner):
-    def set_amount_of_peaked_objects(self, amount_of_peaked_objects):
-        self.amount_of_peaked_objects = amount_of_peaked_objects
-
-    def init_sampling_classifier(self, DATA_PATH):
+    def init_sampling_classifier(self, NN_BINARY_PATH):
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-        with open(DATA_PATH, "rb") as handle:
+        with open(NN_BINARY_PATH, "rb") as handle:
             model = dill.load(handle)
 
         self.sampling_classifier = model
@@ -43,7 +40,7 @@ class TrainedNNLearner(ActiveLearner):
         for _ in range(0, 5):
             random.shuffle(train_unlabeled_X_indices)
             possible_samples_indices = train_unlabeled_X_indices[
-                : self.amount_of_peaked_objects
+                : self.sampling_classifier.n_outputs_
             ]
 
             possible_samples_probas = self.clf.predict_proba(
