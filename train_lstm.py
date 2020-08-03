@@ -235,7 +235,7 @@ if config.HYPER_SEARCH:
         "regular_dropout_rate": [0, 0.1, 0.2, 0.3],
         #  "recurrentDropoutRate": [0, 0.1, 0.2],
         "nr_hidden_neurons": [10, 20, 40, 80, 120],
-        "epochs": [1000],  # <- early stopping :)
+        "epochs": [10],  # <- early stopping :)
         "nr_hidden_layers": [1, 2, 4, 8, 16],  # 16, 32, 64],  # , 2],
         "batch_size": [16, 32, 64],  # , 128],
         #  "nTs": [15000],
@@ -293,9 +293,9 @@ if config.HYPER_SEARCH:
         dill.dump(fitted_model, handle)
 
     with open(config.DATA_PATH + "/hyper_results.txt", "w") as handle:
-        handle.write(fitted_model.best_score_)
-        handle.write(fitted_model.best_params_)
-        handle.write(fitted_model.cv_results_)
+        handle.write(str(fitted_model.best_score_))
+        handle.write(str(fitted_model.best_params_))
+        handle.write(str(fitted_model.cv_results_))
 
 
 else:
