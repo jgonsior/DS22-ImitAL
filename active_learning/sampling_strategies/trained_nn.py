@@ -26,7 +26,7 @@ class TrainedNNLearner(ActiveLearner):
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-        with open(DATA_PATH + "/trained_binary.pickle", "rb") as handle:
+        with open(DATA_PATH, "rb") as handle:
             model = dill.load(handle)
 
         self.sampling_classifier = model

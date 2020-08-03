@@ -56,7 +56,7 @@ config = standard_config(
             ["--ALLOW_RECOMMENDATIONS_AFTER_STOP"],
             {"action": "store_true", "default": False},
         ),
-        (["--OUTPUT_DIRECTORY"], {"default": "tmp/"}),
+        (["--OUTPUT_CSV"], {"default": "tmp/hyper_parameters.csv"}),
         (["--HYPER_SEARCH_TYPE"], {"default": "random"}),
         (["--USER_QUERY_BUDGET_LIMIT"], {"type": float, "default": 200}),
         (["--AMOUNT_OF_PEAKED_OBJECTS"], {"type": int, "default": 12}),
