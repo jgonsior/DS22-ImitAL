@@ -2,7 +2,7 @@
 
 #Submit this script with: sbatch thefilename
 
-#SBATCH --time=24:22:05   # walltime
+#SBATCH --time=23:59:55   # walltime
 #SBATCH --ntasks=100      # limit to one node
 #SBATCH --cpus-per-task=1  # number of processor cores (i.e. threads)
 #SBATCH --mem-per-cpu=1024M   # memory per CPU core
@@ -16,5 +16,5 @@
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
 export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
 OUTFILE="" #/lustre/ssd/ws/s5968580-IL_TD/out"
-MPLCONFIGDIR=/lustre/ssd/ws/s5968580-IL_TD/cache python3 -m pipenv run python /lustre/ssd/ws/s5968580-IL_TD/imitating-weakal/single_al_cycle,2 --OUTPUT_DIRECTORY ../classic_hyper_csvs/uncertainty_entropy.csv --SAMPLING uncertainty_entropy --CLUSTER dummy --NR_QUERIES_PER_ITERATION 5 --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 50 --RANDOM_SEED $SLURM_ARRAY_TASK_ID --N_JOBS 1 --LOG_FILE /lustre/ssd/ws/s5968580-IL_TD/variable_synthetic_1_50_10/output.txt
+MPLCONFIGDIR=/lustre/ssd/ws/s5968580-IL_TD/cache python3 -m pipenv run python /lustre/ssd/ws/s5968580-IL_TD/imitating-weakal/single_al_cycle.py --OUTPUT_DIRECTORY ../classic_hyper_csvs/uncertainty_entropy.csv --SAMPLING uncertainty_entropy --CLUSTER dummy --NR_QUERIES_PER_ITERATION 5 --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 50 --RANDOM_SEED $SLURM_ARRAY_TASK_ID --N_JOBS 1 --LOG_FILE /lustre/ssd/ws/s5968580-IL_TD/variable_synthetic_1_50_10/output.txt
 exit 0
