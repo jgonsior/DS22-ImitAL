@@ -2,7 +2,7 @@
 
 #Submit this script with: sbatch thefilename
 
-#SBATCH --time=48:22:05   # walltime
+#SBATCH --time=23:59:55   # walltime
 #SBATCH --ntasks=1      # limit to one node
 #SBATCH --cpus-per-task=1  # number of processor cores (i.e. threads)
 #SBATCH --mem-per-cpu=1024M   # memory per CPU core
@@ -11,10 +11,13 @@
 #SBATCH -A p_ml_il
 #SBATCH --output /lustre/ssd/ws/s5968580-IL_TD/slurm_output_log.txt
 #SBATCH --error /lustre/ssd/ws/s5968580-IL_TD/slurm_error_log.txt
-#SBATCH --array 0-10000
+#SBATCH --array 0-100
 
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
 export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
 OUTFILE="" #/lustre/ssd/ws/s5968580-IL_TD/out"
-MPLCONFIGDIR=/lustre/ssd/ws/s5968580-IL_TD/cache python3 -m pipenv run python /lustre/ssd/ws/s5968580-IL_TD/imitating-weakal/imit_training.py --DATASETS_PATH ../datasets --OUTPUT_DIRECTORY ../variable_synthetic_1_50_10 --CLUSTER dummy --NR_QUERIES_PER_ITERATION 1 --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 50 --RANDOM_SEED -2 --N_JOBS 1 --AMOUNT_OF_PEAKED_OBJECTS 10 --MAX_AMOUNT_OF_WS_PEAKS 0 --AMOUNT_OF_LEARN_ITERATIONS 100 --LOG_FILE /lustre/ssd/ws/s5968580-IL_TD/variable_synthetic_1_50_10/output.txt
+for i in $(seq $((1 + 100*$SLURM_ARRAY_TASK_ID -100)) $((100 + 100*$SLURM_ARRAY_TASK_ID -100))); 
+do
+    MPLCONFIGDIR=/lustre/ssd/ws/s5968580-IL_TD/cache python3 -m pipenv run python /lustre/ssd/ws/s5968580-IL_TD/imitating-weakal/single_al_cycle.py --NN_BINARY ../fixed_synthetic_5_50_20_large/trained_listwise_binary.pickle --OUTPUT_DIRECTORY NN_BINARY --SAMPLING trained_nn --CLUSTER dummy --NR_QUERIES_PER_ITERATION 5 --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 50 --RANDOM_SEED $i --N_JOBS 1 
+done
 exit 0
