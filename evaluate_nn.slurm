@@ -3,7 +3,7 @@
 #Submit this script with: sbatch thefilename
 
 #SBATCH --time=23:59:55   # walltime
-#SBATCH --ntasks=100      # limit to one node
+#SBATCH --ntasks=1      # limit to one node
 #SBATCH --cpus-per-task=1  # number of processor cores (i.e. threads)
 #SBATCH --mem-per-cpu=1024M   # memory per CPU core
 #SBATCH --mail-user=julius.gonsior@tu-dresden.de   # email address
@@ -11,7 +11,7 @@
 #SBATCH -A p_ml_il
 #SBATCH --output /lustre/ssd/ws/s5968580-IL_TD/slurm_output_log.txt
 #SBATCH --error /lustre/ssd/ws/s5968580-IL_TD/slurm_error_log.txt
-#SBATCH --array 0-10000
+#SBATCH --array 0-10
 
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
 export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
