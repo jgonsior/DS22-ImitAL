@@ -80,9 +80,9 @@ if config.OUTPUT_DIRECTORY == "NN_BINARY":
 
 
 score = train_and_eval_dataset(
-    config.DATASET_NAME,
-    config.DATASETS_PATH,
     hyper_parameters=vars(config),
     oracle=FakeExperimentOracle(),
+    DATASET_NAME=config.DATASET_NAME,
+    DATASETS_PATH=config.DATASETS_PATH,
 )
 print("Done with ", score)
