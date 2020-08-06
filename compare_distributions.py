@@ -43,7 +43,8 @@ def plot_distributions(
     sns.set_palette("tab10")
     for selection, label in selection_list:
         #  ax = sns.distplot(selection, label=label, **kwargs)
-        label = "{}-{:>3}: {:.4g}% ".format(label[0], label[1], selection.mean() * 100)
+        #  label = "{}-{:>3}: {:.4g}% ".format(label[0], label[1], selection.mean() * 100)
+        label = "{}: {:.4g}% ".format(label[0], selection.mean() * 100)
         #  ax = sns.kdeplot(selection, label=label, **kwargs)
         ax = sns.distplot(selection, label=label, **kwargs)
 
@@ -79,7 +80,8 @@ def plot_distributions(
 
 def compare_distributions(CSV_FILE, GROUP_COLUMNS, VALUE_GROUPINGS):
     df = pd.read_csv(CSV_FILE)
-
+    print(df.head)
+    #  exit(-1)
     # group df by all possible GROUP_COLUMNS combinations
     combs = product(*[df[col].unique() for col in GROUP_COLUMNS])
     sels = []
