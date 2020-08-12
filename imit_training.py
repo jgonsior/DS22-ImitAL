@@ -123,11 +123,15 @@ if not os.path.isfile(config.OUTPUT_DIRECTORY + "/states.csv"):
     states.to_csv(config.OUTPUT_DIRECTORY + "/states.csv", index=False)
     optimal_policies.to_csv(config.OUTPUT_DIRECTORY + "/opt_pol.csv", index=False)
 
+if config.RANDOM_SEED == -2:
+    random_but_not_random = True
+else:
+    random_but_not_random = False
 
 init_logger(config.LOG_FILE)
 for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
 
-    if config.RANDOM_SEED == -2:
+    if random_but_not_random:
         config.RANDOM_SEED = random.randint(0, 2147483647)
         np.random.seed(config.RANDOM_SEED)
         random.seed(config.RANDOM_SEED)
@@ -137,12 +141,13 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
     print("Learn iteration {}".format(i))
 
     data_storage = DataStorage(
-        hyper_parameters["RANDOM_SEED"],
-        hyper_parameters["DATASET_NAME"],
-        hyper_parameters["DATASETS_PATH"],
-        hyper_parameters["START_SET_SIZE"],
-        hyper_parameters["TEST_FRACTION"],
-        hyper_parameters,
+        RANDOM_SEED=hyper_parameters["RANDOM_SEED"],
+        hyper_parameters=hyper_parameters,
+        df=None,
+        DATASET_NAME=hyper_parameters["DATASET_NAME"],
+        DATASETS_PATH=hyper_parameters["DATASETS_PATH"],
+        #  hyper_parameters["START_SET_SIZE"],
+        #  hyper_parameters["TEST_FRACTION"],
     )
 
     hyper_parameters["LEN_TRAIN_DATA"] = len(data_storage.train_unlabeled_Y) + len(
