@@ -18,6 +18,6 @@ export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
 OUTFILE="" #/lustre/ssd/ws/s5968580-IL_TD/out"
 for i in $(seq $((1 + 1000*$SLURM_ARRAY_TASK_ID -1000)) $((1000 + 1000*$SLURM_ARRAY_TASK_ID -1000))); 
 do
-    MPLCONFIGDIR=/lustre/ssd/ws/s5968580-IL_TD/cache python3 -m pipenv run python /lustre/ssd/ws/s5968580-IL_TD/imitating-weakal/imit_training.py --DATASETS_PATH ../datasets --OUTPUT_DIRECTORY ../../repr_variable_synthetic_5_50_20 --CLUSTER dummy --NR_QUERIES_PER_ITERATION 1 --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 50 --RANDOM_SEED $i --N_JOBS 1 --AMOUNT_OF_PEAKED_OBJECTS 20 --MAX_AMOUNT_OF_WS_PEAKS 0 --AMOUNT_OF_LEARN_ITERATIONS 50 --LOG_FILE /lustre/ssd/ws/s5968580-IL_TD/repr_variable_synthetic_5_50_20/output.txt
+    MPLCONFIGDIR=/lustre/ssd/ws/s5968580-IL_TD/cache python3 -m pipenv run python /lustre/ssd/ws/s5968580-IL_TD/imitating-weakal/imit_training.py --DATASETS_PATH ../datasets --OUTPUT_DIRECTORY ../../repr_variable_synthetic_5_50_20 --CLUSTER dummy --NR_QUERIES_PER_ITERATION 1 --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 50 --RANDOM_SEED $i --N_JOBS 1 --AMOUNT_OF_PEAKED_OBJECTS 20 --MAX_AMOUNT_OF_WS_PEAKS 0 --AMOUNT_OF_LEARN_ITERATIONS 1 --LOG_FILE /lustre/ssd/ws/s5968580-IL_TD/repr_variable_synthetic_5_50_20/output.txt
 done
 exit 0
