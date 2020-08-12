@@ -87,8 +87,7 @@ optimal_policies = pd.read_csv(DATA_PATH + "/opt_pol.csv")
 #  states = states[0:100]
 #  optimal_policies = optimal_policies[0:100]
 
-
-AMOUNT_OF_PEAKED_OBJECTS = int(len(states.columns) / 2)
+AMOUNT_OF_PEAKED_OBJECTS = len(optimal_policies.columns)
 
 
 def _binarize_targets(df, TOP_N=5):
@@ -361,8 +360,8 @@ else:
 
     Y_pred_random_probas = random_sampling_probas(X_test)
     Y_pred_random = random_sampling(X_test)
-    Y_pred_uncertainty_lc = uncertainty_sampling(X_test, strategy="least_confident")
-    Y_pred_uncertainty_mm = uncertainty_sampling(X_test, strategy="max_margin")
+    #  Y_pred_uncertainty_lc = uncertainty_sampling(X_test, strategy="least_confident")
+    #  Y_pred_uncertainty_mm = uncertainty_sampling(X_test, strategy="max_margin")
     #  Y_pred_uncertainty_ent = uncertainty_sampling(X_test, strategy="entropy")
 
     print(
@@ -371,15 +370,16 @@ else:
     print("Y_pred:\t\t", _evaluate_top_k(Y_test, Y_pred))
     print("Y_pred_random:\t", _evaluate_top_k(Y_test, Y_pred_random))
     print("Y_pred_probas:\t", _evaluate_top_k(Y_test, Y_pred_random_probas))
-    print("Y_pred_unc_lc:\t", _evaluate_top_k(Y_test, Y_pred_uncertainty_lc))
-    print("Y_pred_unc_mm:\t", _evaluate_top_k(Y_test, Y_pred_uncertainty_mm))
+    #  print("Y_pred_unc_lc:\t", _evaluate_top_k(Y_test, Y_pred_uncertainty_lc))
+    #  print("Y_pred_unc_mm:\t", _evaluate_top_k(Y_test, Y_pred_uncertainty_mm))
     #  print("Y_pred_unc_ent:\t", _evaluate_top_k(Y_test, Y_pred_uncertainty_ent))
 
     history = fitted_model.history_
-    print(history.history)
+    print(history)
+    #  print(history.history)
 
-    plt.plot(history.history["loss"])
-    plt.plot(history.history["val_loss"])
+    plt.plot(history["loss"])
+    plt.plot(history["val_loss"])
     plt.title("Model loss")
     plt.ylabel("Loss")
     plt.xlabel("Epoch")
