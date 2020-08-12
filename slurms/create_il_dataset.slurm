@@ -9,12 +9,15 @@
 #SBATCH --mail-user=julius.gonsior@tu-dresden.de   # email address
 #SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE,TIME_LIMIT
 #SBATCH -A p_ml_il
-#SBATCH --output /lustre/ssd/ws/s5968580-IL_TD/slurm_output_log.txt
-#SBATCH --error /lustre/ssd/ws/s5968580-IL_TD/slurm_error_log.txt
-#SBATCH --array 0-10000
+#SBATCH --output /lustre/ssd/ws/s5968580-IL_TD/slurm_output_repr_variable_synthetic_5_50_20.txt
+#SBATCH --error /lustre/ssd/ws/s5968580-IL_TD/slurm_error_repr_variable_synthetic_5_50_20.txt
+#SBATCH --array 1-100
 
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
 export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
 OUTFILE="" #/lustre/ssd/ws/s5968580-IL_TD/out"
-MPLCONFIGDIR=/lustre/ssd/ws/s5968580-IL_TD/cache python3 -m pipenv run python /lustre/ssd/ws/s5968580-IL_TD/imitating-weakal/imit_training.py --DATASETS_PATH ../datasets --OUTPUT_DIRECTORY ../variable_synthetic_1_50_10 --CLUSTER dummy --NR_QUERIES_PER_ITERATION 1 --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 50 --RANDOM_SEED -2 --N_JOBS 1 --AMOUNT_OF_PEAKED_OBJECTS 10 --MAX_AMOUNT_OF_WS_PEAKS 0 --AMOUNT_OF_LEARN_ITERATIONS 100 --LOG_FILE /lustre/ssd/ws/s5968580-IL_TD/variable_synthetic_1_50_10/output.txt
+for i in $(seq $((1 + 1000*$SLURM_ARRAY_TASK_ID -1000)) $((1000 + 1000*$SLURM_ARRAY_TASK_ID -1000))); 
+do
+    MPLCONFIGDIR=/lustre/ssd/ws/s5968580-IL_TD/cache python3 -m pipenv run python /lustre/ssd/ws/s5968580-IL_TD/imitating-weakal/imit_training.py --DATASETS_PATH ../datasets --OUTPUT_DIRECTORY ../repr_variable_synthetic_5_50_20 --CLUSTER dummy --NR_QUERIES_PER_ITERATION 1 --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 50 --RANDOM_SEED $i --N_JOBS 1 --AMOUNT_OF_PEAKED_OBJECTS 20 --MAX_AMOUNT_OF_WS_PEAKS 0 --AMOUNT_OF_LEARN_ITERATIONS 50 --LOG_FILE /lustre/ssd/ws/s5968580-IL_TD/repr_variable_synthetic_5_50_20/output.txt
+done
 exit 0
