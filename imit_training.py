@@ -103,6 +103,7 @@ config = standard_config(
         (["--AMOUNT_OF_PEAKED_OBJECTS"], {"type": int, "default": 12}),
         (["--MAX_AMOUNT_OF_WS_PEAKS"], {"type": int, "default": 1}),
         (["--AMOUNT_OF_LEARN_ITERATIONS"], {"type": int, "default": 1}),
+        (["--PLOT_EVOLUTION"], {"action": "store_true", "default": False}),
     ]
 )
 
@@ -125,6 +126,10 @@ if not os.path.isfile(config.OUTPUT_DIRECTORY + "/states.csv"):
             for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
         ],
     )
+
+    if not os.path.exists(config.OUTPUT_DIRECTORY):
+        os.makedirs(config.OUTPUT_DIRECTORY)
+
     states.to_csv(config.OUTPUT_DIRECTORY + "/states.csv", index=False)
     optimal_policies.to_csv(config.OUTPUT_DIRECTORY + "/opt_pol.csv", index=False)
 
@@ -151,6 +156,7 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
         df=None,
         DATASET_NAME=hyper_parameters["DATASET_NAME"],
         DATASETS_PATH=hyper_parameters["DATASETS_PATH"],
+        PLOT_EVOLUTION=hyper_parameters["PLOT_EVOLUTION"]
         #  hyper_parameters["START_SET_SIZE"],
         #  hyper_parameters["TEST_FRACTION"],
     )
