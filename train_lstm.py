@@ -87,6 +87,11 @@ optimal_policies = pd.read_csv(DATA_PATH + "/opt_pol.csv")
 #  states = states[0:100]
 #  optimal_policies = optimal_policies[0:100]
 
+states = states[states.columns.drop(list(states.filter(regex="avg_dist")))]
+states = states[states.columns.drop(list(states.filter(regex="diff")))]
+#  print(states)
+#  exit(-1)
+
 AMOUNT_OF_PEAKED_OBJECTS = len(optimal_policies.columns)
 
 
