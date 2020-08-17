@@ -111,12 +111,12 @@ if not os.path.isfile(config.OUTPUT_DIRECTORY + "/states.csv"):
     states = pd.DataFrame(
         data=None,
         columns=[str(i) + "_proba_max" for i in range(config.AMOUNT_OF_PEAKED_OBJECTS)]
-        + [str(i) + "_proba_diff" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)]
-        + [str(i) + "_avg_dist_lab" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)]
-        + [
-            str(i) + "_avg_dist_unlab"
-            for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
-        ],
+        + [str(i) + "_proba_diff" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)],
+        #  + [str(i) + "_avg_dist_lab" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)]
+        #  + [
+        #      str(i) + "_avg_dist_unlab"
+        #      for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
+        #  ],
     )
 
     optimal_policies = pd.DataFrame(
