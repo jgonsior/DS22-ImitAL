@@ -92,7 +92,7 @@ optimal_policies = pd.read_csv(DATA_PATH + "/opt_pol.csv")
 #  print(states)
 #  exit(-1)
 
-AMOUNT_OF_PEAKED_OBJECTS = int(len(states.columns) / 2)
+AMOUNT_OF_PEAKED_OBJECTS = len(optimal_policies.columns)
 
 
 def _binarize_targets(df, TOP_N=5):
