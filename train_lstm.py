@@ -87,8 +87,8 @@ optimal_policies = pd.read_csv(DATA_PATH + "/opt_pol.csv")
 #  states = states[0:100]
 #  optimal_policies = optimal_policies[0:100]
 
-states = states[states.columns.drop(list(states.filter(regex="avg_dist")))]
-states = states[states.columns.drop(list(states.filter(regex="diff")))]
+#  states = states[states.columns.drop(list(states.filter(regex="avg_dist")))]
+#  states = states[states.columns.drop(list(states.filter(regex="diff")))]
 #  print(states)
 #  exit(-1)
 
@@ -160,7 +160,7 @@ else:
 
 print(states)
 print(optimal_policies)
-
+#  exit(-1)
 # test out pointwise LTR method
 # test out pairwise LTR method, RankNet, RankSVM, RankBoost
 # test out super complex listwise LTR method (LambdaMART, ApproxNDCG, List{NET, MLE}

@@ -5,14 +5,16 @@ import multiprocessing
 from pathlib import Path
 from joblib import Parallel, delayed
 
-variable_dataset_size = True
+#  VARIABLE_DATASET_TRAINING = True
+VARIABLE_DATASET_TRAINING = False
+VARIABLE_DATASET_EVAL = False
 comparisons = ["random", "uncertainty_max_margin"]
 NR_LEARNING_SAMPLES = 100
 NR_EVALUATIONS = 100
 PARENT_OUTPUT_DIRECTORY = "tmp/"
 OUTPUT_DIRECTORY = "tmp/" + str(NR_LEARNING_SAMPLES) + "_"
 
-if variable_dataset_size:
+if VARIABLE_DATASET_TRAINING:
     VARIABLE_APPENDIX = "variable"
 else:
     VARIABLE_APPENDIX = "fixed"
@@ -25,6 +27,9 @@ print("Saving to " + OUTPUT_DIRECTORY)
 
 print("Creating dataset")
 
+
+#  @todos: VARIABLE_DATASET_TRAINING wird parameter von imit_training und von eval (2 verschiedene parameter, der für eval wird in comparisons mit aufgenommen)
+# test mit neuer Codebasis
 
 if (
     not Path(OUTPUT_DIRECTORY + "/states.csv").is_file()
@@ -43,9 +48,12 @@ if (
 
     with Parallel(n_jobs=multiprocessing.cpu_count()) as parallel:
         output = parallel(
-            delayed(create_dataset_sample)(k) for k in range(1, NR_LEARNING_SAMPLES + 1)
+            delayed(create_dataset_sample)(k)
+            for k in range(1, int(NR_LEARNING_SAMPLES / 10))
         )
     print(output)
+
+assert os.path.exists(OUTPUT_DIRECTORY + "/states.csv")
 
 print("Created states:" + str(sum(1 for l in open(OUTPUT_DIRECTORY + "/states.csv"))))
 print("Created opt_pol:" + str(sum(1 for l in open(OUTPUT_DIRECTORY + "/opt_pol.csv"))))
@@ -61,6 +69,8 @@ if not Path(OUTPUT_DIRECTORY + "/trained_ann.pickle").is_file():
         + "/trained_ann.pickle --REGULAR_DROPOUT_RATE 0.1 --OPTIMIZER RMSprop --NR_HIDDEN_NEURONS 20 --NR_HIDDEN_LAYERS 2 --LOSS CosineSimilarity --EPOCHS 1000 --BATCH_SIZE 16 --ACTIVATION elu --RANDOM_SEED 1"
     )
 
+
+assert os.path.exists(OUTPUT_DIRECTORY + "/trained_ann.pickle")
 
 if (
     not Path(OUTPUT_DIRECTORY + "/trained_ann_evaluation.csv").is_file()
@@ -91,6 +101,8 @@ if (
     text = p.read_text()
     text = text.replace("trained_nn", OUTPUT_DIRECTORY)
     p.write_text(text)
+
+assert os.path.exists(OUTPUT_DIRECTORY + "/trained_ann_evaluation.csv")
 
 amount_of_lines = sum(1 for l in open(OUTPUT_DIRECTORY + "/trained_ann_evaluation.csv"))
 print("Evaluation trained_nn size: {}".format(amount_of_lines))
@@ -136,13 +148,18 @@ for comparison in comparisons:
                 delayed(run_classic_evaluation)(k) for k in range(1, NR_EVALUATIONS + 1)
             )
         print(output)
+    assert os.path.exists(COMPARISON_PATH)
     amount_of_lines = sum(1 for l in open(COMPARISON_PATH))
     print("Evaluation " + comparison + "size: {}".format(amount_of_lines))
 
 
+#  -> hier drinnen fehlt 1000_fixed und so :)
 comparison_path = (
     PARENT_OUTPUT_DIRECTORY
-    + "comparison_"
+    + VARIABLE_APPENDIX
+    + "_"
+    + str(NR_LEARNING_SAMPLES)
+    + "_comparison_"
     + str(NR_EVALUATIONS)
     + "_"
     + "_".join(comparisons)
@@ -174,6 +191,9 @@ if not Path(comparison_path).is_file():
 
     print(df)
     df.to_csv(comparison_path, index=False)
+
+
+assert os.path.exists(comparison_path)
 
 os.system(
     "python compare_distributions.py --CSV_FILE "
