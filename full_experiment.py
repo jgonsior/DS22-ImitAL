@@ -9,12 +9,15 @@ from joblib import Parallel, delayed
 VARIABLE_DATASET_TRAINING = False
 VARIABLE_DATASET_EVAL = False
 comparisons = ["random", "uncertainty_max_margin"]
-NR_LEARNING_SAMPLES = 100
-NR_EVALUATIONS = 100
+NR_LEARNING_SAMPLES = 5
+NR_EVALUATIONS = 5
 PARENT_OUTPUT_DIRECTORY = "tmp/"
 OUTPUT_DIRECTORY = "tmp/" + str(NR_LEARNING_SAMPLES) + "_"
 REPRESENTATIVE_FEATURES = False
-N_DIMENSIONS = -1
+AMOUNT_OF_FEATURES = -1
+HYPERCUBE = False
+OLD_SYNTHETIC_PARAMS = True
+
 
 if VARIABLE_DATASET_TRAINING:
     VARIABLE_APPENDIX = "variable"
@@ -39,19 +42,45 @@ if (
 ):
 
     def create_dataset_sample(RANDOM_SEED):
-        os.system(
-            "python imit_training.py --DATASETS_PATH ../datasets --OUTPUT_DIRECTORY "
+        cli_arguments = (
+            "python imit_training.py "
+            + " --DATASETS_PATH ../datasets"
+            + " --OUTPUT_DIRECTORY "
             + OUTPUT_DIRECTORY
-            + " --CLUSTER dummy --NR_QUERIES_PER_ITERATION 5 --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 50 --RANDOM_SEED "
+            + " --CLUSTER dummy "
+            + " --NR_QUERIES_PER_ITERATION 5 "
+            + " --DATASET_NAME synthetic "
+            + " --START_SET_SIZE 1 "
+            + " --USER_QUERY_BUDGET_LIMIT 50 "
+            + " --RANDOM_SEED "
             + str(RANDOM_SEED)
-            + " --N_JOBS 1 --AMOUNT_OF_PEAKED_OBJECTS 20 --MAX_AMOUNT_OF_WS_PEAKS 0 --AMOUNT_OF_LEARN_ITERATIONS 1 --VARIABLE_INPUT_SIZE --REPRESENTATIVE_FEATURES --OLD_SYNTHETIC_PARAMS"
+            + " --N_JOBS 1"
+            + " --AMOUNT_OF_PEAKED_OBJECTS 20 "
+            + " --MAX_AMOUNT_OF_WS_PEAKS 0 "
+            + " --AMOUNT_OF_LEARN_ITERATIONS 1 "
+            + " --AMOUNT_OF_FEATURES "
+            + str(AMOUNT_OF_FEATURES)
         )
+
+        if VARIABLE_DATASET_TRAINING:
+            cli_arguments += " --VARIABLE_INPUT_SIZE "
+        if REPRESENTATIVE_FEATURES:
+            cli_arguments += " --REPRESENTATIVE_FEATURES "
+        if OLD_SYNTHETIC_PARAMS:
+            cli_arguments += " --OLD_SYNTHETIC_PARAMS "
+        if HYPERCUBE:
+            cli_arguments += " --HYPERCUBE "
+
+        os.system(cli_arguments)
         return RANDOM_SEED
+
+    nr_parallel_processes = int(NR_LEARNING_SAMPLES / 10)
+    if nr_parallel_processes == 0:
+        nr_parallel_processes = NR_LEARNING_SAMPLES + 1
 
     with Parallel(n_jobs=multiprocessing.cpu_count()) as parallel:
         output = parallel(
-            delayed(create_dataset_sample)(k)
-            for k in range(1, int(NR_LEARNING_SAMPLES / 10))
+            delayed(create_dataset_sample)(k) for k in range(1, nr_parallel_processes)
         )
     print(output)
 
