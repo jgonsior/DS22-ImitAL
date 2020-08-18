@@ -104,6 +104,11 @@ config = standard_config(
         (["--MAX_AMOUNT_OF_WS_PEAKS"], {"type": int, "default": 1}),
         (["--AMOUNT_OF_LEARN_ITERATIONS"], {"type": int, "default": 1}),
         (["--PLOT_EVOLUTION"], {"action": "store_true", "default": False}),
+        (["--VARIABLE_INPUT_SIZE"], {"action": "store_true", "default": False}),
+        (["--REPRESENTATIVE_FEATURES"], {"action": "store_true", "default": False}),
+        (["--OLD_SYNTHETIC_PARAMS"], {"action": "store_true", "default": False}),
+        (["--HYPERCUBE"], {"action": "store_true", "default": False}),
+        (["--AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
     ]
 )
 
@@ -156,7 +161,11 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
         df=None,
         DATASET_NAME=hyper_parameters["DATASET_NAME"],
         DATASETS_PATH=hyper_parameters["DATASETS_PATH"],
-        PLOT_EVOLUTION=hyper_parameters["PLOT_EVOLUTION"]
+        PLOT_EVOLUTION=hyper_parameters["PLOT_EVOLUTION"],
+        VARIABLE_INPUT_SIZE=hyper_parameters["VARIABLE_INPUT_SIZE"],
+        OLD_SYNTHETIC_PARAMS=hyper_parameters["OLD_SYNTHETIC_PARAMS"],
+        HYPERCUBE=hyper_parameters["HYPERCUBE"],
+        AMOUNT_OF_FEATURES=hyper_parameters["AMOUNT_OF_FEATURES"],
         #  hyper_parameters["START_SET_SIZE"],
         #  hyper_parameters["TEST_FRACTION"],
     )
