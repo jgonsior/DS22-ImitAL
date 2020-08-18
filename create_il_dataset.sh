@@ -1,0 +1,5 @@
+#!/bin/bash
+for i in $(seq 1 8);
+do
+    python imit_training.py --DATASETS_PATH ../datasets --OUTPUT_DIRECTORY new_old_variable --CLUSTER dummy --NR_QUERIES_PER_ITERATION 5 --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 50 --RANDOM_SEED $i --N_JOBS 1 --AMOUNT_OF_PEAKED_OBJECTS 20 --MAX_AMOUNT_OF_WS_PEAKS 0 --AMOUNT_OF_LEARN_ITERATIONS 12& 
+done
