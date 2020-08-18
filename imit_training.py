@@ -103,14 +103,25 @@ config = standard_config(
         (["--AMOUNT_OF_PEAKED_OBJECTS"], {"type": int, "default": 12}),
         (["--MAX_AMOUNT_OF_WS_PEAKS"], {"type": int, "default": 1}),
         (["--AMOUNT_OF_LEARN_ITERATIONS"], {"type": int, "default": 1}),
+        (["--PLOT_EVOLUTION"], {"action": "store_true", "default": False}),
+        (["--VARIABLE_INPUT_SIZE"], {"action": "store_true", "default": False}),
+        (["--REPRESENTATIVE_FEATURES"], {"action": "store_true", "default": False}),
+        (["--OLD_SYNTHETIC_PARAMS"], {"action": "store_true", "default": False}),
+        (["--HYPERCUBE"], {"action": "store_true", "default": False}),
+        (["--AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
     ]
 )
 
 if not os.path.isfile(config.OUTPUT_DIRECTORY + "/states.csv"):
     states = pd.DataFrame(
         data=None,
-        columns=[str(i) + "_proba_0" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)]
-        + [str(i) + "_proba_1" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)],
+        columns=[str(i) + "_proba_max" for i in range(config.AMOUNT_OF_PEAKED_OBJECTS)]
+        + [str(i) + "_proba_diff" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)],
+        #  + [str(i) + "_avg_dist_lab" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)]
+        #  + [
+        #      str(i) + "_avg_dist_unlab"
+        #      for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
+        #  ],
     )
 
     optimal_policies = pd.DataFrame(
@@ -120,15 +131,17 @@ if not os.path.isfile(config.OUTPUT_DIRECTORY + "/states.csv"):
             for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
         ],
     )
+
+    if not os.path.exists(config.OUTPUT_DIRECTORY):
+        os.makedirs(config.OUTPUT_DIRECTORY)
+
     states.to_csv(config.OUTPUT_DIRECTORY + "/states.csv", index=False)
     optimal_policies.to_csv(config.OUTPUT_DIRECTORY + "/opt_pol.csv", index=False)
-
 
 if config.RANDOM_SEED == -2:
     random_but_not_random = True
 else:
     random_but_not_random = False
-
 
 init_logger(config.LOG_FILE)
 for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
@@ -148,6 +161,11 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
         df=None,
         DATASET_NAME=hyper_parameters["DATASET_NAME"],
         DATASETS_PATH=hyper_parameters["DATASETS_PATH"],
+        PLOT_EVOLUTION=hyper_parameters["PLOT_EVOLUTION"],
+        VARIABLE_INPUT_SIZE=hyper_parameters["VARIABLE_INPUT_SIZE"],
+        OLD_SYNTHETIC_PARAMS=hyper_parameters["OLD_SYNTHETIC_PARAMS"],
+        HYPERCUBE=hyper_parameters["HYPERCUBE"],
+        AMOUNT_OF_FEATURES=hyper_parameters["AMOUNT_OF_FEATURES"],
         #  hyper_parameters["START_SET_SIZE"],
         #  hyper_parameters["TEST_FRACTION"],
     )

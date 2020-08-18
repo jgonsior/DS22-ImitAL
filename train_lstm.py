@@ -87,6 +87,10 @@ optimal_policies = pd.read_csv(DATA_PATH + "/opt_pol.csv")
 #  states = states[0:100]
 #  optimal_policies = optimal_policies[0:100]
 
+#  states = states[states.columns.drop(list(states.filter(regex="avg_dist")))]
+#  states = states[states.columns.drop(list(states.filter(regex="diff")))]
+#  print(states)
+#  exit(-1)
 
 AMOUNT_OF_PEAKED_OBJECTS = int(len(states.columns) / 2)
 
@@ -234,10 +238,10 @@ if config.HYPER_SEARCH:
         ],
         "regular_dropout_rate": [0, 0.1, 0.2, 0.3],
         #  "recurrentDropoutRate": [0, 0.1, 0.2],
-        "nr_hidden_neurons": [10, 20, 40, 80, 120],
+        "nr_hidden_neurons": [10, 20, 40, 80],  # , 120],
         "epochs": [1000],  # <- early stopping :)
-        "nr_hidden_layers": [1, 2, 4, 8, 16],  # 16, 32, 64],  # , 2],
-        "batch_size": [16, 32, 64],  # , 128],
+        "nr_hidden_layers": [1, 2, 4, 8],  # , 16],  # 16, 32, 64],  # , 2],
+        "batch_size": [8, 16, 32, 64],  # , 128],
         #  "nTs": [15000],
         #  "k2": [1000],
         #  "diff": [False],
@@ -347,12 +351,12 @@ else:
     def uncertainty_sampling(X_test, strategy="least_confident"):
         df = X_test.copy()
         if strategy == "least_confident":
-            df = df.loc[:, ~df.columns.str.endswith("_proba_1")]
+            df = df.loc[:, ~df.columns.str.endswith("_proba_diff")]
         elif strategy == "max_margin":
             for i in df.columns:
-                if i.endswith("1"):
+                if i.endswith("diff"):
                     continue
-                df[i[0 : i.find("_")]] = df[i] - df[i[:-1] + "1"]
+                df[i[0 : i.find("_")]] = df[i] - df[i[:-3] + "diff"]
             df = df.loc[:, ~df.columns.str.contains("_")]
         # for entropy we are lacking the other classes
         #  elif strategy == "entropy":
