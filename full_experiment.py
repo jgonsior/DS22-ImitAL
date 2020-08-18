@@ -122,7 +122,7 @@ if (
 ):
 
     def run_evaluation(RANDOM_SEED):
-        os.system(
+        cli_arguments = (
             "python single_al_cycle.py --NN_BINARY "
             + OUTPUT_DIRECTORY
             + "/trained_ann.pickle --OUTPUT_DIRECTORY "
@@ -130,7 +130,21 @@ if (
             + "/trained_ann_evaluation.csv --SAMPLING trained_nn --CLUSTER dummy --NR_QUERIES_PER_ITERATION 5 --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 50 --RANDOM_SEED "
             + str(RANDOM_SEED)
             + " --N_JOBS 1"
+            + " --AMOUNT_OF_FEATURES "
+            + str(AMOUNT_OF_FEATURES)
         )
+
+        if VARIABLE_DATASET_TRAINING:
+            cli_arguments += " --VARIABLE_INPUT_SIZE "
+        if REPRESENTATIVE_FEATURES:
+            cli_arguments += " --REPRESENTATIVE_FEATURES "
+        if OLD_SYNTHETIC_PARAMS:
+            cli_arguments += " --OLD_SYNTHETIC_PARAMS "
+        if HYPERCUBE:
+            cli_arguments += " --HYPERCUBE "
+
+        os.system(cli_arguments)
+
         return RANDOM_SEED
 
     with Parallel(n_jobs=multiprocessing.cpu_count(), backend="threading") as parallel:
@@ -177,7 +191,7 @@ for comparison in comparisons:
     ):
 
         def run_classic_evaluation(RANDOM_SEED):
-            os.system(
+            cli_arguments = (
                 "python single_al_cycle.py --OUTPUT_DIRECTORY "
                 + COMPARISON_PATH
                 + " --SAMPLING "
@@ -185,7 +199,21 @@ for comparison in comparisons:
                 + " --CLUSTER dummy --NR_QUERIES_PER_ITERATION 5 --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 50 --RANDOM_SEED "
                 + str(RANDOM_SEED)
                 + " --N_JOBS 1"
+                + " --AMOUNT_OF_FEATURES "
+                + str(AMOUNT_OF_FEATURES)
             )
+
+            if VARIABLE_DATASET_TRAINING:
+                cli_arguments += " --VARIABLE_INPUT_SIZE "
+            if REPRESENTATIVE_FEATURES:
+                cli_arguments += " --REPRESENTATIVE_FEATURES "
+            if OLD_SYNTHETIC_PARAMS:
+                cli_arguments += " --OLD_SYNTHETIC_PARAMS "
+            if HYPERCUBE:
+                cli_arguments += " --HYPERCUBE "
+
+            os.system(cli_arguments)
+
             return RANDOM_SEED
 
         with Parallel(
