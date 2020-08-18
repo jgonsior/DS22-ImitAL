@@ -13,6 +13,8 @@ NR_LEARNING_SAMPLES = 100
 NR_EVALUATIONS = 100
 PARENT_OUTPUT_DIRECTORY = "tmp/"
 OUTPUT_DIRECTORY = "tmp/" + str(NR_LEARNING_SAMPLES) + "_"
+REPRESENTATIVE_FEATURES = False
+
 
 if VARIABLE_DATASET_TRAINING:
     VARIABLE_APPENDIX = "variable"
@@ -199,4 +201,6 @@ os.system(
     "python compare_distributions.py --CSV_FILE "
     + comparison_path
     + "  --GROUP_COLUMNS sampling"
+    + " --SAVE_FILE "
+    + comparison_path
 )

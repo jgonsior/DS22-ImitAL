@@ -22,6 +22,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--CSV_FILE", default="tmp/hyper_parameters.csv")
 parser.add_argument("--GROUP_COLUMNS", action="append")
 parser.add_argument("--VALUE_GROUPINGS")
+parser.add_argument("--SAVE_FILE", default=None)
 
 
 config = parser.parse_args()
@@ -32,7 +33,7 @@ if len(sys.argv[:-1]) == 0:
 
 
 def plot_distributions(
-    selection_list, axvline=False, save=False, title="", **kwargs,
+    selection_list, axvline=False, SAVE_FILE=None, title="", **kwargs,
 ):
     sns.set(
         font_scale=1,
@@ -68,17 +69,17 @@ def plot_distributions(
     ax.set_title(title)
     plt.xlabel("Test Accuracy")
     plt.tight_layout()
-    if save:
+    if SAVE_FILE is not None:
         if title == "":
             title = "comparison_dist"
-        plt.savefig("plots/" + title.replace("\n", "_").replace(" ", "") + ".pdf")
-        plt.savefig("plots/" + title.replace("\n", "_").replace(" ", "") + ".png")
+        plt.savefig(SAVE_FILE + ".pdf")
+        plt.savefig(SAVE_FILE + ".png")
     else:
         plt.show()
     plt.clf()
 
 
-def compare_distributions(CSV_FILE, GROUP_COLUMNS, VALUE_GROUPINGS):
+def compare_distributions(CSV_FILE, GROUP_COLUMNS, VALUE_GROUPINGS, SAVE_FILE):
     df = pd.read_csv(CSV_FILE)
     print(df.head)
     #  exit(-1)
@@ -93,10 +94,12 @@ def compare_distributions(CSV_FILE, GROUP_COLUMNS, VALUE_GROUPINGS):
         selection = df.loc[sel]["acc_test_oracle"]
         if len(selection) != 0:
             sels.append((selection, comb))
-    plot_distributions(sels, axvline=True, save=False, title="")
+    plot_distributions(sels, axvline=True, SAVE_FILE=SAVE_FILE, title="")
 
 
-compare_distributions(config.CSV_FILE, config.GROUP_COLUMNS, config.VALUE_GROUPINGS)
+compare_distributions(
+    config.CSV_FILE, config.GROUP_COLUMNS, config.VALUE_GROUPINGS, config.SAVE_FILE
+)
 
 exit(1)
 
