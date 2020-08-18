@@ -61,18 +61,18 @@ if (
             + " --AMOUNT_OF_PEAKED_OBJECTS 20 "
             + " --MAX_AMOUNT_OF_WS_PEAKS 0 "
             + " --AMOUNT_OF_LEARN_ITERATIONS 1 "
-            + " --AMOUNT_OF_FEATURES "
-            + str(AMOUNT_OF_FEATURES)
+            #  + " --AMOUNT_OF_FEATURES "
+            #  + str(AMOUNT_OF_FEATURES)
         )
 
-        if VARIABLE_DATASET_TRAINING:
-            cli_arguments += " --VARIABLE_INPUT_SIZE "
-        if REPRESENTATIVE_FEATURES:
-            cli_arguments += " --REPRESENTATIVE_FEATURES "
-        if OLD_SYNTHETIC_PARAMS:
-            cli_arguments += " --OLD_SYNTHETIC_PARAMS "
-        if HYPERCUBE:
-            cli_arguments += " --HYPERCUBE "
+        #  if VARIABLE_DATASET_TRAINING:
+        #      cli_arguments += " --VARIABLE_INPUT_SIZE "
+        #  if REPRESENTATIVE_FEATURES:
+        #      cli_arguments += " --REPRESENTATIVE_FEATURES "
+        #  if OLD_SYNTHETIC_PARAMS:
+        #      cli_arguments += " --OLD_SYNTHETIC_PARAMS "
+        #  if HYPERCUBE:
+        #      cli_arguments += " --HYPERCUBE "
 
         os.system(cli_arguments)
         return RANDOM_SEED
@@ -256,6 +256,6 @@ os.system(
     "python compare_distributions.py --CSV_FILE "
     + comparison_path
     + "  --GROUP_COLUMNS sampling"
-    + " --SAVE_FILE "
-    + comparison_path
+    #  + " --SAVE_FILE "
+    #  + comparison_path
 )
