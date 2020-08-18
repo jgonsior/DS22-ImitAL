@@ -64,6 +64,11 @@ config = standard_config(
         (["--MAX_AMOUNT_OF_WS_PEAKS"], {"type": int, "default": 1}),
         (["--NN_BINARY"], {"type": str}),
         (["--AMOUNT_OF_RANDOM_QUERY_SETS"], {"type": int, "default": 1}),
+        (["--VARIABLE_INPUT_SIZE"], {"action": "store_true", "default": False}),
+        (["--REPRESENTATIVE_FEATURES"], {"action": "store_true", "default": False}),
+        (["--OLD_SYNTHETIC_PARAMS"], {"action": "store_true", "default": False}),
+        (["--HYPERCUBE"], {"action": "store_true", "default": False}),
+        (["--AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
     ]
 )
 

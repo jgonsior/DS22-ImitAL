@@ -9,13 +9,13 @@ from joblib import Parallel, delayed
 VARIABLE_DATASET_TRAINING = False
 VARIABLE_DATASET_EVAL = False
 comparisons = ["random", "uncertainty_max_margin"]
-NR_LEARNING_SAMPLES = 5
-NR_EVALUATIONS = 5
+NR_LEARNING_SAMPLES = 100
+NR_EVALUATIONS = 100
 PARENT_OUTPUT_DIRECTORY = "tmp/"
 OUTPUT_DIRECTORY = "tmp/" + str(NR_LEARNING_SAMPLES) + "_"
 REPRESENTATIVE_FEATURES = False
 AMOUNT_OF_FEATURES = -1
-HYPERCUBE = False
+HYPERCUBE = True
 OLD_SYNTHETIC_PARAMS = True
 
 
@@ -30,7 +30,10 @@ Path(OUTPUT_DIRECTORY).mkdir(parents=True, exist_ok=True)
 
 print("Saving to " + OUTPUT_DIRECTORY)
 
+print("#" * 80)
 print("Creating dataset")
+print("#" * 80)
+print("\n")
 
 
 #  @todos: VARIABLE_DATASET_TRAINING wird parameter von imit_training und von eval (2 verschiedene parameter, der für eval wird in comparisons mit aufgenommen)
@@ -89,6 +92,10 @@ assert os.path.exists(OUTPUT_DIRECTORY + "/states.csv")
 print("Created states:" + str(sum(1 for l in open(OUTPUT_DIRECTORY + "/states.csv"))))
 print("Created opt_pol:" + str(sum(1 for l in open(OUTPUT_DIRECTORY + "/opt_pol.csv"))))
 
+print("#" * 80)
+print("Training ANN")
+print("#" * 80)
+print("\n")
 
 if not Path(OUTPUT_DIRECTORY + "/trained_ann.pickle").is_file():
     print("Training ann")
@@ -102,6 +109,11 @@ if not Path(OUTPUT_DIRECTORY + "/trained_ann.pickle").is_file():
 
 
 assert os.path.exists(OUTPUT_DIRECTORY + "/trained_ann.pickle")
+
+print("#" * 80)
+print("Creating evaluation ann data")
+print("#" * 80)
+print("\n")
 
 if (
     not Path(OUTPUT_DIRECTORY + "/trained_ann_evaluation.csv").is_file()
@@ -138,6 +150,10 @@ assert os.path.exists(OUTPUT_DIRECTORY + "/trained_ann_evaluation.csv")
 amount_of_lines = sum(1 for l in open(OUTPUT_DIRECTORY + "/trained_ann_evaluation.csv"))
 print("Evaluation trained_nn size: {}".format(amount_of_lines))
 
+print("#" * 80)
+print("Creating classic evaluation data")
+print("#" * 80)
+print("\n")
 
 # check if the other evaluation csvs already exist
 for comparison in comparisons:
@@ -184,6 +200,11 @@ for comparison in comparisons:
     print("Evaluation " + comparison + "size: {}".format(amount_of_lines))
 
 
+print("#" * 80)
+print("Generating evaluation CSV")
+print("#" * 80)
+print("\n")
+
 #  -> hier drinnen fehlt 1000_fixed und so :)
 comparison_path = (
     PARENT_OUTPUT_DIRECTORY
@@ -225,6 +246,11 @@ if not Path(comparison_path).is_file():
 
 
 assert os.path.exists(comparison_path)
+
+print("#" * 80)
+print("Evaluation plots")
+print("#" * 80)
+print("\n")
 
 os.system(
     "python compare_distributions.py --CSV_FILE "
