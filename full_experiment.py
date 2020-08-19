@@ -21,7 +21,8 @@ param_string = ""
 
 for k, v in params.items():
     if type(v) == bool:
-        param_string += "_" + k.lower()
+        if v:
+            param_string += "_" + k.lower()
     else:
         param_string += "_" + str(v)
 
@@ -169,7 +170,10 @@ print("#" * 80)
 print("\n")
 params = {
     "VARIABLE_DATASET": True,
-    "comparisons": ["uncertainty_max_margin"],  # ["random", "uncertainty_max_margin"],
+    "comparisons": [
+        "uncertainty_max_margin",
+        "random",
+    ],  # ["random", "uncertainty_max_margin"],
     "NR_EVALUATIONS": 100,
     "REPRESENTATIVE_FEATURES": False,
     "AMOUNT_OF_FEATURES": -1,
@@ -180,8 +184,11 @@ params = {
 CLASSIC_PREFIX = ""
 
 for k, v in params.items():
+    if k == "comparisons":
+        continue
     if type(v) == bool:
-        CLASSIC_PREFIX += "_" + k.lower()
+        if v:
+            CLASSIC_PREFIX += "_" + k.lower()
     else:
         CLASSIC_PREFIX += "_" + str(v)
 
@@ -245,7 +252,14 @@ print("#" * 80)
 print("\n")
 
 #  -> hier drinnen fehlt 1000_fixed und so :)
-comparison_path = OUTPUT_DIRECTORY + "_".join(params["comparisons"]) + ".csv"
+comparison_path = (
+    PARENT_OUTPUT_DIRECTORY
+    + CLASSIC_PREFIX
+    + param_string
+    + "_".join(params["comparisons"])
+    + ".csv"
+)
+#  PARENT_OUTPUT_DIRECTORY + "classics/" + comparison + CLASSIC_PREFIX + ".csv"
 print(comparison_path)
 
 if not Path(comparison_path).is_file():
@@ -260,7 +274,6 @@ if not Path(comparison_path).is_file():
             PARENT_OUTPUT_DIRECTORY
             + "classics/"
             + comparison
-            + "_"
             + CLASSIC_PREFIX
             + ".csv",
             index_col=None,
