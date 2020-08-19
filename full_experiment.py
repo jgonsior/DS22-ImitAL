@@ -4,17 +4,41 @@ import subprocess
 import multiprocessing
 from pathlib import Path
 from joblib import Parallel, delayed
+from active_learning.experiment_setup_lib import standard_config
+
+
+config = standard_config(
+    [
+        (["--RANDOM_SEED"], {"default": 1}),
+        (["--LOG_FILE"], {"default": "log.txt"}),
+        (["--OUTPUT_DIRECTORY"], {"default": "/tmp"}),
+        (["--TRAIN_VARIABLE_DATASET"], {"action": "store_true"}),
+        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 100}),
+        (["--TRAIN_REPRESENTATIVE_FEATURES"], {"action": "store_true"}),
+        (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
+        (["--TRAIN_HYPERCUBE"], {"action": "store_true"}),
+        (["--TRAIN_OLD_SYNTHETIC_PARAMS"], {"action": "store_true"}),
+        (["--TEST_VARIABLE_DATASET"], {"action": "store_true"}),
+        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 100}),
+        (["--TEST_REPRESENTATIVE_FEATURES"], {"action": "store_true"}),
+        (["--TEST_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
+        (["--TEST_HYPERCUBE"], {"action": "store_true"}),
+        (["--TEST_OLD_SYNTHETIC_PARAMS"], {"action": "store_true"}),
+        (["--TEST_COMPARISONS"], {"nargs": "+"}),
+    ],
+    standard_args=False,
+)
+
 
 PARENT_OUTPUT_DIRECTORY = "tmp/"
 
 params = {
-    "NR_EVALUATIONS": 100,
-    "VARIABLE_DATASET": True,
-    "NR_LEARNING_SAMPLES": 100,
-    "REPRESENTATIVE_FEATURES": False,
-    "AMOUNT_OF_FEATURES": -1,
-    "HYPERCUBE": True,
-    "OLD_SYNTHETIC_PARAMS": False,
+    "VARIABLE_DATASET": config.TRAIN_VARIABLE_DATASET,
+    "NR_LEARNING_SAMPLES": config.TRAIN_NR_LEARNING_SAMPLES,
+    "REPRESENTATIVE_FEATURES": config.TRAIN_REPRESENTATIVE_FEATURES,
+    "AMOUNT_OF_FEATURES": config.TRAIN_AMOUNT_OF_FEATURES,
+    "HYPERCUBE": config.TRAIN_HYPERCUBE,
+    "OLD_SYNTHETIC_PARAMS": config.TRAIN_OLD_SYNTHETIC_PARAMS,
 }
 
 param_string = ""
@@ -109,16 +133,40 @@ if not Path(OUTPUT_DIRECTORY + "/trained_ann.pickle").is_file():
 
 
 assert os.path.exists(OUTPUT_DIRECTORY + "/trained_ann.pickle")
-
+OUTPUT_DIRECTORY
 print("#" * 80)
 print("Creating evaluation ann data")
 print("#" * 80)
 print("\n")
 
+params = {
+    "VARIABLE_DATASET": config.TEST_VARIABLE_DATASET,
+    "comparisons": config.TEST_COMPARISONS,
+    # ["random", "uncertainty_max_margin"],
+    "NR_EVALUATIONS": config.TEST_NR_LEARNING_SAMPLES,
+    "REPRESENTATIVE_FEATURES": config.TEST_REPRESENTATIVE_FEATURES,
+    "AMOUNT_OF_FEATURES": config.TEST_AMOUNT_OF_FEATURES,
+    "HYPERCUBE": config.TEST_HYPERCUBE,
+    "OLD_SYNTHETIC_PARAMS": config.TEST_OLD_SYNTHETIC_PARAMS,
+}
+
+CLASSIC_PREFIX = ""
+
+for k, v in params.items():
+    if k == "comparisons":
+        continue
+    if type(v) == bool:
+        if v:
+            CLASSIC_PREFIX += "_" + k.lower()
+    else:
+        CLASSIC_PREFIX += "_" + str(v)
+
+
+trained_ann_csv_path = OUTPUT_DIRECTORY + CLASSIC_PREFIX + ".csv"
+
 if (
-    not Path(OUTPUT_DIRECTORY + "/trained_ann_evaluation.csv").is_file()
-    or sum(1 for l in open(OUTPUT_DIRECTORY + "/trained_ann_evaluation.csv"))
-    < params["NR_EVALUATIONS"]
+    not Path(trained_ann_csv_path).is_file()
+    or sum(1 for l in open(trained_ann_csv_path)) < params["NR_EVALUATIONS"]
 ):
 
     def run_evaluation(RANDOM_SEED):
@@ -126,8 +174,8 @@ if (
             "python single_al_cycle.py --NN_BINARY "
             + OUTPUT_DIRECTORY
             + "/trained_ann.pickle --OUTPUT_DIRECTORY "
-            + OUTPUT_DIRECTORY
-            + "/trained_ann_evaluation.csv --SAMPLING trained_nn --CLUSTER dummy --NR_QUERIES_PER_ITERATION 5 --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 50 --RANDOM_SEED "
+            + trained_ann_csv_path
+            + " --SAMPLING trained_nn --CLUSTER dummy --NR_QUERIES_PER_ITERATION 5 --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 50 --RANDOM_SEED "
             + str(RANDOM_SEED)
             + " --N_JOBS 1"
             + " --AMOUNT_OF_FEATURES "
@@ -154,12 +202,12 @@ if (
     print(output)
 
     # rename sampling column
-    p = Path(OUTPUT_DIRECTORY + "/trained_ann_evaluation.csv")
+    p = Path(trained_ann_csv_path)
     text = p.read_text()
     text = text.replace("trained_nn", OUTPUT_DIRECTORY)
     p.write_text(text)
 
-assert os.path.exists(OUTPUT_DIRECTORY + "/trained_ann_evaluation.csv")
+assert os.path.exists(trained_ann_csv_path)
 
 amount_of_lines = sum(1 for l in open(OUTPUT_DIRECTORY + "/trained_ann_evaluation.csv"))
 print("Evaluation trained_nn size: {}".format(amount_of_lines))
@@ -168,30 +216,6 @@ print("#" * 80)
 print("Creating classic evaluation data")
 print("#" * 80)
 print("\n")
-params = {
-    "VARIABLE_DATASET": True,
-    "comparisons": [
-        "uncertainty_max_margin",
-        "random",
-    ],  # ["random", "uncertainty_max_margin"],
-    "NR_EVALUATIONS": 100,
-    "REPRESENTATIVE_FEATURES": False,
-    "AMOUNT_OF_FEATURES": -1,
-    "HYPERCUBE": True,
-    "OLD_SYNTHETIC_PARAMS": False,
-}
-
-CLASSIC_PREFIX = ""
-
-for k, v in params.items():
-    if k == "comparisons":
-        continue
-    if type(v) == bool:
-        if v:
-            CLASSIC_PREFIX += "_" + k.lower()
-    else:
-        CLASSIC_PREFIX += "_" + str(v)
-
 
 # check if the other evaluation csvs already exist
 for comparison in params["comparisons"]:
@@ -254,8 +278,8 @@ print("\n")
 #  -> hier drinnen fehlt 1000_fixed und so :)
 comparison_path = (
     PARENT_OUTPUT_DIRECTORY
-    + CLASSIC_PREFIX
     + param_string
+    + CLASSIC_PREFIX
     + "_".join(params["comparisons"])
     + ".csv"
 )
