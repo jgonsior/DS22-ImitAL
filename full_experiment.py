@@ -25,6 +25,7 @@ config = standard_config(
         (["--TEST_HYPERCUBE"], {"action": "store_true"}),
         (["--TEST_OLD_SYNTHETIC_PARAMS"], {"action": "store_true"}),
         (["--TEST_COMPARISONS"], {"nargs": "+"}),
+        (["--FINAL_PICTURE"], {"default": ""}),
     ],
     standard_args=False,
 )
@@ -43,6 +44,8 @@ params = {
 param_string = ""
 
 for k, v in params.items():
+    if k == "FINAL_PICTURE":
+        continue
     if type(v) == bool:
         if v:
             param_string += "_" + k.lower()
@@ -152,7 +155,7 @@ params = {
 CLASSIC_PREFIX = ""
 
 for k, v in params.items():
-    if k == "comparisons":
+    if k == "comparisons" or k == "FINAL_PICTURE":
         continue
     if type(v) == bool:
         if v:
@@ -274,15 +277,16 @@ print("Generating evaluation CSV")
 print("#" * 80)
 print("\n")
 
-#  -> hier drinnen fehlt 1000_fixed und so :)
-comparison_path = (
-    PARENT_OUTPUT_DIRECTORY
-    + param_string
-    + CLASSIC_PREFIX
-    + "_".join(params["comparisons"])
-    + ".csv"
-)
-#  PARENT_OUTPUT_DIRECTORY + "classics/" + comparison + CLASSIC_PREFIX + ".csv"
+if config.FINAL_PICTURE == "":
+    comparison_path = (
+        PARENT_OUTPUT_DIRECTORY
+        + param_string
+        + CLASSIC_PREFIX
+        + "_".join(params["comparisons"])
+        + ".csv"
+    )
+else:
+    comparison_path = config.FINAL_PICTURE
 print(comparison_path)
 
 if not Path(comparison_path).is_file():
