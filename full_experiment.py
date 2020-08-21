@@ -112,12 +112,9 @@ if (
         output = parallel(
             delayed(create_dataset_sample)(k) for k in range(1, nr_parallel_processes)
         )
-    print(output)
+    #  print(output)
 
 assert os.path.exists(OUTPUT_DIRECTORY + "/states.csv")
-
-print("Created states:" + str(sum(1 for l in open(OUTPUT_DIRECTORY + "/states.csv"))))
-print("Created opt_pol:" + str(sum(1 for l in open(OUTPUT_DIRECTORY + "/opt_pol.csv"))))
 
 print("#" * 80)
 print("Training ANN")
@@ -210,7 +207,7 @@ if (
         output = parallel(
             delayed(run_evaluation)(k) for k in range(1, params["NR_EVALUATIONS"] + 1)
         )
-    print(output)
+    #  print(output)
 
     # rename sampling column
     p = Path(trained_ann_csv_path)
@@ -275,7 +272,7 @@ for comparison in params["comparisons"]:
                 delayed(run_classic_evaluation)(k)
                 for k in range(1, params["NR_EVALUATIONS"] + 1)
             )
-        print(output)
+        #  print(output)
     assert os.path.exists(COMPARISON_PATH)
     amount_of_lines = sum(1 for l in open(COMPARISON_PATH))
     print("Evaluation " + comparison + "size: {}".format(amount_of_lines))
@@ -315,7 +312,7 @@ if not Path(comparison_path).is_file():
         )
         df = pd.concat([df, df2])
 
-    print(df)
+    #  print(df)
     df.to_csv(comparison_path, index=False)
 
 
