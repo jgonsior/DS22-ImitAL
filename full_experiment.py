@@ -17,13 +17,13 @@ config = standard_config(
         (["--TRAIN_REPRESENTATIVE_FEATURES"], {"action": "store_true"}),
         (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TRAIN_HYPERCUBE"], {"action": "store_true"}),
-        (["--TRAIN_OLD_SYNTHETIC_PARAMS"], {"action": "store_true"}),
+        (["--TRAIN_NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
         (["--TEST_VARIABLE_DATASET"], {"action": "store_true"}),
         (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 100}),
         (["--TEST_REPRESENTATIVE_FEATURES"], {"action": "store_true"}),
         (["--TEST_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TEST_HYPERCUBE"], {"action": "store_true"}),
-        (["--TEST_OLD_SYNTHETIC_PARAMS"], {"action": "store_true"}),
+        (["--TEST_NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
         (
             ["--TEST_COMPARISONS"],
             {"nargs": "+", "default": ["random", "uncertainty_max_margin"]},
@@ -41,7 +41,7 @@ params = {
     "REPRESENTATIVE_FEATURES": config.TRAIN_REPRESENTATIVE_FEATURES,
     "AMOUNT_OF_FEATURES": config.TRAIN_AMOUNT_OF_FEATURES,
     "HYPERCUBE": config.TRAIN_HYPERCUBE,
-    "OLD_SYNTHETIC_PARAMS": config.TRAIN_OLD_SYNTHETIC_PARAMS,
+    "NEW_SYNTHETIC_PARAMS": config.TRAIN_NEW_SYNTHETIC_PARAMS,
 }
 param_string = ""
 
@@ -96,8 +96,8 @@ if (
             cli_arguments += " --VARIABLE_INPUT_SIZE "
         if params["REPRESENTATIVE_FEATURES"]:
             cli_arguments += " --REPRESENTATIVE_FEATURES "
-        if params["OLD_SYNTHETIC_PARAMS"]:
-            cli_arguments += " --OLD_SYNTHETIC_PARAMS "
+        if params["NEW_SYNTHETIC_PARAMS"]:
+            cli_arguments += " --NEW_SYNTHETIC_PARAMS "
         if params["HYPERCUBE"]:
             cli_arguments += " --HYPERCUBE "
 
@@ -147,7 +147,7 @@ params = {
     "REPRESENTATIVE_FEATURES": config.TEST_REPRESENTATIVE_FEATURES,
     "AMOUNT_OF_FEATURES": config.TEST_AMOUNT_OF_FEATURES,
     "HYPERCUBE": config.TEST_HYPERCUBE,
-    "OLD_SYNTHETIC_PARAMS": config.TEST_OLD_SYNTHETIC_PARAMS,
+    "NEW_SYNTHETIC_PARAMS": config.TEST_NEW_SYNTHETIC_PARAMS,
 }
 
 CLASSIC_PREFIX = ""
@@ -194,8 +194,8 @@ if (
             cli_arguments += " --VARIABLE_INPUT_SIZE "
         if params["REPRESENTATIVE_FEATURES"]:
             cli_arguments += " --REPRESENTATIVE_FEATURES "
-        if params["OLD_SYNTHETIC_PARAMS"]:
-            cli_arguments += " --OLD_SYNTHETIC_PARAMS "
+        if params["NEW_SYNTHETIC_PARAMS"]:
+            cli_arguments += " --NEW_SYNTHETIC_PARAMS "
         if params["HYPERCUBE"]:
             cli_arguments += " --HYPERCUBE "
 
@@ -256,8 +256,8 @@ for comparison in params["comparisons"]:
                 cli_arguments += " --VARIABLE_INPUT_SIZE "
             if params["REPRESENTATIVE_FEATURES"]:
                 cli_arguments += " --REPRESENTATIVE_FEATURES "
-            if params["OLD_SYNTHETIC_PARAMS"]:
-                cli_arguments += " --OLD_SYNTHETIC_PARAMS "
+            if params["NEW_SYNTHETIC_PARAMS"]:
+                cli_arguments += " --NEW_SYNTHETIC_PARAMS "
             if params["HYPERCUBE"]:
                 cli_arguments += " --HYPERCUBE "
 

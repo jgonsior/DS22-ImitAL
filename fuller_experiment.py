@@ -10,7 +10,7 @@ from active_learning.experiment_setup_lib import standard_config
 # python fuller_experiment.py --TRAIN_AMOUNT_OF_FEATURES 2 means that we call it once with this, and once with the default values, and compare both
 # python fuller_experiment.py --TRAIN_AMOUNT_OF_FEATURES 2 3 means that we call it once with 2, and once with 3, and once with default values
 # python fuller_experiment.py --TRAIN_HYPERCUBE means that we call it once with, and once without
-# python fuller_experiment --TRAIN_HYPERCUBE --TEST_OLD_SYNTHETIC_PARAMS means that we have a 2x2 comparisn
+# python fuller_experiment --TRAIN_HYPERCUBE --TEST_NEW_SYNTHETIC_PARAMS means that we have a 2x2 comparisn
 
 config = standard_config(
     [
@@ -22,13 +22,13 @@ config = standard_config(
         (["--TRAIN_REPRESENTATIVE_FEATURES"], {"default": "default"}),
         (["--TRAIN_AMOUNT_OF_FEATURES"], {"default": "default"}),
         (["--TRAIN_HYPERCUBE"], {"default": "default"}),
-        (["--TRAIN_OLD_SYNTHETIC_PARAMS"], {"default": "default"}),
+        (["--TRAIN_NEW_SYNTHETIC_PARAMS"], {"default": "default"}),
         (["--TEST_VARIABLE_DATASET"], {"default": "default"}),
         (["--TEST_NR_LEARNING_SAMPLES"], {"default": "default"}),
         (["--TEST_REPRESENTATIVE_FEATURES"], {"default": "default"}),
         (["--TEST_AMOUNT_OF_FEATURES"], {"default": "default"}),
         (["--TEST_HYPERCUBE"], {"default": "default"}),
-        (["--TEST_OLD_SYNTHETIC_PARAMS"], {"default": "default"}),
+        (["--TEST_NEW_SYNTHETIC_PARAMS"], {"default": "default"}),
         (["--TEST_COMPARISONS"], {"default": "default"}),
     ],
     standard_args=False,

@@ -66,7 +66,7 @@ config = standard_config(
         (["--AMOUNT_OF_RANDOM_QUERY_SETS"], {"type": int, "default": 1}),
         (["--VARIABLE_INPUT_SIZE"], {"action": "store_true"}),
         (["--REPRESENTATIVE_FEATURES"], {"action": "store_true"}),
-        (["--OLD_SYNTHETIC_PARAMS"], {"action": "store_true"}),
+        (["--NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
         (["--HYPERCUBE"], {"action": "store_true"}),
         (["--AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
     ]
