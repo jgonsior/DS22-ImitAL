@@ -103,11 +103,11 @@ config = standard_config(
         (["--AMOUNT_OF_PEAKED_OBJECTS"], {"type": int, "default": 12}),
         (["--MAX_AMOUNT_OF_WS_PEAKS"], {"type": int, "default": 1}),
         (["--AMOUNT_OF_LEARN_ITERATIONS"], {"type": int, "default": 1}),
-        (["--PLOT_EVOLUTION"], {"action": "store_true", "default": False}),
-        (["--VARIABLE_INPUT_SIZE"], {"action": "store_true", "default": False}),
-        (["--REPRESENTATIVE_FEATURES"], {"action": "store_true", "default": False}),
-        (["--NEW_SYNTHETIC_PARAMS"], {"action": "store_true", "default": False}),
-        (["--HYPERCUBE"], {"action": "store_true", "default": False}),
+        (["--PLOT_EVOLUTION"], {"action": "store_true"}),
+        (["--VARIABLE_INPUT_SIZE"], {"action": "store_true"}),
+        (["--REPRESENTATIVE_FEATURES"], {"action": "store_true"}),
+        (["--NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
+        (["--HYPERCUBE"], {"action": "store_true"}),
         (["--AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
     ]
 )
