@@ -71,16 +71,30 @@ for k, argument in arguments:
 
 
 # compute FINAL_PICTURE argument
+FINAL_PICTURE_FOLDER = "plots"
+for k, argument in arguments:
+    FINAL_PICTURE_FOLDER += "_" + k
+
 
 for cli_command in cli_commands.values():
+    cli_args = cli_command.split(" --")[4:]
 
-    FINAL_PICTURE = (
-        cli_command.replace(to_be_removed_later, "")
-        .replace(" ", "_")
-        .replace("--", "")
-        .replace("None", "False")
+    FINAL_PICTURE = ""
+    for cli_arg in cli_args:
+        if not " " in cli_arg:
+            FINAL_PICTURE += "_True"
+        else:
+            FINAL_PICTURE += "_" + cli_arg.split(" ")[1].replace("None", "False")
+
+    cli_command += (
+        " --FINAL_PICTURE "
+        + config.OUTPUT_DIRECTORY
+        + "/"
+        + FINAL_PICTURE_FOLDER
+        + "/"
+        + FINAL_PICTURE
     )
-    cli_command += " --FINAL_PICTURE " + config.OUTPUT_DIRECTORY + "/" + FINAL_PICTURE
+    os.makedirs(config.OUTPUT_DIRECTORY + "/" + FINAL_PICTURE_FOLDER, exist_ok=True)
     # remove all None things
     for k, v in arguments:
         if None in v:
