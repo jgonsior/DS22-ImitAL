@@ -23,6 +23,7 @@ parser.add_argument("--CSV_FILE", default="tmp/hyper_parameters.csv")
 parser.add_argument("--GROUP_COLUMNS", action="append")
 parser.add_argument("--VALUE_GROUPINGS")
 parser.add_argument("--SAVE_FILE", default=None)
+parser.add_argument("--TITLE", default="")
 
 
 config = parser.parse_args()
@@ -42,6 +43,10 @@ def plot_distributions(
         font="STIXGeneral",
     )
     sns.set_palette("tab10")
+
+    fig = plt.gcf()
+    fig.set_size_inches(18.5, 10.5)
+
     for selection, label in selection_list:
         #  ax = sns.distplot(selection, label=label, **kwargs)
         #  label = "{}-{:>3}: {:.4g}% ".format(label[0], label[1], selection.mean() * 100)
@@ -72,8 +77,8 @@ def plot_distributions(
     if SAVE_FILE is not None:
         if title == "":
             title = "comparison_dist"
-        plt.savefig(SAVE_FILE + ".pdf")
-        plt.savefig(SAVE_FILE + ".png")
+        plt.savefig(SAVE_FILE + ".pdf", dpi=100)
+        plt.savefig(SAVE_FILE + ".png", dpi=100)
     else:
         plt.show()
     plt.clf()
@@ -94,7 +99,7 @@ def compare_distributions(CSV_FILE, GROUP_COLUMNS, VALUE_GROUPINGS, SAVE_FILE):
         selection = df.loc[sel]["acc_test_oracle"]
         if len(selection) != 0:
             sels.append((selection, comb))
-    plot_distributions(sels, axvline=True, SAVE_FILE=SAVE_FILE, title="")
+    plot_distributions(sels, axvline=True, SAVE_FILE=SAVE_FILE, title=config.TITLE)
 
 
 compare_distributions(

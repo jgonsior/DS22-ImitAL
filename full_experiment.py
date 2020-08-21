@@ -332,5 +332,6 @@ os.system(
     + "  --GROUP_COLUMNS sampling"
     + " --SAVE_FILE "
     + comparison_path
+    + " --TITLE "
+    + comparison_path
 )
-
