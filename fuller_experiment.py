@@ -16,7 +16,7 @@ config = standard_config(
     [
         (["--RANDOM_SEED"], {"default": 1}),
         (["--LOG_FILE"], {"default": "log.txt"}),
-        (["--OUTPUT_DIRECTORY"], {"default": "/tmp"}),
+        (["--OUTPUT_DIRECTORY"], {"default": "tmp/"}),
         (["--TRAIN_VARIABLE_DATASET"], {"default": "default"}),
         (["--TRAIN_NR_LEARNING_SAMPLES"], {"default": "default"}),
         (["--TRAIN_REPRESENTATIVE_FEATURES"], {"default": "default"}),
@@ -34,7 +34,8 @@ config = standard_config(
     standard_args=False,
 )
 
-cli_commands = {0: "python fuller_experiment.py"}
+
+cli_commands = {0: "python full_experiment.py"}
 
 arguments = []
 
@@ -52,6 +53,8 @@ for k, v in vars(config).items():
     elif len(splitted_inputs) > 1:
         arguments.append((k, splitted_inputs))
 
+to_be_removed_later = cli_commands[0]
+
 for k, argument in arguments:
     offset = len(cli_commands)
 
@@ -61,10 +64,27 @@ for k, argument in arguments:
 
     for i, a in enumerate(argument):
         for j in range(offset * i, offset * i + int(len(cli_commands) / len(argument))):
-            if a == None:
-                continue
-            cli_commands[j] += " --" + k + " " + str(a)
+            if a == "True":
+                cli_commands[j] += " --" + k
+            else:
+                cli_commands[j] += " --" + k + " " + str(a)
 
+
+# compute FINAL_PICTURE argument
 
 for cli_command in cli_commands.values():
+
+    FINAL_PICTURE = (
+        cli_command.replace(to_be_removed_later, "")
+        .replace(" ", "_")
+        .replace("--", "")
+        .replace("None", "False")
+    )
+    cli_command += " --FINAL_PICTURE " + config.OUTPUT_DIRECTORY + "/" + FINAL_PICTURE
+    # remove all None things
+    for k, v in arguments:
+        if None in v:
+            #  print(k, str(v))
+            cli_command = cli_command.replace("--" + k + " None ", "")
     print(cli_command)
+    os.system(cli_command)

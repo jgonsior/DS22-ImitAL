@@ -9,7 +9,7 @@ from active_learning.experiment_setup_lib import standard_config
 
 config = standard_config(
     [
-        (["--RANDOM_SEED"], {"default": 1}),
+        (["--RANDOM_SEED"], {"default": 1, "type": int}),
         (["--LOG_FILE"], {"default": "log.txt"}),
         (["--OUTPUT_DIRECTORY"], {"default": "/tmp"}),
         (["--TRAIN_VARIABLE_DATASET"], {"action": "store_true"}),
@@ -24,7 +24,10 @@ config = standard_config(
         (["--TEST_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TEST_HYPERCUBE"], {"action": "store_true"}),
         (["--TEST_OLD_SYNTHETIC_PARAMS"], {"action": "store_true"}),
-        (["--TEST_COMPARISONS"], {"nargs": "+"}),
+        (
+            ["--TEST_COMPARISONS"],
+            {"nargs": "+", "default": ["random", "uncertainty_max_margin"]},
+        ),
         (["--FINAL_PICTURE"], {"default": ""}),
     ],
     standard_args=False,
@@ -40,15 +43,13 @@ params = {
     "HYPERCUBE": config.TRAIN_HYPERCUBE,
     "OLD_SYNTHETIC_PARAMS": config.TRAIN_OLD_SYNTHETIC_PARAMS,
 }
-
 param_string = ""
 
 for k, v in params.items():
-    if k == "FINAL_PICTURE":
-        continue
-    if type(v) == bool:
-        if v:
-            param_string += "_" + k.lower()
+    if v == True:
+        param_string += "_" + k.lower() + "_true"
+    elif v == False:
+        param_string += "_" + k.lower() + "_false"
     else:
         param_string += "_" + str(v)
 
@@ -157,12 +158,20 @@ CLASSIC_PREFIX = ""
 for k, v in params.items():
     if k == "comparisons" or k == "FINAL_PICTURE":
         continue
-    if type(v) == bool:
-        if v:
-            CLASSIC_PREFIX += "_" + k.lower()
+    if v == True:
+        CLASSIC_PREFIX += "_" + k.lower() + "_true"
+    elif v == False:
+        CLASSIC_PREFIX += "_" + k.lower() + "_false"
     else:
         CLASSIC_PREFIX += "_" + str(v)
-
+    #
+    #
+    #  if type(v) == bool:
+    #      if v:
+    #          CLASSIC_PREFIX += "_" + k.lower()
+    #  else:
+    #      CLASSIC_PREFIX += "_" + str(v)
+    #
 
 trained_ann_csv_path = OUTPUT_DIRECTORY + CLASSIC_PREFIX + ".csv"
 
