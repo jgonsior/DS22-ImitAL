@@ -319,6 +319,7 @@ else:
             EarlyStopping(monitor="val_loss", patience=5, verbose=1),
             ReduceLROnPlateau(monitor="val_loss", patience=3, verbose=1),
         ],
+        random_state=config.RANDOM_SEED,
     )
 
     fitted_model = model.fit(
@@ -350,12 +351,12 @@ else:
     def uncertainty_sampling(X_test, strategy="least_confident"):
         df = X_test.copy()
         if strategy == "least_confident":
-            df = df.loc[:, ~df.columns.str.endswith("_proba_1")]
+            df = df.loc[:, ~df.columns.str.endswith("_proba_diff")]
         elif strategy == "max_margin":
             for i in df.columns:
-                if i.endswith("1"):
+                if i.endswith("diff"):
                     continue
-                df[i[0 : i.find("_")]] = df[i] - df[i[:-1] + "1"]
+                df[i[0 : i.find("_")]] = df[i] - df[i[:-3] + "diff"]
             df = df.loc[:, ~df.columns.str.contains("_")]
         # for entropy we are lacking the other classes
         #  elif strategy == "entropy":
@@ -379,16 +380,15 @@ else:
     #  print("Y_pred_unc_mm:\t", _evaluate_top_k(Y_test, Y_pred_uncertainty_mm))
     #  print("Y_pred_unc_ent:\t", _evaluate_top_k(Y_test, Y_pred_uncertainty_ent))
 
-    history = fitted_model.history_
-    print(history)
+    #  history = fitted_model.history_
     #  print(history.history)
-
-    plt.plot(history["loss"])
-    plt.plot(history["val_loss"])
-    plt.title("Model loss")
-    plt.ylabel("Loss")
-    plt.xlabel("Epoch")
-    plt.legend(["Train", "Test"], loc="upper left")
+    #
+    #  plt.plot(history.history["loss"])
+    #  plt.plot(history.history["val_loss"])
+    #  plt.title("Model loss")
+    #  plt.ylabel("Loss")
+    #  plt.xlabel("Epoch")
+    #  plt.legend(["Train", "Test"], loc="upper left")
     #  plt.show()
 
     if config.SAVE_DESTINATION:
