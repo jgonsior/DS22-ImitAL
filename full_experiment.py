@@ -33,7 +33,7 @@ config = standard_config(
     standard_args=False,
 )
 
-PARENT_OUTPUT_DIRECTORY = "tmp/"
+PARENT_OUTPUT_DIRECTORY = config.OUTPUT_DIRECTORY
 
 params = {
     "VARIABLE_DATASET": config.TRAIN_VARIABLE_DATASET,
@@ -315,20 +315,34 @@ if not Path(comparison_path).is_file():
     #  print(df)
     df.to_csv(comparison_path, index=False)
 
-
 assert os.path.exists(comparison_path)
+
+df = pd.read_csv(comparison_path)
+random_mean = df.loc[df["sampling"] == "random"]["acc_test_oracle"].mean()
+
+mm_mean = df.loc[df["sampling"] == "uncertainty_max_margin"]["acc_test_oracle"].mean()
+rest = df.loc[
+    (df["sampling"] != "random") & (df["sampling"] != "uncertainty_max_margin")
+]["acc_test_oracle"].mean()
+
+print("{} {} {}".format(random_mean, rest, mm_mean))
 
 print("#" * 80)
 print("Evaluation plots")
 print("#" * 80)
 print("\n")
 
+splitted_path = os.path.split(comparison_path)
+
 os.system(
     "python compare_distributions.py --CSV_FILE "
     + comparison_path
     + "  --GROUP_COLUMNS sampling"
     + " --SAVE_FILE "
-    + comparison_path
+    + splitted_path[0]
+    + "/"
+    + str(mm_mean - rest)
+    + splitted_path[1]
     + " --TITLE "
     + comparison_path
 )
