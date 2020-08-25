@@ -1,13 +1,10 @@
 import os
-import numpy as np
-from active_learning.al_cycle_wrapper import train_and_eval_dataset
-from active_learning.experiment_setup_lib import get_dataset, standard_config
-from fake_experiment_oracle import FakeExperimentOracle
-import pandas as pd
-from sklearn.metrics import accuracy_score
-from sklearn.ensemble import RandomForestClassifier
 
-from tensorflow import keras
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+
+from active_learning.experiment_setup_lib import get_dataset, standard_config
 
 config = standard_config([
     (["--DATASET_NAME"], {

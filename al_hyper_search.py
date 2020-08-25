@@ -1,12 +1,6 @@
-import numpy as np
 import random
-import sys
-import hashlib
-import copy
-import inspect
-import multiprocessing
-from collections import defaultdict
 
+import numpy as np
 import pandas as pd
 from evolutionary_search import EvolutionaryAlgorithmSearchCV
 from sklearn.base import BaseEstimator

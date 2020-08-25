@@ -1,37 +1,23 @@
-import dill
-import pickle
-from sklearn.metrics import make_scorer
-import sys
 import argparse
-from sklearn.utils.multiclass import type_of_target
-import matplotlib.pyplot as plt
-from scipy.stats import spearmanr, kendalltau
-from sklearn.preprocessing import MinMaxScaler
-import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
-from joblib import Parallel, delayed, parallel_backend
-import random
-from itertools import chain
-import copy
-import numpy as np
-from scipy.stats import entropy
-from sklearn.metrics import accuracy_score, mean_squared_error
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
 import os
-from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
-from scikeras.wrappers import KerasClassifier, KerasRegressor
+import random
+import sys
+
+import dill
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+from keras.layers import Dense, Dropout
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, Activation
-from keras.optimizers import Adam, Nadam, RMSprop, Adadelta
-from keras.initializers import VarianceScaling, lecun_uniform, he_normal, he_uniform
-from keras.activations import softmax, elu, relu, tanh, sigmoid
+from scikeras.wrappers import KerasRegressor
+from scipy.stats import spearmanr, kendalltau
+from sklearn.metrics import accuracy_score, mean_squared_error
+from sklearn.metrics import make_scorer
+from sklearn.model_selection import RandomizedSearchCV
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.callbacks import (
     EarlyStopping,
     ReduceLROnPlateau,
-    LearningRateScheduler,
 )
 
 parser = argparse.ArgumentParser()

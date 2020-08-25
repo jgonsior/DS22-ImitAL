@@ -1,55 +1,27 @@
-import pandas as pd
 import os
-import csv
-from pathlib import Path
-import pandas as pd
-from collections import defaultdict
-import datetime
-import hashlib
-import math
-import operator
-import threading
+import os
+import random
 from timeit import default_timer as timer
-from sklearn.metrics import accuracy_score
+
+import numpy as np
+import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
+
 from active_learning.al_cycle_wrapper import eval_al
-
-#  import np.random.distributions as dists
-from json_tricks import dumps
-from sklearn.preprocessing import LabelEncoder
-
 from active_learning.cluster_strategies import (
     DummyClusterStrategy,
-    MostUncertainClusterStrategy,
-    RandomClusterStrategy,
-    RoundRobinClusterStrategy,
 )
 from active_learning.dataStorage import DataStorage
-from active_learning.experiment_setup_lib import (
-    calculate_global_score,
-    conf_matrix_and_acc,
-    get_param_distribution,
-    init_logger,
-)
-from active_learning.sampling_strategies import (
-    BoundaryPairSampler,
-    RandomSampler,
-    UncertaintySampler,
-    OptimalForecastSampler,
-    ImitationLearner,
-)
-
-from active_learning.weak_supervision import WeakCert, WeakClust
-
-
-import random
-import numpy as np
-from active_learning.al_cycle_wrapper import train_and_eval_dataset
 from active_learning.experiment_setup_lib import (
     standard_config,
     init_logger,
 )
+from active_learning.sampling_strategies import (
+    ImitationLearner,
+)
 from fake_experiment_oracle import FakeExperimentOracle
+
+#  import np.random.distributions as dists
 
 config = standard_config(
     [

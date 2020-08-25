@@ -1,11 +1,11 @@
-import pandas as pd
-import os
-import subprocess
 import multiprocessing
+import os
 from pathlib import Path
-from joblib import Parallel, delayed
-from active_learning.experiment_setup_lib import standard_config
 
+import pandas as pd
+from joblib import Parallel, delayed
+
+from active_learning.experiment_setup_lib import standard_config
 
 config = standard_config(
     [

@@ -1,20 +1,16 @@
-from itertools import product
-import sys
+import argparse
+import locale
 import math
-from queue import Queue
-from itertools import chain, combinations, permutations
 import pickle
-from tabulate import tabulate
-from IPython.core.display import display, HTML
+import sys
+from itertools import chain, combinations
+from itertools import product
+from queue import Queue
+
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
-import numpy as np
-from scipy.stats import norm
-import matplotlib.pyplot as plt
-from sklearn.base import BaseEstimator
-from sklearn.model_selection import RandomizedSearchCV, ShuffleSplit
-import locale
-import argparse
 
 locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
 

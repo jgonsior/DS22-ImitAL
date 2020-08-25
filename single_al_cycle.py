@@ -1,6 +1,8 @@
 import os
 import random
+
 import numpy as np
+
 from active_learning.al_cycle_wrapper import train_and_eval_dataset
 from active_learning.experiment_setup_lib import (
     standard_config,
