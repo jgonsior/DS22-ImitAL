@@ -12,18 +12,20 @@ config = standard_config(
         (["--RANDOM_SEED"], {"default": 1, "type": int}),
         (["--LOG_FILE"], {"default": "log.txt"}),
         (["--OUTPUT_DIRECTORY"], {"default": "/tmp"}),
-        (["--TRAIN_VARIABLE_DATASET"], {"action": "store_true"}),
+        (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
         (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 100}),
         (["--TRAIN_REPRESENTATIVE_FEATURES"], {"action": "store_true"}),
         (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TRAIN_HYPERCUBE"], {"action": "store_true"}),
         (["--TRAIN_NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
-        (["--TEST_VARIABLE_DATASET"], {"action": "store_true"}),
+        (["--TRAIN_CONVEX_HULL_SAMPLING"], {"action": "store_true"}),
+        (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
         (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 100}),
         (["--TEST_REPRESENTATIVE_FEATURES"], {"action": "store_true"}),
         (["--TEST_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TEST_HYPERCUBE"], {"action": "store_true"}),
         (["--TEST_NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
+        (["--TEST_CONVEX_HULL_SAMPLING"], {"action": "store_true"}),
         (
             ["--TEST_COMPARISONS"],
             {"nargs": "+", "default": ["random", "uncertainty_max_margin"]},
@@ -42,10 +44,12 @@ params = {
     "AMOUNT_OF_FEATURES": config.TRAIN_AMOUNT_OF_FEATURES,
     "HYPERCUBE": config.TRAIN_HYPERCUBE,
     "NEW_SYNTHETIC_PARAMS": config.TRAIN_NEW_SYNTHETIC_PARAMS,
+    "CONVEX_HULL_SAMPLING": config.TRAIN_CONVEX_HULL_SAMPLING,
 }
 param_string = ""
 
 for k, v in params.items():
+    k = "".join([x[0] for x in k.split("_")])
     if v == True:
         param_string += "_" + k.lower() + "_true"
     elif v == False:
@@ -100,6 +104,8 @@ if (
             cli_arguments += " --NEW_SYNTHETIC_PARAMS "
         if params["HYPERCUBE"]:
             cli_arguments += " --HYPERCUBE "
+        if params["CONVEX_HULL_SAMPLING"]:
+            cli_arguments += " --CONVEX_HULL_SAMPLING"
         print(cli_arguments)
 
         os.system(cli_arguments)
@@ -148,6 +154,7 @@ params = {
     "AMOUNT_OF_FEATURES": config.TEST_AMOUNT_OF_FEATURES,
     "HYPERCUBE": config.TEST_HYPERCUBE,
     "NEW_SYNTHETIC_PARAMS": config.TEST_NEW_SYNTHETIC_PARAMS,
+    "CONVEX_HULL_SAMPLING": config.TEST_CONVEX_HULL_SAMPLING,
 }
 
 CLASSIC_PREFIX = ""
@@ -155,6 +162,8 @@ CLASSIC_PREFIX = ""
 for k, v in params.items():
     if k == "comparisons" or k == "FINAL_PICTURE":
         continue
+    k = "".join([x[0] for x in k.split("_")])
+
     if v == True:
         CLASSIC_PREFIX += "_" + k.lower() + "_true"
     elif v == False:
@@ -198,6 +207,8 @@ if (
             cli_arguments += " --NEW_SYNTHETIC_PARAMS "
         if params["HYPERCUBE"]:
             cli_arguments += " --HYPERCUBE "
+        if params["CONVEX_HULL_SAMPLING"]:
+            cli_arguments += " --CONVEX_HULL_SAMPLING"
         print(cli_arguments)
         #  exit(-1)
         os.system(cli_arguments)
@@ -262,6 +273,8 @@ for comparison in params["comparisons"]:
                 cli_arguments += " --NEW_SYNTHETIC_PARAMS "
             if params["HYPERCUBE"]:
                 cli_arguments += " --HYPERCUBE "
+            if params["CONVEX_HULL_SAMPLING"]:
+                cli_arguments += " --CONVEX_HULL_SAMPLING"
 
             os.system(cli_arguments)
 

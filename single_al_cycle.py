@@ -71,6 +71,7 @@ config = standard_config(
         (["--NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
         (["--HYPERCUBE"], {"action": "store_true"}),
         (["--AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
+        (["--CONVEX_HULL_SAMPLING"], {"action": "store_true"}),
     ]
 )
 

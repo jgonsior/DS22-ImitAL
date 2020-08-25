@@ -8,17 +8,13 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 
 from active_learning.al_cycle_wrapper import eval_al
-from active_learning.cluster_strategies import (
-    DummyClusterStrategy,
-)
+from active_learning.cluster_strategies import DummyClusterStrategy
 from active_learning.dataStorage import DataStorage
 from active_learning.experiment_setup_lib import (
     standard_config,
     init_logger,
 )
-from active_learning.sampling_strategies import (
-    ImitationLearner,
-)
+from active_learning.sampling_strategies import ImitationLearner
 from fake_experiment_oracle import FakeExperimentOracle
 
 #  import np.random.distributions as dists
@@ -81,6 +77,7 @@ config = standard_config(
         (["--NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
         (["--HYPERCUBE"], {"action": "store_true"}),
         (["--AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
+        (["--CONVEX_HULL_SAMPLING"], {"action": "store_true"}),
     ]
 )
 
@@ -174,12 +171,13 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
 
     active_learner = ImitationLearner(**active_learner_params)
     active_learner.set_amount_of_peaked_objects(
-        hyper_parameters["AMOUNT_OF_PEAKED_OBJECTS"]
+        hyper_parameters["AMOUNT_OF_PEAKED_OBJECTS"],
     )
 
     active_learner.init_sampling_classifier(
         hyper_parameters["OUTPUT_DIRECTORY"],
         hyper_parameters["REPRESENTATIVE_FEATURES"],
+        hyper_parameters["CONVEX_HULL_SAMPLING"],
     )
     active_learner.MAX_AMOUNT_OF_WS_PEAKS = hyper_parameters["MAX_AMOUNT_OF_WS_PEAKS"]
 

@@ -19,6 +19,7 @@ config = standard_config(
         (["--TRAIN_AMOUNT_OF_FEATURES"], {"default": "default"}),
         (["--TRAIN_HYPERCUBE"], {"default": "default"}),
         (["--TRAIN_NEW_SYNTHETIC_PARAMS"], {"default": "default"}),
+        (["--TRAIN_CONVEX_HULL_SAMPLING"], {"default": "default"}),
         (["--TEST_VARIABLE_DATASET"], {"default": "default"}),
         (["--TEST_NR_LEARNING_SAMPLES"], {"default": "default"}),
         (["--TEST_REPRESENTATIVE_FEATURES"], {"default": "default"}),
@@ -26,6 +27,7 @@ config = standard_config(
         (["--TEST_HYPERCUBE"], {"default": "default"}),
         (["--TEST_NEW_SYNTHETIC_PARAMS"], {"default": "default"}),
         (["--TEST_COMPARISONS"], {"default": "default"}),
+        (["--TEST_CONVEX_HULL_SAMPLING"], {"default": "default"}),
     ],
     standard_args=False,
 )
