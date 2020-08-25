@@ -21,7 +21,7 @@ config = standard_config(
         (["--TRAIN_CONVEX_HULL_SAMPLING"], {"action": "store_true"}),
         (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
         (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 100}),
-        (["--TEST_REPRESENTATIVE_FEATURES"], {"action": "store_true"}),
+        (["--TEST_REPRESENTATIVE_FEATURES"], {"action": "store_false"}),
         (["--TEST_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TEST_HYPERCUBE"], {"action": "store_true"}),
         (["--TEST_NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
