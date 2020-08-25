@@ -16,7 +16,7 @@ config = standard_config(
     [
         (["--RANDOM_SEED"], {"default": 1}),
         (["--LOG_FILE"], {"default": "log.txt"}),
-        (["--OUTPUT_DIRECTORY"], {"default": "tmp"}),
+        (["--OUTPUT_DIRECTORY"], {"default": "tmp/"}),
         (["--TRAIN_VARIABLE_DATASET"], {"default": "default"}),
         (["--TRAIN_NR_LEARNING_SAMPLES"], {"default": "default"}),
         (["--TRAIN_REPRESENTATIVE_FEATURES"], {"default": "default"}),
@@ -89,12 +89,11 @@ for cli_command in cli_commands.values():
     cli_command += (
         " --FINAL_PICTURE "
         + config.OUTPUT_DIRECTORY
-        + "/"
         + FINAL_PICTURE_FOLDER
         + "/"
         + FINAL_PICTURE
     )
-    os.makedirs(config.OUTPUT_DIRECTORY + "/" + FINAL_PICTURE_FOLDER, exist_ok=True)
+    os.makedirs(config.OUTPUT_DIRECTORY + FINAL_PICTURE_FOLDER, exist_ok=True)
     # remove all None things
     for k, v in arguments:
         if None in v:

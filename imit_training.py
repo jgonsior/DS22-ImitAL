@@ -113,16 +113,20 @@ config = standard_config(
 )
 
 if not os.path.isfile(config.OUTPUT_DIRECTORY + "/states.csv"):
-    states = pd.DataFrame(
-        data=None,
-        columns=[str(i) + "_proba_max" for i in range(config.AMOUNT_OF_PEAKED_OBJECTS)]
-        + [str(i) + "_proba_diff" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)],
-        #  + [str(i) + "_avg_dist_lab" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)]
-        #  + [
-        #      str(i) + "_avg_dist_unlab"
-        #      for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
-        #  ],
-    )
+    columns = [
+        str(i) + "_proba_max" for i in range(config.AMOUNT_OF_PEAKED_OBJECTS)
+    ] + [str(i) + "_proba_diff" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)]
+
+    if config.REPRESENTATIVE_FEATURES:
+        columns += [
+            str(i) + "_avg_dist_lab" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
+        ]
+        columns += [
+            str(i) + "_avg_dist_unlab"
+            for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
+        ]
+
+    states = pd.DataFrame(data=None, columns=columns)
 
     optimal_policies = pd.DataFrame(
         data=None,
@@ -201,7 +205,10 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
         hyper_parameters["AMOUNT_OF_PEAKED_OBJECTS"]
     )
 
-    active_learner.init_sampling_classifier(hyper_parameters["OUTPUT_DIRECTORY"],)
+    active_learner.init_sampling_classifier(
+        hyper_parameters["OUTPUT_DIRECTORY"],
+        hyper_parameters["REPRESENTATIVE_FEATURES"],
+    )
     active_learner.MAX_AMOUNT_OF_WS_PEAKS = hyper_parameters["MAX_AMOUNT_OF_WS_PEAKS"]
 
     start = timer()

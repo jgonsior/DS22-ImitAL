@@ -100,6 +100,7 @@ if (
             cli_arguments += " --NEW_SYNTHETIC_PARAMS "
         if params["HYPERCUBE"]:
             cli_arguments += " --HYPERCUBE "
+        print(cli_arguments)
 
         os.system(cli_arguments)
         return RANDOM_SEED
@@ -138,7 +139,6 @@ print("#" * 80)
 print("Creating evaluation ann data")
 print("#" * 80)
 print("\n")
-
 params = {
     "VARIABLE_DATASET": config.TEST_VARIABLE_DATASET,
     "comparisons": config.TEST_COMPARISONS,
@@ -198,7 +198,8 @@ if (
             cli_arguments += " --NEW_SYNTHETIC_PARAMS "
         if params["HYPERCUBE"]:
             cli_arguments += " --HYPERCUBE "
-
+        print(cli_arguments)
+        #  exit(-1)
         os.system(cli_arguments)
 
         return RANDOM_SEED
@@ -208,6 +209,7 @@ if (
             delayed(run_evaluation)(k) for k in range(1, params["NR_EVALUATIONS"] + 1)
         )
     #  print(output)
+    assert os.path.exists(trained_ann_csv_path)
 
     # rename sampling column
     p = Path(trained_ann_csv_path)

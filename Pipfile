@@ -33,6 +33,7 @@ tensorflow-ranking = "*"
 scikeras = "*"
 dill = "*"
 ipykernel = "*"
+handcalcs = "*"
 
 [requires]
 python_version = "3"
