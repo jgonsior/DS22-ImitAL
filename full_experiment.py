@@ -38,6 +38,9 @@ config = standard_config(
     standard_args=False,
 )
 
+if config.NR_QUERIES_PER_ITERATION == 1:
+    config.USER_QUERY_BUDGET_LIMIT = config.USER_QUERY_BUDGET_LIMIT / 5
+
 PARENT_OUTPUT_DIRECTORY = config.OUTPUT_DIRECTORY
 
 params = {
@@ -91,7 +94,8 @@ if (
             + str(params["NR_QUERIES_PER_ITERATION"])
             + " --DATASET_NAME synthetic "
             + " --START_SET_SIZE 1 "
-            + " --USER_QUERY_BUDGET_LIMIT 50 "
+            + " --USER_QUERY_BUDGET_LIMIT "
+            + str(config.USER_QUERY_BUDGET_LIMIT)
             + " --RANDOM_SEED "
             + str(RANDOM_SEED)
             + " --N_JOBS 1"
@@ -206,7 +210,9 @@ if (
             + trained_ann_csv_path
             + " --SAMPLING trained_nn --CLUSTER dummy --NR_QUERIES_PER_ITERATION "
             + str(params["NR_QUERIES_PER_ITERATION"])
-            + " --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 50 --RANDOM_SEED "
+            + " --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT "
+            + str(config.USER_QUERY_BUDGET_LIMIT)
+            + " --RANDOM_SEED "
             + str(RANDOM_SEED)
             + " --N_JOBS 1"
             + " --AMOUNT_OF_FEATURES "
@@ -274,7 +280,9 @@ for comparison in params["comparisons"]:
                 + comparison
                 + " --CLUSTER dummy --NR_QUERIES_PER_ITERATION "
                 + str(params["NR_QUERIES_PER_ITERATION"])
-                + " --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 50 --RANDOM_SEED "
+                + " --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT "
+                + str(config.USER_QUERY_BUDGET_LIMIT)
+                + " --RANDOM_SEED "
                 + str(RANDOM_SEED)
                 + " --N_JOBS 1"
                 + " --AMOUNT_OF_FEATURES "
