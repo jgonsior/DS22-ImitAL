@@ -78,6 +78,7 @@ config = standard_config(
         (["--HYPERCUBE"], {"action": "store_true"}),
         (["--AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--CONVEX_HULL_SAMPLING"], {"action": "store_true"}),
+        (["--VARIANCE_BOUND"], {"type": int, "default": 1}),
     ]
 )
 
@@ -178,6 +179,7 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
         hyper_parameters["OUTPUT_DIRECTORY"],
         hyper_parameters["REPRESENTATIVE_FEATURES"],
         hyper_parameters["CONVEX_HULL_SAMPLING"],
+        hyper_parameters["VARIANCE_BOUND"],
     )
     active_learner.MAX_AMOUNT_OF_WS_PEAKS = hyper_parameters["MAX_AMOUNT_OF_WS_PEAKS"]
 

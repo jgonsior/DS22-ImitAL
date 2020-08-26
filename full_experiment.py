@@ -16,6 +16,7 @@ config = standard_config(
         (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 100}),
         (["--TRAIN_REPRESENTATIVE_FEATURES"], {"action": "store_false"}),
         (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": 3}),
+        (["--TRAIN_VARIANCE_BOUND"], {"type": int, "default": 1}),
         (["--TRAIN_HYPERCUBE"], {"action": "store_true"}),
         (["--TRAIN_NEW_SYNTHETIC_PARAMS"], {"action": "store_false"}),
         (["--TRAIN_CONVEX_HULL_SAMPLING"], {"action": "store_true"}),
@@ -45,6 +46,7 @@ params = {
     "HYPERCUBE": config.TRAIN_HYPERCUBE,
     "NEW_SYNTHETIC_PARAMS": config.TRAIN_NEW_SYNTHETIC_PARAMS,
     "CONVEX_HULL_SAMPLING": config.TRAIN_CONVEX_HULL_SAMPLING,
+    "VARIANCE_BOUND": config.TRAIN_VARIANCE_BOUND,
 }
 param_string = ""
 
@@ -94,6 +96,8 @@ if (
             + " --AMOUNT_OF_LEARN_ITERATIONS 1 "
             + " --AMOUNT_OF_FEATURES "
             + str(params["AMOUNT_OF_FEATURES"])
+            + " --VARIANCE_BOUND "
+            + str(params["VARIANCE_BOUND"])
         )
 
         if params["VARIABLE_DATASET"]:

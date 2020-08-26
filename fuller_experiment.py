@@ -20,6 +20,7 @@ config = standard_config(
         (["--TRAIN_HYPERCUBE"], {"default": "default"}),
         (["--TRAIN_NEW_SYNTHETIC_PARAMS"], {"default": "default"}),
         (["--TRAIN_CONVEX_HULL_SAMPLING"], {"default": "default"}),
+        (["--TRAIN_VARIANCE_BOUND"], {"default": "default"}),
         (["--TEST_VARIABLE_DATASET"], {"default": "default"}),
         (["--TEST_NR_LEARNING_SAMPLES"], {"default": "default"}),
         (["--TEST_REPRESENTATIVE_FEATURES"], {"default": "default"}),
