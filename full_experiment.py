@@ -12,11 +12,13 @@ config = standard_config(
         (["--RANDOM_SEED"], {"default": 1, "type": int}),
         (["--LOG_FILE"], {"default": "log.txt"}),
         (["--OUTPUT_DIRECTORY"], {"default": "/tmp"}),
+        (["--NR_QUERIES_PER_ITERATION"], {"type": int, "default": 5}),
+        (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 50}),
         (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
         (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 100}),
         (["--TRAIN_REPRESENTATIVE_FEATURES"], {"action": "store_false"}),
         (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": 3}),
-        (["--TRAIN_VARIANCE_BOUND"], {"type": int, "default": 1}),
+        (["--TRAIN_VARIANCE_BOUND"], {"type": int, "default": 2}),
         (["--TRAIN_HYPERCUBE"], {"action": "store_true"}),
         (["--TRAIN_NEW_SYNTHETIC_PARAMS"], {"action": "store_false"}),
         (["--TRAIN_CONVEX_HULL_SAMPLING"], {"action": "store_true"}),
@@ -47,6 +49,7 @@ params = {
     "NEW_SYNTHETIC_PARAMS": config.TRAIN_NEW_SYNTHETIC_PARAMS,
     "CONVEX_HULL_SAMPLING": config.TRAIN_CONVEX_HULL_SAMPLING,
     "VARIANCE_BOUND": config.TRAIN_VARIANCE_BOUND,
+    "NR_QUERIES_PER_ITERATION": config.NR_QUERIES_PER_ITERATION,
 }
 param_string = ""
 
@@ -84,7 +87,8 @@ if (
             + " --OUTPUT_DIRECTORY "
             + OUTPUT_DIRECTORY
             + " --CLUSTER dummy "
-            + " --NR_QUERIES_PER_ITERATION 5 "
+            + " --NR_QUERIES_PER_ITERATION "
+            + str(params["NR_QUERIES_PER_ITERATION"])
             + " --DATASET_NAME synthetic "
             + " --START_SET_SIZE 1 "
             + " --USER_QUERY_BUDGET_LIMIT 50 "
@@ -159,6 +163,7 @@ params = {
     "HYPERCUBE": config.TEST_HYPERCUBE,
     "NEW_SYNTHETIC_PARAMS": config.TEST_NEW_SYNTHETIC_PARAMS,
     "CONVEX_HULL_SAMPLING": config.TEST_CONVEX_HULL_SAMPLING,
+    "NR_QUERIES_PER_ITERATION": config.NR_QUERIES_PER_ITERATION,
 }
 
 CLASSIC_PREFIX = ""
@@ -196,7 +201,9 @@ if (
             + OUTPUT_DIRECTORY
             + "/trained_ann.pickle --OUTPUT_DIRECTORY "
             + trained_ann_csv_path
-            + " --SAMPLING trained_nn --CLUSTER dummy --NR_QUERIES_PER_ITERATION 5 --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 50 --RANDOM_SEED "
+            + " --SAMPLING trained_nn --CLUSTER dummy --NR_QUERIES_PER_ITERATION "
+            + str(params["NR_QUERIES_PER_ITERATION"])
+            + " --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 50 --RANDOM_SEED "
             + str(RANDOM_SEED)
             + " --N_JOBS 1"
             + " --AMOUNT_OF_FEATURES "
@@ -262,7 +269,9 @@ for comparison in params["comparisons"]:
                 + COMPARISON_PATH
                 + " --SAMPLING "
                 + comparison
-                + " --CLUSTER dummy --NR_QUERIES_PER_ITERATION 5 --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 50 --RANDOM_SEED "
+                + " --CLUSTER dummy --NR_QUERIES_PER_ITERATION "
+                + str(params["NR_QUERIES_PER_ITERATION"])
+                + " --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT 50 --RANDOM_SEED "
                 + str(RANDOM_SEED)
                 + " --N_JOBS 1"
                 + " --AMOUNT_OF_FEATURES "

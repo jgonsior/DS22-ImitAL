@@ -13,6 +13,7 @@ config = standard_config(
         (["--RANDOM_SEED"], {"default": 1}),
         (["--LOG_FILE"], {"default": "log.txt"}),
         (["--OUTPUT_DIRECTORY"], {"default": "tmp/"}),
+        (["--NR_QUERIES_PER_ITERATION"], {"default": "default"}),
         (["--TRAIN_VARIABLE_DATASET"], {"default": "default"}),
         (["--TRAIN_NR_LEARNING_SAMPLES"], {"default": "default"}),
         (["--TRAIN_REPRESENTATIVE_FEATURES"], {"default": "default"}),
