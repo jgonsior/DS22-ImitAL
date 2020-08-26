@@ -17,7 +17,7 @@ config = standard_config(
         (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
         (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 100}),
         (["--TRAIN_REPRESENTATIVE_FEATURES"], {"action": "store_false"}),
-        (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": 3}),
+        (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TRAIN_VARIANCE_BOUND"], {"type": int, "default": 2}),
         (["--TRAIN_HYPERCUBE"], {"action": "store_true"}),
         (["--TRAIN_NEW_SYNTHETIC_PARAMS"], {"action": "store_false"}),
@@ -119,7 +119,10 @@ if (
         os.system(cli_arguments)
         return RANDOM_SEED
 
-    nr_parallel_processes = int(params["NR_LEARNING_SAMPLES"] / 10)
+    nr_parallel_processes = int(
+        params["NR_LEARNING_SAMPLES"]
+        / (config.USER_QUERY_BUDGET_LIMIT / params["NR_QUERIES_PER_ITERATION"])
+    )
     if nr_parallel_processes == 0:
         nr_parallel_processes = params["NR_LEARNING_SAMPLES"] + 1
 
