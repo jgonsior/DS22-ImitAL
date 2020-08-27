@@ -15,7 +15,7 @@ config = standard_config(
         (["--NR_QUERIES_PER_ITERATION"], {"type": int, "default": 5}),
         (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 50}),
         (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 100}),
+        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 1000}),
         (["--TRAIN_REPRESENTATIVE_FEATURES"], {"action": "store_false"}),
         (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TRAIN_VARIANCE_BOUND"], {"type": int, "default": 2}),
@@ -23,7 +23,7 @@ config = standard_config(
         (["--TRAIN_NEW_SYNTHETIC_PARAMS"], {"action": "store_false"}),
         (["--TRAIN_CONVEX_HULL_SAMPLING"], {"action": "store_false"}),
         (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 100}),
+        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 1000}),
         (["--TEST_REPRESENTATIVE_FEATURES"], {"action": "store_false"}),
         (["--TEST_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TEST_HYPERCUBE"], {"action": "store_true"}),
@@ -82,6 +82,12 @@ if (
     or sum(1 for l in open(OUTPUT_DIRECTORY + "/states.csv"))
     < params["NR_LEARNING_SAMPLES"]
 ):
+    if Path(OUTPUT_DIRECTORY + "/states.csv").is_file():
+        NR_LEARNING_SAMPLES = params["NR_LEARNING_SAMPLES"] - sum(
+            1 for l in open(OUTPUT_DIRECTORY + "/states.csv")
+        )
+    else:
+        NR_LEARNING_SAMPLES = params["NR_LEARNING_SAMPLES"]
 
     def create_dataset_sample(RANDOM_SEED):
         cli_arguments = (
@@ -124,7 +130,7 @@ if (
         return RANDOM_SEED
 
     nr_parallel_processes = int(
-        params["NR_LEARNING_SAMPLES"]
+        NR_LEARNING_SAMPLES
         / (config.USER_QUERY_BUDGET_LIMIT / params["NR_QUERIES_PER_ITERATION"])
     )
     if nr_parallel_processes == 0:
@@ -150,7 +156,7 @@ if not Path(OUTPUT_DIRECTORY + "/trained_ann.pickle").is_file():
         + OUTPUT_DIRECTORY
         + " --STATE_ENCODING listwise --TARGET_ENCODING binary --SAVE_DESTINATION "
         + OUTPUT_DIRECTORY
-        + "/trained_ann.pickle --REGULAR_DROPOUT_RATE 0.1 --OPTIMIZER RMSprop --NR_HIDDEN_NEURONS 20 --NR_HIDDEN_LAYERS 2 --LOSS CosineSimilarity --EPOCHS 1000 --BATCH_SIZE 16 --ACTIVATION elu --RANDOM_SEED 1"
+        + "/trained_ann.pickle --REGULAR_DROPOUT_RATE 0.2 --OPTIMIZER Adam --NR_HIDDEN_NEURONS 40 --NR_HIDDEN_LAYERS 1 --LOSS CosineSimilarity --EPOCHS 1000 --BATCH_SIZE 64 --ACTIVATION relu --RANDOM_SEED 1"
     )
 
 
