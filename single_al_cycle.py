@@ -66,6 +66,7 @@ config = standard_config(
         (["--MAX_AMOUNT_OF_WS_PEAKS"], {"type": int, "default": 1}),
         (["--NN_BINARY"], {"type": str}),
         (["--AMOUNT_OF_RANDOM_QUERY_SETS"], {"type": int, "default": 1}),
+        (["--PLOT_EVOLUTION"], {"action": "store_true"}),
         (["--VARIABLE_INPUT_SIZE"], {"action": "store_true"}),
         (["--REPRESENTATIVE_FEATURES"], {"action": "store_true"}),
         (["--NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
