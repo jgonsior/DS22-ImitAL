@@ -12,7 +12,7 @@ config = standard_config(
         (["--RANDOM_SEED"], {"default": 1, "type": int}),
         (["--LOG_FILE"], {"default": "log.txt"}),
         (["--OUTPUT_DIRECTORY"], {"default": "/tmp"}),
-        (["--NR_QUERIES_PER_ITERATION"], {"type": int, "default": 5}),
+        (["--NR_QUERIES_PER_ITERATION"], {"type": int, "default": 1}),
         (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 50}),
         (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
         (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 1000}),
@@ -346,9 +346,7 @@ print(comparison_path)
 
 if not Path(comparison_path).is_file():
     df = pd.read_csv(
-        trained_ann_csv_path,
-        index_col=None,
-        nrows=1 + params["NR_EVALUATIONS"],
+        trained_ann_csv_path, index_col=None, nrows=1 + params["NR_EVALUATIONS"],
     )
 
     for comparison in params["comparisons"]:
