@@ -1,3 +1,4 @@
+from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
 import os
 import os
@@ -155,7 +156,11 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
 
     if hyper_parameters["STOP_AFTER_MAXIMUM_ACCURACY_REACHED"]:
         # calculate maximum theoretical accuracy
-        tmp_clf = RandomForestClassifier()
+        if hyper_parameters["CLASSIFIER"] == "RF":
+            tmp_clf = RandomForestClassifier()
+        elif hyper_parameters["CLASSIFIER"] == "SVM":
+            tmp_clf = SVC(probability=True)
+
         tmp_clf.fit(
             pd.concat([data_storage.train_unlabeled_X, data_storage.train_labeled_X]),
             data_storage.train_unlabeled_Y["label"].to_list()
@@ -175,9 +180,13 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
     cluster_strategy = DummyClusterStrategy()
     cluster_strategy.set_data_storage(data_storage, hyper_parameters["N_JOBS"])
 
-    classifier = RandomForestClassifier(
-        n_jobs=hyper_parameters["N_JOBS"], random_state=hyper_parameters["RANDOM_SEED"]
-    )
+    if hyper_parameters["CLASSIFIER"] == "RF":
+        classifier = RandomForestClassifier(
+            n_jobs=hyper_parameters["N_JOBS"],
+            random_state=hyper_parameters["RANDOM_SEED"],
+        )
+    elif hyper_parameters["CLASSIFIER"] == "SVM":
+        classifier = SVC(random_state=hyper_parameters["RANDOM_SEED"], probability=True)
 
     weak_supervision_label_sources = []
 

@@ -14,6 +14,7 @@ config = standard_config(
         (["--LOG_FILE"], {"default": "log.txt"}),
         (["--OUTPUT_DIRECTORY"], {"default": "tmp/"}),
         (["--NR_QUERIES_PER_ITERATION"], {"default": "default"}),
+        (["--CLASSIFIER"], {"default": "RF"}),
         (["--TRAIN_VARIABLE_DATASET"], {"default": "default"}),
         (["--TRAIN_NR_LEARNING_SAMPLES"], {"default": "default"}),
         (["--TRAIN_REPRESENTATIVE_FEATURES"], {"default": "default"}),
@@ -101,4 +102,4 @@ for cli_command in cli_commands.values():
             #  print(k, str(v))
             cli_command = cli_command.replace("--" + k + " None ", "")
     print(cli_command)
-    os.system(cli_command)
+    #  os.system(cli_command)
