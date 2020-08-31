@@ -19,7 +19,12 @@ config = standard_config(
                 "help": "Possible values: uncertainty, random, committe, boundary",
             },
         ),
-        (["--DATASET_NAME"], {"required": True,}),
+        (
+            ["--DATASET_NAME"],
+            {
+                "required": True,
+            },
+        ),
         (
             ["--CLUSTER"],
             {

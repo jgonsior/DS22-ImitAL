@@ -14,8 +14,9 @@ config = standard_config(
         (["--OUTPUT_DIRECTORY"], {"default": "/tmp"}),
         (["--NR_QUERIES_PER_ITERATION"], {"type": int, "default": 1}),
         (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 50}),
+        (["--CLASSIFIER"], {"default": "RF"}),
         (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 1000}),
+        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 100}),
         (["--TRAIN_REPRESENTATIVE_FEATURES"], {"action": "store_false"}),
         (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TRAIN_VARIANCE_BOUND"], {"type": int, "default": 2}),
@@ -24,7 +25,7 @@ config = standard_config(
         (["--TRAIN_CONVEX_HULL_SAMPLING"], {"action": "store_false"}),
         (["--TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED"], {"action": "store_true"}),
         (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 1000}),
+        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 100}),
         (["--TEST_REPRESENTATIVE_FEATURES"], {"action": "store_false"}),
         (["--TEST_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TEST_HYPERCUBE"], {"action": "store_true"}),
@@ -55,6 +56,7 @@ params = {
     "VARIANCE_BOUND": config.TRAIN_VARIANCE_BOUND,
     "NR_QUERIES_PER_ITERATION": config.NR_QUERIES_PER_ITERATION,
     "STOP_AFTER_MAXIMUM_ACCURACY_REACHED": config.TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED,
+    "CLASSIFIER": config.CLASSIFIER,
 }
 param_string = ""
 
@@ -114,6 +116,8 @@ if (
             + str(params["AMOUNT_OF_FEATURES"])
             + " --VARIANCE_BOUND "
             + str(params["VARIANCE_BOUND"])
+            + " --CLASSIFIER "
+            + str(params["CLASSIFIER"])
         )
 
         if params["VARIABLE_DATASET"]:
@@ -181,6 +185,7 @@ params = {
     "NEW_SYNTHETIC_PARAMS": config.TEST_NEW_SYNTHETIC_PARAMS,
     "CONVEX_HULL_SAMPLING": config.TEST_CONVEX_HULL_SAMPLING,
     "NR_QUERIES_PER_ITERATION": config.NR_QUERIES_PER_ITERATION,
+    "CLASSIFIER": config.CLASSIFIER,
 }
 
 CLASSIC_PREFIX = ""
@@ -227,6 +232,8 @@ if (
             + " --N_JOBS 1"
             + " --AMOUNT_OF_FEATURES "
             + str(params["AMOUNT_OF_FEATURES"])
+            + " --CLASSIFIER "
+            + str(params["CLASSIFIER"])
         )
 
         if params["VARIABLE_DATASET"]:
@@ -297,6 +304,8 @@ for comparison in params["comparisons"]:
                 + " --N_JOBS 1"
                 + " --AMOUNT_OF_FEATURES "
                 + str(params["AMOUNT_OF_FEATURES"])
+                + " --CLASSIFIER "
+                + str(params["CLASSIFIER"])
             )
 
             if params["VARIABLE_DATASET"]:
