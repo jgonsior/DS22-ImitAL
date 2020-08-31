@@ -22,6 +22,7 @@ config = standard_config(
         (["--TRAIN_HYPERCUBE"], {"action": "store_true"}),
         (["--TRAIN_NEW_SYNTHETIC_PARAMS"], {"action": "store_false"}),
         (["--TRAIN_CONVEX_HULL_SAMPLING"], {"action": "store_false"}),
+        (["--TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED"], {"action": "store_true"}),
         (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
         (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 1000}),
         (["--TEST_REPRESENTATIVE_FEATURES"], {"action": "store_false"}),
@@ -53,6 +54,7 @@ params = {
     "CONVEX_HULL_SAMPLING": config.TRAIN_CONVEX_HULL_SAMPLING,
     "VARIANCE_BOUND": config.TRAIN_VARIANCE_BOUND,
     "NR_QUERIES_PER_ITERATION": config.NR_QUERIES_PER_ITERATION,
+    "STOP_AFTER_MAXIMUM_ACCURACY_REACHED": config.TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED,
 }
 param_string = ""
 
@@ -124,6 +126,8 @@ if (
             cli_arguments += " --HYPERCUBE "
         if params["CONVEX_HULL_SAMPLING"]:
             cli_arguments += " --CONVEX_HULL_SAMPLING"
+        if params["STOP_AFTER_MAXIMUM_ACCURACY_REACHED"]:
+            cli_arguments += " --STOP_AFTER_MAXIMUM_ACCURACY_REACHED"
         print(cli_arguments)
 
         os.system(cli_arguments)
@@ -342,7 +346,9 @@ print(comparison_path)
 
 if not Path(comparison_path).is_file():
     df = pd.read_csv(
-        trained_ann_csv_path, index_col=None, nrows=1 + params["NR_EVALUATIONS"],
+        trained_ann_csv_path,
+        index_col=None,
+        nrows=1 + params["NR_EVALUATIONS"],
     )
 
     for comparison in params["comparisons"]:

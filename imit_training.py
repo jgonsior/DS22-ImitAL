@@ -1,3 +1,4 @@
+from sklearn.metrics import accuracy_score
 import os
 import os
 import random
@@ -23,9 +24,16 @@ config = standard_config(
     [
         (
             ["--SAMPLING"],
-            {"help": "Possible values: uncertainty, random, committe, boundary",},
+            {
+                "help": "Possible values: uncertainty, random, committe, boundary",
+            },
         ),
-        (["--DATASET_NAME"], {"required": True,}),
+        (
+            ["--DATASET_NAME"],
+            {
+                "required": True,
+            },
+        ),
         (
             ["--CLUSTER"],
             {
@@ -79,6 +87,7 @@ config = standard_config(
         (["--AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--CONVEX_HULL_SAMPLING"], {"action": "store_true"}),
         (["--VARIANCE_BOUND"], {"type": int, "default": 1}),
+        (["--STOP_AFTER_MAXIMUM_ACCURACY_REACHED"], {"action": "store_true"}),
     ]
 )
 
@@ -143,6 +152,22 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
         #  hyper_parameters["START_SET_SIZE"],
         #  hyper_parameters["TEST_FRACTION"],
     )
+
+    if hyper_parameters["STOP_AFTER_MAXIMUM_ACCURACY_REACHED"]:
+        # calculate maximum theoretical accuracy
+        tmp_clf = RandomForestClassifier()
+        tmp_clf.fit(
+            pd.concat([data_storage.train_unlabeled_X, data_storage.train_labeled_X]),
+            data_storage.train_unlabeled_Y["label"].to_list()
+            + data_storage.train_labeled_Y["label"].to_list(),
+        )
+        tmp_Y_pred = tmp_clf.predict(data_storage.test_X)
+        THEORETICALLY_BEST_ACHIEVABLE_ACCURACY = (
+            accuracy_score(data_storage.test_Y, tmp_Y_pred) * 0.95
+        )
+        hyper_parameters[
+            "THEORETICALLY_BEST_ACHIEVABLE_ACCURACY"
+        ] = THEORETICALLY_BEST_ACHIEVABLE_ACCURACY
 
     hyper_parameters["LEN_TRAIN_DATA"] = len(data_storage.train_unlabeled_Y) + len(
         data_storage.train_labeled_Y
