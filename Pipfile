@@ -7,7 +7,7 @@ verify_ssl = true
 pylint = "*"
 pydocstyle = "*"
 rope = "*"
-black = "==19.10b0"
+black = "==20.08b1"
 
 [packages]
 pandas = "*"
