@@ -37,8 +37,6 @@ config = standard_config(
         (["--TEST_CONVEX_HULL_SAMPLING"], {"default": "default"}),
         (["--TEST_CLASSIFIER"], {"default": "default"}),
         (["--TEST_GENERATE_NOISE"], {"default": "default"}),
-        (["--TEST_NO_DIFF_FEATURES"], {"default": "default"}),
-        (["--TEST_LRU_AREAS_LIMIT"], {"default": "default"}),
     ],
     standard_args=False,
 )
