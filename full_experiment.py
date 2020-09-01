@@ -14,9 +14,9 @@ config = standard_config(
         (["--OUTPUT_DIRECTORY"], {"default": "/tmp"}),
         (["--NR_QUERIES_PER_ITERATION"], {"type": int, "default": 1}),
         (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 30}),
-        (["--TRAIN_CLASSIFIER"], {"default": "RF"}),
+        (["--TRAIN_CLASSIFIER"], {"default": "MLP"}),
         (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 100}),
+        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 200}),
         (["--TRAIN_REPRESENTATIVE_FEATURES"], {"action": "store_false"}),
         (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TRAIN_VARIANCE_BOUND"], {"type": int, "default": 2}),
@@ -26,13 +26,13 @@ config = standard_config(
         (["--TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED"], {"action": "store_false"}),
         (["--TRAIN_GENERATE_NOISE"], {"action": "store_false"}),
         (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 100}),
+        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 200}),
         (["--TEST_REPRESENTATIVE_FEATURES"], {"action": "store_false"}),
         (["--TEST_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TEST_HYPERCUBE"], {"action": "store_true"}),
         (["--TEST_NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
         (["--TEST_CONVEX_HULL_SAMPLING"], {"action": "store_false"}),
-        (["--TEST_CLASSIFIER"], {"default": "RF"}),
+        (["--TEST_CLASSIFIER"], {"default": "MLP"}),
         (["--TEST_GENERATE_NOISE"], {"action": "store_false"}),
         (
             ["--TEST_COMPARISONS"],
@@ -368,9 +368,7 @@ print(comparison_path)
 
 if not Path(comparison_path).is_file():
     df = pd.read_csv(
-        trained_ann_csv_path,
-        index_col=None,
-        nrows=1 + params["NR_EVALUATIONS"],
+        trained_ann_csv_path, index_col=None, nrows=1 + params["NR_EVALUATIONS"],
     )
 
     for comparison in params["comparisons"]:

@@ -105,4 +105,4 @@ for cli_command in cli_commands.values():
             #  print(k, str(v))
             cli_command = cli_command.replace("--" + k + " None ", "")
     print(cli_command)
-    #  os.system(cli_command)
+    os.system(cli_command)
