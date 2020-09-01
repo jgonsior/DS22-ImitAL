@@ -17,7 +17,7 @@ config = standard_config(
         (["--TRAIN_CLASSIFIER"], {"default": "MLP"}),
         (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
         (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 200}),
-        (["--TRAIN_REPRESENTATIVE_FEATURES"], {"action": "store_false"}),
+        (["--TRAIN_REPRESENTATIVE_FEATURES"], {"action": "store_true"}),
         (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TRAIN_VARIANCE_BOUND"], {"type": int, "default": 2}),
         (["--TRAIN_HYPERCUBE"], {"action": "store_true"}),
@@ -25,14 +25,18 @@ config = standard_config(
         (["--TRAIN_CONVEX_HULL_SAMPLING"], {"action": "store_false"}),
         (["--TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED"], {"action": "store_false"}),
         (["--TRAIN_GENERATE_NOISE"], {"action": "store_false"}),
+        (["--TRAIN_NO_DIFF_FEATURES"], {"action": "store_true"}),
+        (["--TRAIN_LRU_AREAS_LIMIT"], {"type": int, "default": 0}),
         (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
         (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 200}),
-        (["--TEST_REPRESENTATIVE_FEATURES"], {"action": "store_false"}),
+        (["--TEST_REPRESENTATIVE_FEATURES"], {"action": "store_true"}),
         (["--TEST_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TEST_HYPERCUBE"], {"action": "store_true"}),
         (["--TEST_NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
         (["--TEST_CONVEX_HULL_SAMPLING"], {"action": "store_false"}),
         (["--TEST_CLASSIFIER"], {"default": "MLP"}),
+        (["--TEST_NO_DIFF_FEATURES"], {"action": "store_true"}),
+        (["--TEST_LRU_AREAS_LIMIT"], {"type": int, "default": 0}),
         (["--TEST_GENERATE_NOISE"], {"action": "store_false"}),
         (
             ["--TEST_COMPARISONS"],
@@ -61,6 +65,8 @@ params = {
     "STOP_AFTER_MAXIMUM_ACCURACY_REACHED": config.TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED,
     "CLASSIFIER": config.TRAIN_CLASSIFIER,
     "GENERATE_NOISE": config.TRAIN_GENERATE_NOISE,
+    "NO_DIFF_FEATURES": config.TRAIN_NO_DIFF_FEATURES,
+    "LRU_AREAS_LIMIT": config.TRAIN_LRU_AREAS_LIMIT,
 }
 param_string = ""
 
@@ -122,6 +128,8 @@ if (
             + str(params["VARIANCE_BOUND"])
             + " --CLASSIFIER "
             + str(params["CLASSIFIER"])
+            + " --LRU_AREAS_LIMIT "
+            + str(params["LRU_AREAS_LIMIT"])
         )
 
         if params["VARIABLE_DATASET"]:
@@ -138,6 +146,8 @@ if (
             cli_arguments += " --STOP_AFTER_MAXIMUM_ACCURACY_REACHED"
         if params["GENERATE_NOISE"]:
             cli_arguments += " --GENERATE_NOISE"
+        if params["NO_DIFF_FEATURES"]:
+            cli_arguments += " --NO_DIFF_FEATURES"
         print(cli_arguments)
 
         os.system(cli_arguments)
@@ -193,6 +203,8 @@ params = {
     "NR_QUERIES_PER_ITERATION": config.NR_QUERIES_PER_ITERATION,
     "CLASSIFIER": config.TEST_CLASSIFIER,
     "GENERATE_NOISE": config.TEST_GENERATE_NOISE,
+    "NO_DIFF_FEATURES": config.TEST_NO_DIFF_FEATURES,
+    "LRU_AREAS_LIMIT": config.TEST_LRU_AREAS_LIMIT,
 }
 
 CLASSIC_PREFIX = ""
@@ -242,6 +254,8 @@ if (
             + str(params["AMOUNT_OF_FEATURES"])
             + " --CLASSIFIER "
             + str(params["CLASSIFIER"])
+            + " --LRU_AREAS_LIMIT "
+            + str(params["LRU_AREAS_LIMIT"])
         )
 
         if params["VARIABLE_DATASET"]:
@@ -256,6 +270,8 @@ if (
             cli_arguments += " --CONVEX_HULL_SAMPLING"
         if params["GENERATE_NOISE"]:
             cli_arguments += " --GENERATE_NOISE"
+        if params["NO_DIFF_FEATURES"]:
+            cli_arguments += " --NO_DIFF_FEATURES"
         print(cli_arguments)
         #  exit(-1)
         os.system(cli_arguments)
@@ -317,6 +333,8 @@ for comparison in params["comparisons"]:
                 + str(params["AMOUNT_OF_FEATURES"])
                 + " --CLASSIFIER "
                 + str(params["CLASSIFIER"])
+                + " --LRU_AREAS_LIMIT "
+                + str(params["LRU_AREAS_LIMIT"])
             )
 
             if params["VARIABLE_DATASET"]:
@@ -331,6 +349,8 @@ for comparison in params["comparisons"]:
                 cli_arguments += " --CONVEX_HULL_SAMPLING"
             if params["GENERATE_NOISE"]:
                 cli_arguments += " --GENERATE_NOISE"
+            if params["NO_DIFF_FEATURES"]:
+                cli_arguments += " --NO_DIFF_FEATURES"
 
             os.system(cli_arguments)
 
@@ -368,7 +388,9 @@ print(comparison_path)
 
 if not Path(comparison_path).is_file():
     df = pd.read_csv(
-        trained_ann_csv_path, index_col=None, nrows=1 + params["NR_EVALUATIONS"],
+        trained_ann_csv_path,
+        index_col=None,
+        nrows=1 + params["NR_EVALUATIONS"],
     )
 
     for comparison in params["comparisons"]:

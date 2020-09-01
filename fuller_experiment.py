@@ -25,6 +25,8 @@ config = standard_config(
         (["--TRAIN_VARIANCE_BOUND"], {"default": "default"}),
         (["--TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED"], {"default": "default"}),
         (["--TRAIN_GENERATE_NOISE"], {"default": "default"}),
+        (["--TRAIN_NO_DIFF_FEATURES"], {"default": "default"}),
+        (["--TRAIN_LRU_AREAS_LIMIT"], {"default": "default"}),
         (["--TEST_VARIABLE_DATASET"], {"default": "default"}),
         (["--TEST_NR_LEARNING_SAMPLES"], {"default": "default"}),
         (["--TEST_REPRESENTATIVE_FEATURES"], {"default": "default"}),
@@ -35,6 +37,8 @@ config = standard_config(
         (["--TEST_CONVEX_HULL_SAMPLING"], {"default": "default"}),
         (["--TEST_CLASSIFIER"], {"default": "default"}),
         (["--TEST_GENERATE_NOISE"], {"default": "default"}),
+        (["--TEST_NO_DIFF_FEATURES"], {"default": "default"}),
+        (["--TEST_LRU_AREAS_LIMIT"], {"default": "default"}),
     ],
     standard_args=False,
 )
@@ -105,4 +109,4 @@ for cli_command in cli_commands.values():
             #  print(k, str(v))
             cli_command = cli_command.replace("--" + k + " None ", "")
     print(cli_command)
-    os.system(cli_command)
+    #  os.system(cli_command)

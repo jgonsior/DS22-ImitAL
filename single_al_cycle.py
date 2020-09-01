@@ -79,6 +79,8 @@ config = standard_config(
         (["--AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--CONVEX_HULL_SAMPLING"], {"action": "store_true"}),
         (["--GENERATE_NOISE"], {"action": "store_true"}),
+        (["--NO_DIFF_FEATURES"], {"action": "store_true"}),
+        (["--LRU_AREAS_LIMIT"], {"type": int, "default": 0}),
     ]
 )
 

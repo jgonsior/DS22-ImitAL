@@ -89,6 +89,8 @@ config = standard_config(
         (["--VARIANCE_BOUND"], {"type": int, "default": 1}),
         (["--STOP_AFTER_MAXIMUM_ACCURACY_REACHED"], {"action": "store_true"}),
         (["--GENERATE_NOISE"], {"action": "store_true"}),
+        (["--NO_DIFF_FEATURES"], {"action": "store_true"}),
+        (["--LRU_AREAS_LIMIT"], {"type": int, "default": 0}),
     ]
 )
 
@@ -97,13 +99,17 @@ if not os.path.isfile(config.OUTPUT_DIRECTORY + "/states.csv"):
         str(i) + "_proba_max" for i in range(config.AMOUNT_OF_PEAKED_OBJECTS)
     ] + [str(i) + "_proba_diff" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)]
 
-    if config.REPRESENTATIVE_FEATURES:
+    if config.LRU_AREAS_LIMIT == -1:
         columns += [
             str(i) + "_avg_dist_lab" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
         ]
         columns += [
             str(i) + "_avg_dist_unlab"
             for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
+        ]
+    if config.LRU_AREAS_LIMIT > 0:
+        columns += [
+            str(i) + "_lru_dist" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
         ]
 
     states = pd.DataFrame(data=None, columns=columns)
@@ -150,7 +156,7 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
         NEW_SYNTHETIC_PARAMS=hyper_parameters["NEW_SYNTHETIC_PARAMS"],
         HYPERCUBE=hyper_parameters["HYPERCUBE"],
         AMOUNT_OF_FEATURES=hyper_parameters["AMOUNT_OF_FEATURES"],
-        GENERATE_NOISE=hyper_parameters["GENERATE_NOISE"]
+        GENERATE_NOISE=hyper_parameters["GENERATE_NOISE"],
         #  hyper_parameters["START_SET_SIZE"],
         #  hyper_parameters["TEST_FRACTION"],
     )
@@ -211,6 +217,8 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
         hyper_parameters["REPRESENTATIVE_FEATURES"],
         hyper_parameters["CONVEX_HULL_SAMPLING"],
         hyper_parameters["VARIANCE_BOUND"],
+        hyper_parameters["NO_DIFF_FEATURES"],
+        hyper_parameters["LRU_AREAS_LIMIT"],
     )
     active_learner.MAX_AMOUNT_OF_WS_PEAKS = hyper_parameters["MAX_AMOUNT_OF_WS_PEAKS"]
 
