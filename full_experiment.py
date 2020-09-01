@@ -13,10 +13,10 @@ config = standard_config(
         (["--LOG_FILE"], {"default": "log.txt"}),
         (["--OUTPUT_DIRECTORY"], {"default": "/tmp"}),
         (["--NR_QUERIES_PER_ITERATION"], {"type": int, "default": 1}),
-        (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 50}),
-        (["--CLASSIFIER"], {"default": "RF"}),
+        (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 30}),
+        (["--TRAIN_CLASSIFIER"], {"default": "RF"}),
         (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 100}),
+        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 10000}),
         (["--TRAIN_REPRESENTATIVE_FEATURES"], {"action": "store_false"}),
         (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TRAIN_VARIANCE_BOUND"], {"type": int, "default": 2}),
@@ -25,12 +25,13 @@ config = standard_config(
         (["--TRAIN_CONVEX_HULL_SAMPLING"], {"action": "store_false"}),
         (["--TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED"], {"action": "store_true"}),
         (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 100}),
+        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 10000}),
         (["--TEST_REPRESENTATIVE_FEATURES"], {"action": "store_false"}),
         (["--TEST_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TEST_HYPERCUBE"], {"action": "store_true"}),
         (["--TEST_NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
         (["--TEST_CONVEX_HULL_SAMPLING"], {"action": "store_false"}),
+        (["--TEST_CLASSIFIER"], {"default": "RF"}),
         (
             ["--TEST_COMPARISONS"],
             {"nargs": "+", "default": ["random", "uncertainty_max_margin"]},
@@ -56,7 +57,7 @@ params = {
     "VARIANCE_BOUND": config.TRAIN_VARIANCE_BOUND,
     "NR_QUERIES_PER_ITERATION": config.NR_QUERIES_PER_ITERATION,
     "STOP_AFTER_MAXIMUM_ACCURACY_REACHED": config.TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED,
-    "CLASSIFIER": config.CLASSIFIER,
+    "CLASSIFIER": config.TRAIN_CLASSIFIER,
 }
 param_string = ""
 
@@ -164,7 +165,7 @@ if not Path(OUTPUT_DIRECTORY + "/trained_ann.pickle").is_file():
         + OUTPUT_DIRECTORY
         + " --STATE_ENCODING listwise --TARGET_ENCODING binary --SAVE_DESTINATION "
         + OUTPUT_DIRECTORY
-        + "/trained_ann.pickle --REGULAR_DROPOUT_RATE 0.2 --OPTIMIZER Adam --NR_HIDDEN_NEURONS 40 --NR_HIDDEN_LAYERS 1 --LOSS CosineSimilarity --EPOCHS 1000 --BATCH_SIZE 64 --ACTIVATION relu --RANDOM_SEED 1"
+        + "/trained_ann.pickle --REGULAR_DROPOUT_RATE 0.1 --OPTIMIZER RMSprop --NR_HIDDEN_NEURONS 80 --NR_HIDDEN_LAYERS 2 --LOSS CosineSimilarity --EPOCHS 1000 --BATCH_SIZE 32 --ACTIVATION elu --RANDOM_SEED 1"
     )
 
 
@@ -185,7 +186,7 @@ params = {
     "NEW_SYNTHETIC_PARAMS": config.TEST_NEW_SYNTHETIC_PARAMS,
     "CONVEX_HULL_SAMPLING": config.TEST_CONVEX_HULL_SAMPLING,
     "NR_QUERIES_PER_ITERATION": config.NR_QUERIES_PER_ITERATION,
-    "CLASSIFIER": config.CLASSIFIER,
+    "CLASSIFIER": config.TEST_CLASSIFIER,
 }
 
 CLASSIC_PREFIX = ""
@@ -218,6 +219,7 @@ if (
 ):
 
     def run_evaluation(RANDOM_SEED):
+        RANDOM_SEED += 100000
         cli_arguments = (
             "python single_al_cycle.py --NN_BINARY "
             + OUTPUT_DIRECTORY
@@ -290,6 +292,7 @@ for comparison in params["comparisons"]:
     ):
 
         def run_classic_evaluation(RANDOM_SEED):
+            RANDOM_SEED += 100000
             cli_arguments = (
                 "python single_al_cycle.py --OUTPUT_DIRECTORY "
                 + COMPARISON_PATH
