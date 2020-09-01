@@ -78,6 +78,7 @@ config = standard_config(
         (["--HYPERCUBE"], {"action": "store_true"}),
         (["--AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--CONVEX_HULL_SAMPLING"], {"action": "store_true"}),
+        (["--GENERATE_NOISE"], {"action": "store_true"}),
     ]
 )
 

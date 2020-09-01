@@ -23,7 +23,8 @@ config = standard_config(
         (["--TRAIN_HYPERCUBE"], {"action": "store_true"}),
         (["--TRAIN_NEW_SYNTHETIC_PARAMS"], {"action": "store_false"}),
         (["--TRAIN_CONVEX_HULL_SAMPLING"], {"action": "store_false"}),
-        (["--TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED"], {"action": "store_true"}),
+        (["--TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED"], {"action": "store_false"}),
+        (["--TRAIN_GENERATE_NOISE"], {"action": "store_false"}),
         (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
         (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 100}),
         (["--TEST_REPRESENTATIVE_FEATURES"], {"action": "store_false"}),
@@ -32,6 +33,7 @@ config = standard_config(
         (["--TEST_NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
         (["--TEST_CONVEX_HULL_SAMPLING"], {"action": "store_false"}),
         (["--TEST_CLASSIFIER"], {"default": "RF"}),
+        (["--TEST_GENERATE_NOISE"], {"action": "store_false"}),
         (
             ["--TEST_COMPARISONS"],
             {"nargs": "+", "default": ["random", "uncertainty_max_margin"]},
@@ -58,6 +60,7 @@ params = {
     "NR_QUERIES_PER_ITERATION": config.NR_QUERIES_PER_ITERATION,
     "STOP_AFTER_MAXIMUM_ACCURACY_REACHED": config.TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED,
     "CLASSIFIER": config.TRAIN_CLASSIFIER,
+    "GENERATE_NOISE": config.TRAIN_GENERATE_NOISE,
 }
 param_string = ""
 
@@ -133,6 +136,8 @@ if (
             cli_arguments += " --CONVEX_HULL_SAMPLING"
         if params["STOP_AFTER_MAXIMUM_ACCURACY_REACHED"]:
             cli_arguments += " --STOP_AFTER_MAXIMUM_ACCURACY_REACHED"
+        if params["GENERATE_NOISE"]:
+            cli_arguments += " --GENERATE_NOISE"
         print(cli_arguments)
 
         os.system(cli_arguments)
@@ -187,6 +192,7 @@ params = {
     "CONVEX_HULL_SAMPLING": config.TEST_CONVEX_HULL_SAMPLING,
     "NR_QUERIES_PER_ITERATION": config.NR_QUERIES_PER_ITERATION,
     "CLASSIFIER": config.TEST_CLASSIFIER,
+    "GENERATE_NOISE": config.TEST_GENERATE_NOISE,
 }
 
 CLASSIC_PREFIX = ""
@@ -248,6 +254,8 @@ if (
             cli_arguments += " --HYPERCUBE "
         if params["CONVEX_HULL_SAMPLING"]:
             cli_arguments += " --CONVEX_HULL_SAMPLING"
+        if params["GENERATE_NOISE"]:
+            cli_arguments += " --GENERATE_NOISE"
         print(cli_arguments)
         #  exit(-1)
         os.system(cli_arguments)
@@ -321,6 +329,8 @@ for comparison in params["comparisons"]:
                 cli_arguments += " --HYPERCUBE "
             if params["CONVEX_HULL_SAMPLING"]:
                 cli_arguments += " --CONVEX_HULL_SAMPLING"
+            if params["GENERATE_NOISE"]:
+                cli_arguments += " --GENERATE_NOISE"
 
             os.system(cli_arguments)
 

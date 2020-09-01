@@ -88,6 +88,7 @@ config = standard_config(
         (["--CONVEX_HULL_SAMPLING"], {"action": "store_true"}),
         (["--VARIANCE_BOUND"], {"type": int, "default": 1}),
         (["--STOP_AFTER_MAXIMUM_ACCURACY_REACHED"], {"action": "store_true"}),
+        (["--GENERATE_NOISE"], {"action": "store_true"}),
     ]
 )
 
@@ -149,6 +150,7 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
         NEW_SYNTHETIC_PARAMS=hyper_parameters["NEW_SYNTHETIC_PARAMS"],
         HYPERCUBE=hyper_parameters["HYPERCUBE"],
         AMOUNT_OF_FEATURES=hyper_parameters["AMOUNT_OF_FEATURES"],
+        GENERATE_NOISE=hyper_parameters["GENERATE_NOISE"]
         #  hyper_parameters["START_SET_SIZE"],
         #  hyper_parameters["TEST_FRACTION"],
     )

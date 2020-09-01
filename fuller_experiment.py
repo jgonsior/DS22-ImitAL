@@ -14,7 +14,7 @@ config = standard_config(
         (["--LOG_FILE"], {"default": "log.txt"}),
         (["--OUTPUT_DIRECTORY"], {"default": "tmp/"}),
         (["--NR_QUERIES_PER_ITERATION"], {"default": "default"}),
-        (["--TRAIN_CLASSIFIER"], {"default": "RF"}),
+        (["--TRAIN_CLASSIFIER"], {"default": "default"}),
         (["--TRAIN_VARIABLE_DATASET"], {"default": "default"}),
         (["--TRAIN_NR_LEARNING_SAMPLES"], {"default": "default"}),
         (["--TRAIN_REPRESENTATIVE_FEATURES"], {"default": "default"}),
@@ -23,7 +23,8 @@ config = standard_config(
         (["--TRAIN_NEW_SYNTHETIC_PARAMS"], {"default": "default"}),
         (["--TRAIN_CONVEX_HULL_SAMPLING"], {"default": "default"}),
         (["--TRAIN_VARIANCE_BOUND"], {"default": "default"}),
-        (["--TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED"], {"action": "store_true"}),
+        (["--TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED"], {"default": "default"}),
+        (["--TRAIN_GENERATE_NOISE"], {"default": "default"}),
         (["--TEST_VARIABLE_DATASET"], {"default": "default"}),
         (["--TEST_NR_LEARNING_SAMPLES"], {"default": "default"}),
         (["--TEST_REPRESENTATIVE_FEATURES"], {"default": "default"}),
@@ -32,7 +33,8 @@ config = standard_config(
         (["--TEST_NEW_SYNTHETIC_PARAMS"], {"default": "default"}),
         (["--TEST_COMPARISONS"], {"default": "default"}),
         (["--TEST_CONVEX_HULL_SAMPLING"], {"default": "default"}),
-        (["--TEST_CLASSIFIER"], {"default": "RF"}),
+        (["--TEST_CLASSIFIER"], {"default": "default"}),
+        (["--TEST_GENERATE_NOISE"], {"default": "default"}),
     ],
     standard_args=False,
 )
@@ -103,4 +105,4 @@ for cli_command in cli_commands.values():
             #  print(k, str(v))
             cli_command = cli_command.replace("--" + k + " None ", "")
     print(cli_command)
-    os.system(cli_command)
+    #  os.system(cli_command)
