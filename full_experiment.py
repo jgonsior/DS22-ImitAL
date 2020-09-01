@@ -16,7 +16,7 @@ config = standard_config(
         (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 30}),
         (["--TRAIN_CLASSIFIER"], {"default": "MLP"}),
         (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 20}),
+        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 200}),
         (["--TRAIN_REPRESENTATIVE_FEATURES"], {"action": "store_true"}),
         (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TRAIN_VARIANCE_BOUND"], {"type": int, "default": 2}),
@@ -28,7 +28,7 @@ config = standard_config(
         (["--TRAIN_NO_DIFF_FEATURES"], {"action": "store_true"}),
         (["--TRAIN_LRU_AREAS_LIMIT"], {"type": int, "default": 0}),
         (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 20}),
+        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 200}),
         (["--TEST_REPRESENTATIVE_FEATURES"], {"action": "store_true"}),
         (["--TEST_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TEST_HYPERCUBE"], {"action": "store_true"}),
@@ -387,9 +387,7 @@ print(comparison_path)
 
 if not Path(comparison_path).is_file():
     df = pd.read_csv(
-        trained_ann_csv_path,
-        index_col=None,
-        nrows=1 + params["NR_EVALUATIONS"],
+        trained_ann_csv_path, index_col=None, nrows=1 + params["NR_EVALUATIONS"],
     )
 
     for comparison in params["comparisons"]:
