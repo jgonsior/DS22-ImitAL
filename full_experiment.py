@@ -35,7 +35,6 @@ config = standard_config(
         (["--TEST_NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
         (["--TEST_CONVEX_HULL_SAMPLING"], {"action": "store_false"}),
         (["--TEST_CLASSIFIER"], {"default": "MLP"}),
-        (["--TEST_NO_DIFF_FEATURES"], {"action": "store_true"}),
         (["--TEST_GENERATE_NOISE"], {"action": "store_false"}),
         (
             ["--TEST_COMPARISONS"],
@@ -202,7 +201,7 @@ params = {
     "NR_QUERIES_PER_ITERATION": config.NR_QUERIES_PER_ITERATION,
     "CLASSIFIER": config.TEST_CLASSIFIER,
     "GENERATE_NOISE": config.TEST_GENERATE_NOISE,
-    "NO_DIFF_FEATURES": config.TEST_NO_DIFF_FEATURES,
+    "NO_DIFF_FEATURES": config.TRAIN_NO_DIFF_FEATURES,
     "LRU_AREAS_LIMIT": config.TRAIN_LRU_AREAS_LIMIT,
 }
 
