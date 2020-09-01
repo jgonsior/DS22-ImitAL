@@ -24,7 +24,7 @@ config = standard_config(
         (["--TRAIN_NEW_SYNTHETIC_PARAMS"], {"action": "store_false"}),
         (["--TRAIN_CONVEX_HULL_SAMPLING"], {"action": "store_false"}),
         (["--TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED"], {"action": "store_false"}),
-        (["--TRAIN_GENERATE_NOISE"], {"action": "store_false"}),
+        (["--TRAIN_GENERATE_NOISE"], {"action": "store_true"}),
         (["--TRAIN_NO_DIFF_FEATURES"], {"action": "store_true"}),
         (["--TRAIN_LRU_AREAS_LIMIT"], {"type": int, "default": 0}),
         (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
@@ -388,9 +388,7 @@ print(comparison_path)
 
 if not Path(comparison_path).is_file():
     df = pd.read_csv(
-        trained_ann_csv_path,
-        index_col=None,
-        nrows=1 + params["NR_EVALUATIONS"],
+        trained_ann_csv_path, index_col=None, nrows=1 + params["NR_EVALUATIONS"],
     )
 
     for comparison in params["comparisons"]:
