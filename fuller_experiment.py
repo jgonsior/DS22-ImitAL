@@ -14,7 +14,7 @@ config = standard_config(
         (["--LOG_FILE"], {"default": "log.txt"}),
         (["--OUTPUT_DIRECTORY"], {"default": "tmp/"}),
         (["--NR_QUERIES_PER_ITERATION"], {"default": "default"}),
-        (["--CLASSIFIER"], {"default": "RF"}),
+        (["--TRAIN_CLASSIFIER"], {"default": "RF"}),
         (["--TRAIN_VARIABLE_DATASET"], {"default": "default"}),
         (["--TRAIN_NR_LEARNING_SAMPLES"], {"default": "default"}),
         (["--TRAIN_REPRESENTATIVE_FEATURES"], {"default": "default"}),
@@ -32,6 +32,7 @@ config = standard_config(
         (["--TEST_NEW_SYNTHETIC_PARAMS"], {"default": "default"}),
         (["--TEST_COMPARISONS"], {"default": "default"}),
         (["--TEST_CONVEX_HULL_SAMPLING"], {"default": "default"}),
+        (["--TEST_CLASSIFIER"], {"default": "RF"}),
     ],
     standard_args=False,
 )
