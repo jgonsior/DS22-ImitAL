@@ -11,7 +11,7 @@ from active_learning.al_cycle_wrapper import eval_al
 from active_learning.cluster_strategies import DummyClusterStrategy
 from active_learning.dataStorage import DataStorage
 from active_learning.experiment_setup_lib import (
-    standard_config,
+    get_active_config,
     init_logger,
     get_classifier,
 )
@@ -20,94 +20,36 @@ from fake_experiment_oracle import FakeExperimentOracle
 
 #  import np.random.distributions as dists
 
-config = standard_config(
-    [
-        (
-            ["--SAMPLING"],
-            {
-                "help": "Possible values: uncertainty, random, committe, boundary",
-            },
-        ),
-        (
-            ["--DATASET_NAME"],
-            {
-                "required": True,
-            },
-        ),
-        (
-            ["--CLUSTER"],
-            {
-                "default": "dummy",
-                "help": "Possible values: dummy, random, mostUncertain, roundRobin",
-            },
-        ),
-        (["--NR_LEARNING_ITERATIONS"], {"type": int, "default": 150000}),
-        (["--NR_QUERIES_PER_ITERATION"], {"type": int, "default": 150}),
-        (["--START_SET_SIZE"], {"type": int, "default": 1}),
-        (
-            ["--MINIMUM_TEST_ACCURACY_BEFORE_RECOMMENDATIONS"],
-            {"type": float, "default": 0.5},
-        ),
-        (
-            ["--UNCERTAINTY_RECOMMENDATION_CERTAINTY_THRESHOLD"],
-            {"type": float, "default": 0.9},
-        ),
-        (["--UNCERTAINTY_RECOMMENDATION_RATIO"], {"type": float, "default": 1 / 100}),
-        (["--SNUBA_LITE_MINIMUM_HEURISTIC_ACCURACY"], {"type": float, "default": 0.9}),
-        (
-            ["--CLUSTER_RECOMMENDATION_MINIMUM_CLUSTER_UNITY_SIZE"],
-            {"type": float, "default": 0.7},
-        ),
-        (
-            ["--CLUSTER_RECOMMENDATION_RATIO_LABELED_UNLABELED"],
-            {"type": float, "default": 0.9},
-        ),
-        (["--WITH_UNCERTAINTY_RECOMMENDATION"], {"action": "store_true"}),
-        (["--WITH_CLUSTER_RECOMMENDATION"], {"action": "store_true"}),
-        (["--WITH_SNUBA_LITE"], {"action": "store_true"}),
-        (["--PLOT"], {"action": "store_true"}),
-        (["--STOPPING_CRITERIA_UNCERTAINTY"], {"type": float, "default": 0.7}),
-        (["--STOPPING_CRITERIA_ACC"], {"type": float, "default": 0.7}),
-        (["--STOPPING_CRITERIA_STD"], {"type": float, "default": 0.7}),
-        (
-            ["--ALLOW_RECOMMENDATIONS_AFTER_STOP"],
-            {"action": "store_true", "default": False},
-        ),
-        (["--OUTPUT_DIRECTORY"], {"default": "tmp/"}),
-        (["--HYPER_SEARCH_TYPE"], {"default": "random"}),
-        (["--USER_QUERY_BUDGET_LIMIT"], {"type": float, "default": 200}),
-        (["--AMOUNT_OF_PEAKED_OBJECTS"], {"type": int, "default": 12}),
-        (["--MAX_AMOUNT_OF_WS_PEAKS"], {"type": int, "default": 1}),
-        (["--AMOUNT_OF_LEARN_ITERATIONS"], {"type": int, "default": 1}),
-        (["--PLOT_EVOLUTION"], {"action": "store_true"}),
-        (["--VARIABLE_INPUT_SIZE"], {"action": "store_true"}),
-        (["--REPRESENTATIVE_FEATURES"], {"action": "store_true"}),
-        (["--NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
-        (["--HYPERCUBE"], {"action": "store_true"}),
-        (["--AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
-        (["--CONVEX_HULL_SAMPLING"], {"action": "store_true"}),
-        (["--VARIANCE_BOUND"], {"type": int, "default": 1}),
-        (["--STOP_AFTER_MAXIMUM_ACCURACY_REACHED"], {"action": "store_true"}),
-        (["--GENERATE_NOISE"], {"action": "store_true"}),
-        (["--NO_DIFF_FEATURES"], {"action": "store_true"}),
-        (["--LRU_AREAS_LIMIT"], {"type": int, "default": 0}),
-    ]
-)
+config = get_active_config()
 
 if not os.path.isfile(config.OUTPUT_DIRECTORY + "/states.csv"):
     columns = [
-        str(i) + "_proba_max" for i in range(config.AMOUNT_OF_PEAKED_OBJECTS)
-    ] + [str(i) + "_proba_diff" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)]
-
-    if config.LRU_AREAS_LIMIT == 0:
+        str(i) + "_proba_argfirst" for i in range(config.AMOUNT_OF_PEAKED_OBJECTS)
+    ]
+    if config.STATE_ARGSECOND_PROBAS:
         columns += [
-            str(i) + "_avg_dist_lab" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
-        ]
-        columns += [
-            str(i) + "_avg_dist_unlab"
+            str(i) + "_proba_argsecond"
             for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
         ]
-    if config.LRU_AREAS_LIMIT > 0:
+    if config.STATE_DIFF_PROBAS:
+        columns += [
+            str(i) + "_proba_diff" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
+        ]
+    if config.STATE_ARGTHIRD_PROBAS:
+        columns += [
+            str(i) + "_proba_argthird"
+            for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
+        ]
+    if config.STATE_DISTANCES:
+        columns += [
+            str(i) + "_proba_avg_dist_lab"
+            for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
+        ]
+        columns += [
+            str(i) + "_proba_avg_dist_unlab"
+            for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
+        ]
+    if config.STATE_LRU_AREAS_LIMIT > 0:
         columns += [
             str(i) + "_lru_dist" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
         ]
@@ -152,7 +94,7 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
         DATASET_NAME=hyper_parameters["DATASET_NAME"],
         DATASETS_PATH=hyper_parameters["DATASETS_PATH"],
         PLOT_EVOLUTION=hyper_parameters["PLOT_EVOLUTION"],
-        VARIABLE_INPUT_SIZE=hyper_parameters["VARIABLE_INPUT_SIZE"],
+        VARIABLE_DATASET=hyper_parameters["VARIABLE_DATASET"],
         NEW_SYNTHETIC_PARAMS=hyper_parameters["NEW_SYNTHETIC_PARAMS"],
         HYPERCUBE=hyper_parameters["HYPERCUBE"],
         AMOUNT_OF_FEATURES=hyper_parameters["AMOUNT_OF_FEATURES"],
@@ -213,12 +155,14 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
     )
 
     active_learner.init_sampling_classifier(
-        hyper_parameters["OUTPUT_DIRECTORY"],
-        hyper_parameters["REPRESENTATIVE_FEATURES"],
-        hyper_parameters["CONVEX_HULL_SAMPLING"],
-        hyper_parameters["VARIANCE_BOUND"],
-        hyper_parameters["NO_DIFF_FEATURES"],
-        hyper_parameters["LRU_AREAS_LIMIT"],
+        DATA_PATH=hyper_parameters["OUTPUT_DIRECTORY"],
+        CONVEX_HULL_SAMPLING=hyper_parameters["CONVEX_HULL_SAMPLING"],
+        VARIANCE_BOUND=hyper_parameters["VARIANCE_BOUND"],
+        STATE_DISTANCES=hyper_parameters["STATE_DISTANCES"],
+        STATE_DIFF_PROBAS=hyper_parameters["STATE_DIFF_PROBAS"],
+        STATE_ARGTHIRD_PROBAS=hyper_parameters["STATE_ARGTHIRD_PROBAS"],
+        STATE_LRU_AREAS_LIMIT=hyper_parameters["STATE_LRU_AREAS_LIMIT"],
+        STATE_ARGSECOND_PROBAS=hyper_parameters["STATE_ARGSECOND_PROBAS"],
     )
     active_learner.MAX_AMOUNT_OF_WS_PEAKS = hyper_parameters["MAX_AMOUNT_OF_WS_PEAKS"]
 
