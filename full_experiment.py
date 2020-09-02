@@ -18,7 +18,7 @@ config = standard_config(
         (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
         (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 21}),
         (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
-        (["--TRAIN_VARIANCE_BOUND"], {"type": int, "default": 2}),
+        (["--TRAIN_VARIANCE_BOUND"], {"type": int, "default": 1}),
         (["--TRAIN_HYPERCUBE"], {"action": "store_true"}),
         (["--TRAIN_NEW_SYNTHETIC_PARAMS"], {"action": "store_false"}),
         (["--TRAIN_CONVEX_HULL_SAMPLING"], {"action": "store_false"}),

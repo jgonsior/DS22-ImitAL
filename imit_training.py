@@ -94,7 +94,7 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
         DATASET_NAME=hyper_parameters["DATASET_NAME"],
         DATASETS_PATH=hyper_parameters["DATASETS_PATH"],
         PLOT_EVOLUTION=hyper_parameters["PLOT_EVOLUTION"],
-        VARIABLE_INPUT_SIZE=hyper_parameters["VARIABLE_INPUT_SIZE"],
+        VARIABLE_DATASET=hyper_parameters["VARIABLE_DATASET"],
         NEW_SYNTHETIC_PARAMS=hyper_parameters["NEW_SYNTHETIC_PARAMS"],
         HYPERCUBE=hyper_parameters["HYPERCUBE"],
         AMOUNT_OF_FEATURES=hyper_parameters["AMOUNT_OF_FEATURES"],
