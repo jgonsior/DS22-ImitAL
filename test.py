@@ -77,10 +77,16 @@ if n_dimensions == 3:
     z_random = random_sample[:, 2]
 
 
-x_data = np.concatenate((x_data, x_sample, x_random),)
-y_data = np.concatenate((y_data, y_sample, y_random),)
+x_data = np.concatenate(
+    (x_data, x_sample, x_random),
+)
+y_data = np.concatenate(
+    (y_data, y_sample, y_random),
+)
 if n_dimensions == 3:
-    z_data = np.concatenate((z_data, z_sample, z_random),)
+    z_data = np.concatenate(
+        (z_data, z_sample, z_random),
+    )
 y = np.concatenate((y, [2] * amount_of_samples, [3] * amount_of_samples))
 size = np.concatenate(
     ([10] * amount_of_data, [100] * amount_of_samples, [100] * amount_of_samples)

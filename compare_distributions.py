@@ -30,7 +30,11 @@ if len(sys.argv[:-1]) == 0:
 
 
 def plot_distributions(
-    selection_list, axvline=False, SAVE_FILE=None, title="", **kwargs,
+    selection_list,
+    axvline=False,
+    SAVE_FILE=None,
+    title="",
+    **kwargs,
 ):
     sns.set(
         font_scale=1,
@@ -208,7 +212,11 @@ df = df.query("sampling != 'random'")
 
 
 def compare_two_distributions(
-    selection_list, axvline=False, save=False, title="", **kwargs,
+    selection_list,
+    axvline=False,
+    save=False,
+    title="",
+    **kwargs,
 ):
     sns.set(
         font_scale=1,
@@ -440,7 +448,10 @@ def get_distributions_for_interesting(params):
                 (sel, "{:>5} : {:>6} - {:.2%}".format(value, len(sel), sel.mean()))
             )
         compare_two_distributions(
-            selections, axvline=True, title=param, save=True,
+            selections,
+            axvline=True,
+            title=param,
+            save=True,
         )
 
     #  für alpha, beta, gamma jointplots über ganzen Wertebereich, mit acc_test_oracle als highlight farbe?
