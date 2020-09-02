@@ -13,22 +13,22 @@ config = standard_config(
         (["--LOG_FILE"], {"default": "log.txt"}),
         (["--OUTPUT_DIRECTORY"], {"default": "/tmp"}),
         (["--NR_QUERIES_PER_ITERATION"], {"type": int, "default": 1}),
-        (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 30}),
+        (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 50}),
         (["--TRAIN_CLASSIFIER"], {"default": "MLP"}),
         (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 2000}),
+        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 200}),
         (["--TRAIN_REPRESENTATIVE_FEATURES"], {"action": "store_true"}),
         (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
-        (["--TRAIN_VARIANCE_BOUND"], {"type": int, "default": 2}),
+        (["--TRAIN_VARIANCE_BOUND"], {"type": int, "default": 1}),
         (["--TRAIN_HYPERCUBE"], {"action": "store_true"}),
         (["--TRAIN_NEW_SYNTHETIC_PARAMS"], {"action": "store_false"}),
-        (["--TRAIN_CONVEX_HULL_SAMPLING"], {"action": "store_false"}),
+        (["--TRAIN_CONVEX_HULL_SAMPLING"], {"action": "store_true"}),
         (["--TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED"], {"action": "store_false"}),
         (["--TRAIN_GENERATE_NOISE"], {"action": "store_true"}),
         (["--TRAIN_NO_DIFF_FEATURES"], {"action": "store_true"}),
         (["--TRAIN_LRU_AREAS_LIMIT"], {"type": int, "default": 0}),
         (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 2000}),
+        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 200}),
         (["--TEST_REPRESENTATIVE_FEATURES"], {"action": "store_true"}),
         (["--TEST_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TEST_HYPERCUBE"], {"action": "store_true"}),
@@ -51,6 +51,7 @@ if config.NR_QUERIES_PER_ITERATION == 1:
 PARENT_OUTPUT_DIRECTORY = config.OUTPUT_DIRECTORY
 
 params = {
+    "USER_QUERY_BUDGET_LIMIT": config.USER_QUERY_BUDGET_LIMIT,
     "VARIABLE_DATASET": config.TRAIN_VARIABLE_DATASET,
     "NR_LEARNING_SAMPLES": config.TRAIN_NR_LEARNING_SAMPLES,
     "REPRESENTATIVE_FEATURES": config.TRAIN_REPRESENTATIVE_FEATURES,
@@ -113,7 +114,7 @@ if (
             + " --DATASET_NAME synthetic "
             + " --START_SET_SIZE 1 "
             + " --USER_QUERY_BUDGET_LIMIT "
-            + str(config.USER_QUERY_BUDGET_LIMIT)
+            + str(params["USER_QUERY_BUDGET_LIMIT"])
             + " --RANDOM_SEED "
             + str(RANDOM_SEED)
             + " --N_JOBS 1"
@@ -153,7 +154,7 @@ if (
 
     nr_parallel_processes = int(
         NR_LEARNING_SAMPLES
-        / (config.USER_QUERY_BUDGET_LIMIT / params["NR_QUERIES_PER_ITERATION"])
+        / (params["USER_QUERY_BUDGET_LIMIT"] / params["NR_QUERIES_PER_ITERATION"])
     )
     if nr_parallel_processes == 0:
         nr_parallel_processes = params["NR_LEARNING_SAMPLES"] + 1
@@ -178,7 +179,7 @@ if not Path(OUTPUT_DIRECTORY + "/trained_ann.pickle").is_file():
         + OUTPUT_DIRECTORY
         + " --STATE_ENCODING listwise --TARGET_ENCODING binary --SAVE_DESTINATION "
         + OUTPUT_DIRECTORY
-        + "/trained_ann.pickle --REGULAR_DROPOUT_RATE 0.1 --OPTIMIZER RMSprop --NR_HIDDEN_NEURONS 80 --NR_HIDDEN_LAYERS 2 --LOSS CosineSimilarity --EPOCHS 1000 --BATCH_SIZE 32 --ACTIVATION elu --RANDOM_SEED 1"
+        + "/trained_ann.pickle --REGULAR_DROPOUT_RATE 0.1 --OPTIMIZER RMSprop --NR_HIDDEN_NEURONS 80 --NR_HIDDEN_LAYERS 4 --LOSS CosineSimilarity --EPOCHS 1000 --BATCH_SIZE 32 --ACTIVATION elu --RANDOM_SEED 1"
     )
 
 
@@ -189,6 +190,7 @@ print("Creating evaluation ann data")
 print("#" * 80)
 print("\n")
 params = {
+    "USER_QUERY_BUDGET_LIMIT": config.USER_QUERY_BUDGET_LIMIT,
     "VARIABLE_DATASET": config.TEST_VARIABLE_DATASET,
     "comparisons": config.TEST_COMPARISONS,
     # ["random", "uncertainty_max_margin"],
@@ -244,7 +246,7 @@ if (
             + " --SAMPLING trained_nn --CLUSTER dummy --NR_QUERIES_PER_ITERATION "
             + str(params["NR_QUERIES_PER_ITERATION"])
             + " --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT "
-            + str(config.USER_QUERY_BUDGET_LIMIT)
+            + str(params["USER_QUERY_BUDGET_LIMIT"])
             + " --RANDOM_SEED "
             + str(RANDOM_SEED)
             + " --N_JOBS 1"
@@ -323,7 +325,7 @@ for comparison in params["comparisons"]:
                 + " --CLUSTER dummy --NR_QUERIES_PER_ITERATION "
                 + str(params["NR_QUERIES_PER_ITERATION"])
                 + " --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT "
-                + str(config.USER_QUERY_BUDGET_LIMIT)
+                + str(params["USER_QUERY_BUDGET_LIMIT"])
                 + " --RANDOM_SEED "
                 + str(RANDOM_SEED)
                 + " --N_JOBS 1"

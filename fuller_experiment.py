@@ -14,6 +14,7 @@ config = standard_config(
         (["--LOG_FILE"], {"default": "log.txt"}),
         (["--OUTPUT_DIRECTORY"], {"default": "tmp/"}),
         (["--NR_QUERIES_PER_ITERATION"], {"default": "default"}),
+        (["--USER_QUERY_BUDGET_LIMIT"], {"default": "default"}),
         (["--TRAIN_CLASSIFIER"], {"default": "default"}),
         (["--TRAIN_VARIABLE_DATASET"], {"default": "default"}),
         (["--TRAIN_NR_LEARNING_SAMPLES"], {"default": "default"}),
