@@ -163,6 +163,7 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
         STATE_ARGTHIRD_PROBAS=hyper_parameters["STATE_ARGTHIRD_PROBAS"],
         STATE_LRU_AREAS_LIMIT=hyper_parameters["STATE_LRU_AREAS_LIMIT"],
         STATE_ARGSECOND_PROBAS=hyper_parameters["STATE_ARGSECOND_PROBAS"],
+        STATE_NO_LRU_WEIGHTS=hyper_parameters["STATE_NO_LRU_WEIGHTS"],
     )
     active_learner.MAX_AMOUNT_OF_WS_PEAKS = hyper_parameters["MAX_AMOUNT_OF_WS_PEAKS"]
 

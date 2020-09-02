@@ -28,6 +28,7 @@ config = standard_config(
         (["--TRAIN_STATE_ARGSECOND_PROBAS"], {"action": "store_true"}),
         (["--TRAIN_STATE_ARGTHIRD_PROBAS"], {"action": "store_true"}),
         (["--TRAIN_STATE_DISTANCES"], {"action": "store_true"}),
+        (["--TRAIN_STATE_NO_LRU_WEIGHTS"], {"action": "store_true"}),
         (["--TRAIN_STATE_LRU_AREAS_LIMIT"], {"type": int, "default": 0}),
         (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
         (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 200}),
@@ -69,6 +70,7 @@ params = {
     "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
     "STATE_DISTANCES": config.TRAIN_STATE_DISTANCES,
     "STATE_LRU_AREAS_LIMIT": config.TRAIN_STATE_LRU_AREAS_LIMIT,
+    "STATE_NO_LRU_WEIGHTS": config.TRAIN_STATE_NO_LRU_WEIGHTS,
 }
 param_string = ""
 
@@ -146,6 +148,7 @@ if (
             "STATE_ARGTHIRD_PROBAS",
             "STATE_ARGSECOND_PROBAS",
             "STATE_DIFF_PROBAS",
+            "STATE_NO_LRU_WEIGHTS",
         ]:
             if params[k]:
                 cli_arguments += " --" + k + " "
@@ -209,6 +212,7 @@ params = {
     "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
     "STATE_DISTANCES": config.TRAIN_STATE_DISTANCES,
     "STATE_LRU_AREAS_LIMIT": config.TRAIN_STATE_LRU_AREAS_LIMIT,
+    "STATE_NO_LRU_WEIGHTS": config.TRAIN_STATE_NO_LRU_WEIGHTS,
 }
 
 CLASSIC_PREFIX = ""
@@ -273,6 +277,7 @@ if (
             "STATE_ARGTHIRD_PROBAS",
             "STATE_ARGSECOND_PROBAS",
             "STATE_DIFF_PROBAS",
+            "STATE_NO_LRU_WEIGHTS",
         ]:
             if params[k]:
                 cli_arguments += " --" + k + " "
@@ -352,6 +357,7 @@ for comparison in params["comparisons"]:
                 "STATE_ARGTHIRD_PROBAS",
                 "STATE_ARGSECOND_PROBAS",
                 "STATE_DIFF_PROBAS",
+                "STATE_NO_LRU_WEIGHTS",
             ]:
                 if params[k]:
                     cli_arguments += " --" + k + " "
@@ -393,7 +399,9 @@ print(comparison_path)
 
 if not Path(comparison_path).is_file():
     df = pd.read_csv(
-        trained_ann_csv_path, index_col=None, nrows=1 + params["NR_EVALUATIONS"],
+        trained_ann_csv_path,
+        index_col=None,
+        nrows=1 + params["NR_EVALUATIONS"],
     )
 
     for comparison in params["comparisons"]:
