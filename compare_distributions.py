@@ -86,7 +86,7 @@ def plot_distributions(
 
 def compare_distributions(CSV_FILE, GROUP_COLUMNS, VALUE_GROUPINGS, SAVE_FILE):
     df = pd.read_csv(CSV_FILE)
-    print(df.head)
+    #  print(df.head)
     #  exit(-1)
     # group df by all possible GROUP_COLUMNS combinations
     combs = product(*[df[col].unique() for col in GROUP_COLUMNS])
@@ -95,7 +95,7 @@ def compare_distributions(CSV_FILE, GROUP_COLUMNS, VALUE_GROUPINGS, SAVE_FILE):
         sel = True
         for restriction, column in zip(comb, GROUP_COLUMNS):
             sel &= df[column] == restriction
-        print(comb)
+        #  print(comb)
         selection = df.loc[sel]["acc_test_oracle"]
         if len(selection) != 0:
             sels.append((selection, comb))
@@ -309,7 +309,7 @@ def find_best_distribution(param, save=False, one_vs_rest_params=False):
             selections.append((sel1, str(s) + ": " + str(len(sel1))))
 
         if diff > highest_diff:
-            print(str(s), "\t\t\t", diff)
+            #  print(str(s), "\t\t\t", diff)
             title = " kde density plot\nSelection: {} \n Mean Diff: {}".format(
                 str(s), diff
             )

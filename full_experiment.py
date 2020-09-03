@@ -1,7 +1,7 @@
 import multiprocessing
 import os
 from pathlib import Path
-
+import time
 import pandas as pd
 from joblib import Parallel, delayed
 
@@ -13,10 +13,10 @@ config = standard_config(
         (["--LOG_FILE"], {"default": "log.txt"}),
         (["--OUTPUT_DIRECTORY"], {"default": "/tmp"}),
         (["--NR_QUERIES_PER_ITERATION"], {"type": int, "default": 1}),
-        (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 150}),
+        (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 15}),
         (["--TRAIN_CLASSIFIER"], {"default": "MLP"}),
         (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 200}),
+        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 10}),
         (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TRAIN_VARIANCE_BOUND"], {"type": int, "default": 1}),
         (["--TRAIN_HYPERCUBE"], {"action": "store_true"}),
@@ -31,7 +31,7 @@ config = standard_config(
         (["--TRAIN_STATE_NO_LRU_WEIGHTS"], {"action": "store_true"}),
         (["--TRAIN_STATE_LRU_AREAS_LIMIT"], {"type": int, "default": 0}),
         (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 200}),
+        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 10}),
         (["--TEST_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TEST_HYPERCUBE"], {"action": "store_true"}),
         (["--TEST_NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
@@ -46,9 +46,6 @@ config = standard_config(
     ],
     standard_args=False,
 )
-
-if config.NR_QUERIES_PER_ITERATION == 1:
-    config.USER_QUERY_BUDGET_LIMIT = config.USER_QUERY_BUDGET_LIMIT / 5
 
 PARENT_OUTPUT_DIRECTORY = config.OUTPUT_DIRECTORY
 
@@ -94,6 +91,7 @@ print("Creating dataset")
 print("#" * 80)
 print("\n")
 
+start = time.time()
 
 if (
     not Path(OUTPUT_DIRECTORY + "/states.csv").is_file()
@@ -171,6 +169,15 @@ if (
 
 assert os.path.exists(OUTPUT_DIRECTORY + "/states.csv")
 
+end = time.time()
+print(end - start)
+start = time.time()
+
+
+end = time.time()
+print(end - start)
+start = time.time()
+
 print("#" * 80)
 print("Training ANN")
 print("#" * 80)
@@ -188,6 +195,16 @@ if not Path(OUTPUT_DIRECTORY + "/trained_ann.pickle").is_file():
 
 
 assert os.path.exists(OUTPUT_DIRECTORY + "/trained_ann.pickle")
+
+end = time.time()
+print(end - start)
+start = time.time()
+
+
+end = time.time()
+print(end - start)
+start = time.time()
+
 OUTPUT_DIRECTORY
 print("#" * 80)
 print("Creating evaluation ann data")
@@ -300,6 +317,11 @@ if (
 
 assert os.path.exists(trained_ann_csv_path)
 
+end = time.time()
+print(end - start)
+start = time.time()
+
+
 amount_of_lines = sum(1 for l in open(trained_ann_csv_path))
 print("Evaluation trained_nn size: {}".format(amount_of_lines))
 
@@ -396,7 +418,9 @@ print(comparison_path)
 
 if not Path(comparison_path).is_file():
     df = pd.read_csv(
-        trained_ann_csv_path, index_col=None, nrows=1 + params["NR_EVALUATIONS"],
+        trained_ann_csv_path,
+        index_col=None,
+        nrows=1 + params["NR_EVALUATIONS"],
     )
 
     for comparison in params["comparisons"]:
@@ -415,6 +439,11 @@ if not Path(comparison_path).is_file():
     df.to_csv(comparison_path, index=False)
 
 assert os.path.exists(comparison_path)
+
+end = time.time()
+print(end - start)
+start = time.time()
+
 
 df = pd.read_csv(comparison_path)
 random_mean = df.loc[df["sampling"] == "random"]["acc_test_oracle"].mean()
@@ -445,3 +474,6 @@ os.system(
     + " --TITLE "
     + comparison_path
 )
+
+end = time.time()
+print(end - start)

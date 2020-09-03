@@ -65,7 +65,7 @@ if config.RANDOM_SEED != -1 and config.RANDOM_SEED != -2:
 
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"] = ""
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 
 DATA_PATH = config.DATA_PATH
@@ -114,11 +114,11 @@ def _evaluate_top_k(Y_true, Y_pred):
                 Y_pred_binarized[str(i) + "_true_peaked_normalised_acc"].to_numpy(),
             )
         )
-    print(accs)
+    #  print(accs)
     return np.mean(accs)
 
 
-print(config.TARGET_ENCODING)
+#  print(config.TARGET_ENCODING)
 
 if config.TARGET_ENCODING == "regression":
     # congrats, default values
@@ -129,12 +129,12 @@ else:
     print("Not a valid TARGET_ENCODING")
     exit(-1)
 
-print(config.STATE_ENCODING)
+#  print(config.STATE_ENCODING)
 if config.STATE_ENCODING == "listwise":
     # congrats, the states are already in the correct form
     pass
 elif config.STATE_ENCODING == "pointwise":
-    print(states)
+    #  print(states)
     #  states_new =
     states.to_csv(DATA_PATH + "/states_pointwise.csv", index=False)
     exit(-1)
@@ -146,8 +146,8 @@ else:
     print("Not a valid STATE_ENCODING")
     exit(-1)
 
-print(states)
-print(optimal_policies)
+#  print(states)
+#  print(optimal_policies)
 #  exit(-1)
 # test out pointwise LTR method
 # test out pairwise LTR method, RankNet, RankSVM, RankBoost
@@ -265,8 +265,8 @@ if config.HYPER_SEARCH:
         epochs=None,
         batch_size=None,
         callbacks=[
-            EarlyStopping(monitor="val_loss", patience=5, verbose=1),
-            ReduceLROnPlateau(monitor="val_loss", patience=3, verbose=1),
+            EarlyStopping(monitor="val_loss", patience=5, verbose=0),
+            ReduceLROnPlateau(monitor="val_loss", patience=3, verbose=0),
         ],
     )
 
@@ -276,7 +276,7 @@ if config.HYPER_SEARCH:
         cv=5,
         n_jobs=-1,
         scoring=make_scorer(_evaluate_top_k, greater_is_better=True),
-        verbose=2,
+        verbose=0,
         n_iter=config.N_ITER,
     )
 
@@ -299,7 +299,7 @@ if config.HYPER_SEARCH:
 else:
     model = KerasRegressor(
         build_fn=build_nn,
-        verbose=1,
+        verbose=0,
         activation=config.ACTIVATION,
         validation_split=0.3,
         loss=config.LOSS,
@@ -310,10 +310,10 @@ else:
         epochs=config.EPOCHS,
         batch_size=config.BATCH_SIZE,
         callbacks=[
-            EarlyStopping(monitor="val_loss", patience=5, verbose=1),
-            ReduceLROnPlateau(monitor="val_loss", patience=3, verbose=1),
+            EarlyStopping(monitor="val_loss", patience=5, verbose=0),
+            ReduceLROnPlateau(monitor="val_loss", patience=3, verbose=0),
         ],
-        random_state=config.RANDOM_SEED,
+        #  random_state=config.RANDOM_SEED,
     )
 
     fitted_model = model.fit(
@@ -323,11 +323,11 @@ else:
         batch_size=config.BATCH_SIZE,
     )
 
-    Y_pred = fitted_model.predict(X_test)
+    #  Y_pred = fitted_model.predict(X_test)
 
-    print(Y_test)
-    print(Y_pred)
-    print(mean_squared_error(Y_test, Y_pred))
+    #  print(Y_test)
+    #  print(Y_pred)
+    #  print(mean_squared_error(Y_test, Y_pred))
 
     def random_sampling_probas(X_test):
         result = np.random.uniform(
@@ -361,18 +361,18 @@ else:
 
         return _binarize_targets(df).to_numpy()
 
-    Y_pred_random_probas = random_sampling_probas(X_test)
-    Y_pred_random = random_sampling(X_test)
+    #  Y_pred_random_probas = random_sampling_probas(X_test)
+    #  Y_pred_random = random_sampling(X_test)
     #  Y_pred_uncertainty_lc = uncertainty_sampling(X_test, strategy="least_confident")
     #  Y_pred_uncertainty_mm = uncertainty_sampling(X_test, strategy="max_margin")
     #  Y_pred_uncertainty_ent = uncertainty_sampling(X_test, strategy="entropy")
 
-    print(
-        "Pleas note: uncertainty measures in real AL have access to ALL data from all samples, not just only from a small subset of only 20 samples!"
-    )
-    print("Y_pred:\t\t", _evaluate_top_k(Y_test, Y_pred))
-    print("Y_pred_random:\t", _evaluate_top_k(Y_test, Y_pred_random))
-    print("Y_pred_probas:\t", _evaluate_top_k(Y_test, Y_pred_random_probas))
+    #  print(
+    #      "Pleas note: uncertainty measures in real AL have access to ALL data from all samples, not just only from a small subset of only 20 samples!"
+    #  )
+    #  print("Y_pred:\t\t", _evaluate_top_k(Y_test, Y_pred))
+    #  print("Y_pred_random:\t", _evaluate_top_k(Y_test, Y_pred_random))
+    #  print("Y_pred_probas:\t", _evaluate_top_k(Y_test, Y_pred_random_probas))
     #  print("Y_pred_unc_lc:\t", _evaluate_top_k(Y_test, Y_pred_uncertainty_lc))
     #  print("Y_pred_unc_mm:\t", _evaluate_top_k(Y_test, Y_pred_uncertainty_mm))
     #  print("Y_pred_unc_ent:\t", _evaluate_top_k(Y_test, Y_pred_uncertainty_ent))
@@ -395,5 +395,5 @@ else:
         with open(config.SAVE_DESTINATION, "rb") as handle:
             new_model = dill.load(handle)
 
-            Y_pred2 = new_model.predict(X_test)
-            print("Y_pred_random:\t", _evaluate_top_k(Y_test, Y_pred2))
+            #  Y_pred2 = new_model.predict(X_test)
+            #  print("Y_pred_random:\t", _evaluate_top_k(Y_test, Y_pred2))

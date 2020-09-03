@@ -1,3 +1,4 @@
+from active_learning.experiment_setup_lib import log_it
 from sklearn.metrics import accuracy_score
 import os
 import os
@@ -85,7 +86,7 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
 
     hyper_parameters = vars(config)
 
-    print("Learn iteration {}".format(i))
+    log_it("Learn iteration {}".format(i))
 
     data_storage = DataStorage(
         RANDOM_SEED=hyper_parameters["RANDOM_SEED"],

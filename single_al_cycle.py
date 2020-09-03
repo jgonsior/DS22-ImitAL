@@ -10,9 +10,13 @@ from active_learning.experiment_setup_lib import (
 )
 from fake_experiment_oracle import FakeExperimentOracle
 
-config = get_active_config([(["--NN_BINARY_PATH"], {"type": str}),])
+config = get_active_config(
+    [
+        (["--NN_BINARY_PATH"], {"type": str}),
+    ]
+)
 
-init_logger("console")
+init_logger(config.LOG_FILE)
 
 if config.RANDOM_SEED == -2:
     config.RANDOM_SEED = random.randint(0, 2147483647)
@@ -31,4 +35,4 @@ score = train_and_eval_dataset(
     DATASET_NAME=config.DATASET_NAME,
     DATASETS_PATH=config.DATASETS_PATH,
 )
-print("Done with ", score)
+#  print("Done with ", score)
