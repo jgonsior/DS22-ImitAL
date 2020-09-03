@@ -57,7 +57,17 @@ test_base_param_string = "#".join(
     [x for x in splitted_base_param_string if not x.startswith("TRAIN_")]
 )
 
+if train_base_param_string == "":
+    train_base_param_string = "DEFAULT"
+if test_base_param_string == "":
+    test_base_param_string = "DEFAULT"
+
 PARENT_OUTPUT_DIRECTORY = config.OUTPUT_DIRECTORY
+
+print("train_base_param_string" + train_base_param_string)
+print("test_base_param_string" + test_base_param_string)
+print(config.BASE_PARAM_STRING)
+print()
 
 params = {
     "USER_QUERY_BUDGET_LIMIT": config.USER_QUERY_BUDGET_LIMIT,
