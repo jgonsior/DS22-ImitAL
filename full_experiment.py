@@ -14,16 +14,16 @@ config, parser = standard_config(
         (["--LOG_FILE"], {"default": "log.txt"}),
         (["--OUTPUT_DIRECTORY"], {"default": "/tmp"}),
         (["--BASE_PARAM_STRING"], {"default": "default"}),
-        (["--NR_QUERIES_PER_ITERATION"], {"type": int, "default": 2}),
-        (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 5}),
+        (["--NR_QUERIES_PER_ITERATION"], {"type": int, "default": 1}),
+        (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 50}),
         (["--TRAIN_CLASSIFIER"], {"default": "MLP"}),
         (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 5}),
+        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 3000}),
         (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TRAIN_VARIANCE_BOUND"], {"type": int, "default": 1}),
         (["--TRAIN_HYPERCUBE"], {"action": "store_true"}),
         (["--TRAIN_NEW_SYNTHETIC_PARAMS"], {"action": "store_false"}),
-        (["--TRAIN_CONVEX_HULL_SAMPLING"], {"action": "store_true"}),
+        (["--TRAIN_CONVEX_HULL_SAMPLING"], {"action": "store_false"}),
         (["--TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED"], {"action": "store_false"}),
         (["--TRAIN_GENERATE_NOISE"], {"action": "store_true"}),
         (["--TRAIN_STATE_DIFF_PROBAS"], {"action": "store_true"}),
@@ -33,7 +33,7 @@ config, parser = standard_config(
         (["--TRAIN_STATE_NO_LRU_WEIGHTS"], {"action": "store_true"}),
         (["--TRAIN_STATE_LRU_AREAS_LIMIT"], {"type": int, "default": 0}),
         (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 3}),
+        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 100}),
         (["--TEST_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TEST_HYPERCUBE"], {"action": "store_true"}),
         (["--TEST_NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
@@ -441,9 +441,7 @@ print(comparison_path)
 
 if not Path(comparison_path).is_file():
     df = pd.read_csv(
-        trained_ann_csv_path,
-        index_col=None,
-        nrows=1 + params["NR_EVALUATIONS"],
+        trained_ann_csv_path, index_col=None, nrows=1 + params["NR_EVALUATIONS"],
     )
 
     for comparison in params["comparisons"]:
