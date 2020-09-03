@@ -1,3 +1,4 @@
+import math
 import multiprocessing
 import os
 from pathlib import Path
@@ -7,16 +8,17 @@ from joblib import Parallel, delayed
 
 from active_learning.experiment_setup_lib import standard_config
 
-config = standard_config(
+config, parser = standard_config(
     [
         (["--RANDOM_SEED"], {"default": 1, "type": int}),
         (["--LOG_FILE"], {"default": "log.txt"}),
         (["--OUTPUT_DIRECTORY"], {"default": "/tmp"}),
-        (["--NR_QUERIES_PER_ITERATION"], {"type": int, "default": 1}),
-        (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 15}),
+        (["--BASE_PARAM_STRING"], {"default": "default"}),
+        (["--NR_QUERIES_PER_ITERATION"], {"type": int, "default": 2}),
+        (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 5}),
         (["--TRAIN_CLASSIFIER"], {"default": "MLP"}),
         (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 10}),
+        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 5}),
         (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TRAIN_VARIANCE_BOUND"], {"type": int, "default": 1}),
         (["--TRAIN_HYPERCUBE"], {"action": "store_true"}),
@@ -31,7 +33,7 @@ config = standard_config(
         (["--TRAIN_STATE_NO_LRU_WEIGHTS"], {"action": "store_true"}),
         (["--TRAIN_STATE_LRU_AREAS_LIMIT"], {"type": int, "default": 0}),
         (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 10}),
+        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 3}),
         (["--TEST_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TEST_HYPERCUBE"], {"action": "store_true"}),
         (["--TEST_NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
@@ -45,6 +47,14 @@ config = standard_config(
         (["--FINAL_PICTURE"], {"default": ""}),
     ],
     standard_args=False,
+    return_argparse=True,
+)
+splitted_base_param_string = config.BASE_PARAM_STRING.split("#")
+train_base_param_string = "#".join(
+    [x for x in splitted_base_param_string if not x.startswith("TEST_")]
+)
+test_base_param_string = "#".join(
+    [x for x in splitted_base_param_string if not x.startswith("TRAIN_")]
 )
 
 PARENT_OUTPUT_DIRECTORY = config.OUTPUT_DIRECTORY
@@ -69,16 +79,7 @@ params = {
     "STATE_LRU_AREAS_LIMIT": config.TRAIN_STATE_LRU_AREAS_LIMIT,
     "STATE_NO_LRU_WEIGHTS": config.TRAIN_STATE_NO_LRU_WEIGHTS,
 }
-param_string = ""
-
-for k, v in params.items():
-    k = "".join([x[0] for x in k.split("_")])
-    if v == True:
-        param_string += "_" + k.lower() + "_t"
-    elif v == False:
-        param_string += "_" + k.lower() + "_f"
-    else:
-        param_string += "_" + str(v)
+param_string = train_base_param_string
 
 OUTPUT_DIRECTORY = PARENT_OUTPUT_DIRECTORY + param_string
 
@@ -155,8 +156,10 @@ if (
         return RANDOM_SEED
 
     nr_parallel_processes = int(
-        NR_LEARNING_SAMPLES
-        / (params["USER_QUERY_BUDGET_LIMIT"] / params["NR_QUERIES_PER_ITERATION"])
+        math.ceil(
+            NR_LEARNING_SAMPLES
+            / (params["USER_QUERY_BUDGET_LIMIT"] / params["NR_QUERIES_PER_ITERATION"])
+        )
     )
     if nr_parallel_processes == 0:
         nr_parallel_processes = params["NR_LEARNING_SAMPLES"] + 1
@@ -170,12 +173,12 @@ if (
 assert os.path.exists(OUTPUT_DIRECTORY + "/states.csv")
 
 end = time.time()
-print(end - start)
+
 start = time.time()
 
 
 end = time.time()
-print(end - start)
+print("Done in ", end - start, " s\n")
 start = time.time()
 
 print("#" * 80)
@@ -190,22 +193,21 @@ if not Path(OUTPUT_DIRECTORY + "/trained_ann.pickle").is_file():
         + OUTPUT_DIRECTORY
         + " --STATE_ENCODING listwise --TARGET_ENCODING binary --SAVE_DESTINATION "
         + OUTPUT_DIRECTORY
-        + "/trained_ann.pickle --REGULAR_DROPOUT_RATE 0.1 --OPTIMIZER RMSprop --NR_HIDDEN_NEURONS 80 --NR_HIDDEN_LAYERS 4 --LOSS CosineSimilarity --EPOCHS 1000 --BATCH_SIZE 32 --ACTIVATION elu --RANDOM_SEED 1"
+        + "/trained_ann.pickle --REGULAR_DROPOUT_RATE 0.1 --OPTIMIZER RMSprop --NR_HIDDEN_NEURONS 80 --NR_HIDDEN_LAYERS 2 --LOSS CosineSimilarity --EPOCHS 1000 --BATCH_SIZE 32 --ACTIVATION elu --RANDOM_SEED 1"
     )
 
 
 assert os.path.exists(OUTPUT_DIRECTORY + "/trained_ann.pickle")
 
 end = time.time()
-print(end - start)
+print("Done in ", end - start, " s\n")
 start = time.time()
 
 
 end = time.time()
-print(end - start)
+print("Done in ", end - start, " s\n")
 start = time.time()
 
-OUTPUT_DIRECTORY
 print("#" * 80)
 print("Creating evaluation ann data")
 print("#" * 80)
@@ -231,29 +233,7 @@ params = {
     "STATE_NO_LRU_WEIGHTS": config.TRAIN_STATE_NO_LRU_WEIGHTS,
 }
 
-CLASSIC_PREFIX = ""
-
-for k, v in params.items():
-    if k == "comparisons" or k == "FINAL_PICTURE":
-        continue
-    k = "".join([x[0] for x in k.split("_")])
-
-    if v == True:
-        CLASSIC_PREFIX += "_" + k.lower() + "_t"
-    elif v == False:
-        CLASSIC_PREFIX += "_" + k.lower() + "_f"
-    else:
-        CLASSIC_PREFIX += "_" + str(v)
-    #
-    #
-    #  if type(v) == bool:
-    #      if v:
-    #          CLASSIC_PREFIX += "_" + k.lower()
-    #  else:
-    #      CLASSIC_PREFIX += "_" + str(v)
-    #
-
-trained_ann_csv_path = OUTPUT_DIRECTORY + CLASSIC_PREFIX + ".csv"
+trained_ann_csv_path = config.OUTPUT_DIRECTORY + config.BASE_PARAM_STRING + ".csv"
 
 if (
     not Path(trained_ann_csv_path).is_file()
@@ -316,14 +296,52 @@ if (
     p.write_text(text)
 
 assert os.path.exists(trained_ann_csv_path)
-
-end = time.time()
-print(end - start)
-start = time.time()
-
-
 amount_of_lines = sum(1 for l in open(trained_ann_csv_path))
 print("Evaluation trained_nn size: {}".format(amount_of_lines))
+
+end = time.time()
+print("Done in ", end - start, " s\n")
+
+# remove STATE stuff
+
+params = {
+    "USER_QUERY_BUDGET_LIMIT": config.USER_QUERY_BUDGET_LIMIT,
+    "VARIABLE_DATASET": config.TEST_VARIABLE_DATASET,
+    "comparisons": config.TEST_COMPARISONS,
+    # ["random", "uncertainty_max_margin"],
+    "NR_EVALUATIONS": config.TEST_NR_LEARNING_SAMPLES,
+    "AMOUNT_OF_FEATURES": config.TEST_AMOUNT_OF_FEATURES,
+    "HYPERCUBE": config.TEST_HYPERCUBE,
+    "NEW_SYNTHETIC_PARAMS": config.TEST_NEW_SYNTHETIC_PARAMS,
+    "CONVEX_HULL_SAMPLING": config.TEST_CONVEX_HULL_SAMPLING,
+    "NR_QUERIES_PER_ITERATION": config.NR_QUERIES_PER_ITERATION,
+    "CLASSIFIER": config.TEST_CLASSIFIER,
+    "GENERATE_NOISE": config.TEST_GENERATE_NOISE,
+}
+
+CLASSIC_PREFIX = test_base_param_string
+
+#
+#  for k, v in params.items():
+#      if k in ["USER_QUERY_BUDGET_LIMIT", "NR_QUERIES_PER_ITERATION"]:
+#          if parser.get_default(k) == v:
+#              continue
+#      elif parser.get_default("TEST_" + k) == v:
+#          continue
+#      #  k = "".join([x[0] for x in k.split("_")])
+#
+#      if k == "comparisons" or k == "FINAL_PICTURE":
+#          continue
+#      #  k = "".join([x[0] for x in k.split("_")])
+#
+#      if v == True:
+#          CLASSIC_PREFIX += "_TEST" + k.lower() + "_T"
+#      elif v == False:
+#          CLASSIC_PREFIX += "_TEST" + k.lower() + "_F"
+#      else:
+#          CLASSIC_PREFIX += "_TEST" + str(v)
+#
+
 
 print("#" * 80)
 print("Creating classic evaluation data")
@@ -332,6 +350,7 @@ print("\n")
 
 # check if the other evaluation csvs already exist
 for comparison in params["comparisons"]:
+    start = time.time()
     COMPARISON_PATH = (
         PARENT_OUTPUT_DIRECTORY + "classics/" + comparison + CLASSIC_PREFIX + ".csv"
     )
@@ -362,8 +381,6 @@ for comparison in params["comparisons"]:
                 + str(params["AMOUNT_OF_FEATURES"])
                 + " --CLASSIFIER "
                 + str(params["CLASSIFIER"])
-                + " --STATE_LRU_AREAS_LIMIT "
-                + str(params["STATE_LRU_AREAS_LIMIT"])
             )
 
             for k in [
@@ -372,11 +389,6 @@ for comparison in params["comparisons"]:
                 "HYPERCUBE",
                 "CONVEX_HULL_SAMPLING",
                 "GENERATE_NOISE",
-                "STATE_DISTANCES",
-                "STATE_ARGTHIRD_PROBAS",
-                "STATE_ARGSECOND_PROBAS",
-                "STATE_DIFF_PROBAS",
-                "STATE_NO_LRU_WEIGHTS",
             ]:
                 if params[k]:
                     cli_arguments += " --" + k + " "
@@ -396,9 +408,10 @@ for comparison in params["comparisons"]:
         #  print(output)
     assert os.path.exists(COMPARISON_PATH)
     amount_of_lines = sum(1 for l in open(COMPARISON_PATH))
-    print("Evaluation " + comparison + "size: {}".format(amount_of_lines))
+    end = time.time()
+    print("Done in ", end - start, " s\n")
 
-
+start = time.time()
 print("#" * 80)
 print("Generating evaluation CSV")
 print("#" * 80)
@@ -439,9 +452,9 @@ if not Path(comparison_path).is_file():
     df.to_csv(comparison_path, index=False)
 
 assert os.path.exists(comparison_path)
-
 end = time.time()
-print(end - start)
+print("Done in ", end - start, " s\n")
+
 start = time.time()
 
 
@@ -476,4 +489,4 @@ os.system(
 )
 
 end = time.time()
-print(end - start)
+print("Done in ", end - start, " s\n")

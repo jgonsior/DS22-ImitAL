@@ -80,12 +80,11 @@ for k, argument in arguments:
             else:
                 cli_commands[j] += " --" + k + " " + str(a)
 
-
 # compute FINAL_PICTURE argument
 FINAL_PICTURE_FOLDER = "plots"
+
 for k, argument in arguments:
     FINAL_PICTURE_FOLDER += "_" + k
-
 
 for cli_command in cli_commands.values():
     cli_args = cli_command.split(" --")[4:]
@@ -110,5 +109,8 @@ for cli_command in cli_commands.values():
         if None in v:
             #  print(k, str(v))
             cli_command = cli_command.replace("--" + k + " None ", "")
+    BASE_PARAM_STRING = cli_command.split(" --")[4:-1]
+    BASE_PARAM_STRING = "#".join(BASE_PARAM_STRING).replace(" ", "_")
+    cli_command += " --BASE_PARAM_STRING " + BASE_PARAM_STRING
     print(cli_command)
     os.system(cli_command)
