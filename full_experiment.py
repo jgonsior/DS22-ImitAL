@@ -14,11 +14,11 @@ config, parser = standard_config(
         (["--LOG_FILE"], {"default": "log.txt"}),
         (["--OUTPUT_DIRECTORY"], {"default": "/tmp"}),
         (["--BASE_PARAM_STRING"], {"default": "default"}),
-        (["--NR_QUERIES_PER_ITERATION"], {"type": int, "default": 1}),
+        (["--NR_QUERIES_PER_ITERATION"], {"type": int, "default": 5}),
         (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 50}),
         (["--TRAIN_CLASSIFIER"], {"default": "MLP"}),
         (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 3000}),
+        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 1000}),
         (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TRAIN_VARIANCE_BOUND"], {"type": int, "default": 1}),
         (["--TRAIN_HYPERCUBE"], {"action": "store_true"}),
@@ -30,6 +30,7 @@ config, parser = standard_config(
         (["--TRAIN_STATE_ARGSECOND_PROBAS"], {"action": "store_true"}),
         (["--TRAIN_STATE_ARGTHIRD_PROBAS"], {"action": "store_true"}),
         (["--TRAIN_STATE_DISTANCES"], {"action": "store_true"}),
+        (["--TRAIN_STATE_PREDICTED_CLASS"], {"action": "store_true"}),
         (["--TRAIN_STATE_NO_LRU_WEIGHTS"], {"action": "store_true"}),
         (["--TRAIN_STATE_LRU_AREAS_LIMIT"], {"type": int, "default": 0}),
         (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
@@ -86,6 +87,7 @@ params = {
     "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
     "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
     "STATE_DISTANCES": config.TRAIN_STATE_DISTANCES,
+    "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
     "STATE_LRU_AREAS_LIMIT": config.TRAIN_STATE_LRU_AREAS_LIMIT,
     "STATE_NO_LRU_WEIGHTS": config.TRAIN_STATE_NO_LRU_WEIGHTS,
 }
@@ -153,6 +155,7 @@ if (
             "STOP_AFTER_MAXIMUM_ACCURACY_REACHED",
             "GENERATE_NOISE",
             "STATE_DISTANCES",
+            "STATE_PREDICTED_CLASS",
             "STATE_ARGTHIRD_PROBAS",
             "STATE_ARGSECOND_PROBAS",
             "STATE_DIFF_PROBAS",
@@ -171,7 +174,7 @@ if (
             / (params["USER_QUERY_BUDGET_LIMIT"] / params["NR_QUERIES_PER_ITERATION"])
         )
     )
-    if nr_parallel_processes == 0:
+    if nr_parallel_processes == 1:
         nr_parallel_processes = params["NR_LEARNING_SAMPLES"] + 1
 
     with Parallel(n_jobs=multiprocessing.cpu_count()) as parallel:
@@ -239,6 +242,7 @@ params = {
     "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
     "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
     "STATE_DISTANCES": config.TRAIN_STATE_DISTANCES,
+    "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
     "STATE_LRU_AREAS_LIMIT": config.TRAIN_STATE_LRU_AREAS_LIMIT,
     "STATE_NO_LRU_WEIGHTS": config.TRAIN_STATE_NO_LRU_WEIGHTS,
 }
@@ -279,6 +283,7 @@ if (
             "CONVEX_HULL_SAMPLING",
             "GENERATE_NOISE",
             "STATE_DISTANCES",
+            "STATE_PREDICTED_CLASS",
             "STATE_ARGTHIRD_PROBAS",
             "STATE_ARGSECOND_PROBAS",
             "STATE_DIFF_PROBAS",
@@ -441,7 +446,9 @@ print(comparison_path)
 
 if not Path(comparison_path).is_file():
     df = pd.read_csv(
-        trained_ann_csv_path, index_col=None, nrows=1 + params["NR_EVALUATIONS"],
+        trained_ann_csv_path,
+        index_col=None,
+        nrows=1 + params["NR_EVALUATIONS"],
     )
 
     for comparison in params["comparisons"]:

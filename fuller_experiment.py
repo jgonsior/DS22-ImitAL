@@ -30,6 +30,7 @@ config = standard_config(
         (["--TRAIN_STATE_ARGSECOND_PROBAS"], {"default": "default"}),
         (["--TRAIN_STATE_ARGTHIRD_PROBAS"], {"default": "default"}),
         (["--TRAIN_STATE_DISTANCES"], {"default": "default"}),
+        (["--TRAIN_STATE_PREDICTED_CLASS"], {"default": "default"}),
         (["--TRAIN_STATE_NO_LRU_WEIGHTS"], {"default": "default"}),
         (["--TRAIN_STATE_LRU_AREAS_LIMIT"], {"default": "default"}),
         (["--TEST_VARIABLE_DATASET"], {"default": "default"}),

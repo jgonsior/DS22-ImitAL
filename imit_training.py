@@ -41,6 +41,10 @@ if not os.path.isfile(config.OUTPUT_DIRECTORY + "/states.csv"):
             str(i) + "_proba_argthird"
             for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
         ]
+    if config.STATE_PREDICTED_CLASS:
+        columns += [
+            str(i) + "_pred_class" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
+        ]
     if config.STATE_DISTANCES:
         columns += [
             str(i) + "_proba_avg_dist_lab"
@@ -162,6 +166,7 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
         STATE_DISTANCES=hyper_parameters["STATE_DISTANCES"],
         STATE_DIFF_PROBAS=hyper_parameters["STATE_DIFF_PROBAS"],
         STATE_ARGTHIRD_PROBAS=hyper_parameters["STATE_ARGTHIRD_PROBAS"],
+        STATE_PREDICTED_CLASS=hyper_parameters["STATE_PREDICTED_CLASS"],
         STATE_LRU_AREAS_LIMIT=hyper_parameters["STATE_LRU_AREAS_LIMIT"],
         STATE_ARGSECOND_PROBAS=hyper_parameters["STATE_ARGSECOND_PROBAS"],
         STATE_NO_LRU_WEIGHTS=hyper_parameters["STATE_NO_LRU_WEIGHTS"],
