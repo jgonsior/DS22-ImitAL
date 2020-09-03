@@ -17,5 +17,3 @@ python fuller_experiment.py --TRAIN_HYPERCUBE True
 python fuller_experiment.py --TRAIN_NEW_SYNTHETIC_PARAMS True --TEST_NEW_SYNTHETIC_PARAMS True
 python fuller_experiment.py --TRAIN_CONVEX_HULL_SAMPLING True
 python fuller_experiment.py --TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED True
-
-

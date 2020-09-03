@@ -111,6 +111,6 @@ for cli_command in cli_commands.values():
             cli_command = cli_command.replace("--" + k + " None ", "")
     BASE_PARAM_STRING = cli_command.split(" --")[4:-1]
     BASE_PARAM_STRING = "#".join(BASE_PARAM_STRING).replace(" ", "_")
-    cli_command += " --BASE_PARAM_STRING " + BASE_PARAM_STRING
+    cli_command += " --BASE_PARAM_STRING _" + BASE_PARAM_STRING
     print(cli_command)
     os.system(cli_command)
