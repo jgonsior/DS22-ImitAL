@@ -77,9 +77,9 @@ param_string = ""
 for k, v in params.items():
     k = "".join([x[0] for x in k.split("_")])
     if v == True:
-        param_string += "_" + k.lower() + "_true"
+        param_string += "_" + k.lower() + "_t"
     elif v == False:
-        param_string += "_" + k.lower() + "_false"
+        param_string += "_" + k.lower() + "_f"
     else:
         param_string += "_" + str(v)
 
@@ -143,7 +143,6 @@ if (
             "CONVEX_HULL_SAMPLING",
             "STOP_AFTER_MAXIMUM_ACCURACY_REACHED",
             "GENERATE_NOISE",
-            "STATE_LRU_AREAS_LIMIT",
             "STATE_DISTANCES",
             "STATE_ARGTHIRD_PROBAS",
             "STATE_ARGSECOND_PROBAS",
@@ -223,9 +222,9 @@ for k, v in params.items():
     k = "".join([x[0] for x in k.split("_")])
 
     if v == True:
-        CLASSIC_PREFIX += "_" + k.lower() + "_true"
+        CLASSIC_PREFIX += "_" + k.lower() + "_t"
     elif v == False:
-        CLASSIC_PREFIX += "_" + k.lower() + "_false"
+        CLASSIC_PREFIX += "_" + k.lower() + "_f"
     else:
         CLASSIC_PREFIX += "_" + str(v)
     #
@@ -272,7 +271,6 @@ if (
             "HYPERCUBE",
             "CONVEX_HULL_SAMPLING",
             "GENERATE_NOISE",
-            "STATE_LRU_AREAS_LIMIT",
             "STATE_DISTANCES",
             "STATE_ARGTHIRD_PROBAS",
             "STATE_ARGSECOND_PROBAS",
@@ -352,7 +350,6 @@ for comparison in params["comparisons"]:
                 "HYPERCUBE",
                 "CONVEX_HULL_SAMPLING",
                 "GENERATE_NOISE",
-                "STATE_LRU_AREAS_LIMIT",
                 "STATE_DISTANCES",
                 "STATE_ARGTHIRD_PROBAS",
                 "STATE_ARGSECOND_PROBAS",
@@ -399,9 +396,7 @@ print(comparison_path)
 
 if not Path(comparison_path).is_file():
     df = pd.read_csv(
-        trained_ann_csv_path,
-        index_col=None,
-        nrows=1 + params["NR_EVALUATIONS"],
+        trained_ann_csv_path, index_col=None, nrows=1 + params["NR_EVALUATIONS"],
     )
 
     for comparison in params["comparisons"]:
