@@ -15,5 +15,5 @@
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
 export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
 OUTFILE="/lustre/ssd/ws/s5968580-IL_TD/lstm_hyperout.txt"
-MPLCONFIGDIR=/lustre/ssd/ws/s5968580-IL_TD/cache python3 -m pipenv run python /lustre/ssd/ws/s5968580-IL_TD/imitating-weakal/train_lstm.py --DATA_PATH ../variable_synthetic_1_50_10 --STATE_ENCODING listwise --TARGET_ENCODING binary --HYPER_SEARCH --N_ITER 50
+MPLCONFIGDIR=/lustre/ssd/ws/s5968580-IL_TD/cache python3 -m pipenv run python /lustre/ssd/ws/s5968580-IL_TD/imitating-weakal/train_lstm.py --DATA_PATH ../../repr_variable_synthetic_5_50_20 --STATE_ENCODING listwise --TARGET_ENCODING binary --HYPER_SEARCH --N_ITER 50
 exit 0
