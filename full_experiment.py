@@ -16,6 +16,7 @@ config, parser = standard_config(
         (["--BASE_PARAM_STRING"], {"default": "default"}),
         (["--NR_QUERIES_PER_ITERATION"], {"type": int, "default": 5}),
         (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 5}),
+        (["--AMOUNT_OF_STATES"], {"default": 1000}),
         (["--TRAIN_CLASSIFIER"], {"default": "MLP"}),
         (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
         (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 3}),
@@ -106,10 +107,14 @@ print("\n")
 
 start = time.time()
 
+calculate AMOUNT_OF_STATES based on NR_LEARNING_SAMPLES, NR_QUERIES_PER_ITERATION, USER_QUERY_BUDGET_LIMIT, und anzahl der bereits existierenden lines im File
+AMOUNT_OF_STATES = 
+
+
 if (
     not Path(OUTPUT_DIRECTORY + "/states.csv").is_file()
     or sum(1 for l in open(OUTPUT_DIRECTORY + "/states.csv"))
-    < params["NR_LEARNING_SAMPLES"]
+    < params["AMOUNT_OF_STATES"]
 ):
     if Path(OUTPUT_DIRECTORY + "/states.csv").is_file():
         NR_LEARNING_SAMPLES = params["NR_LEARNING_SAMPLES"] - sum(
@@ -183,10 +188,15 @@ if (
         )
     #  print(output)
 
+
+if sum(1 for l in open(OUTPUT_DIRECTORY + "/states.csv")) > params["AMOUNT_OF_STATES"]:
+    print("@todo" * 1000)
+    print("please trim file so that it only contains 1000 lines for a fair comparison")
+
 assert os.path.exists(OUTPUT_DIRECTORY + "/states.csv")
 
 end = time.time()
-
+exit(-2)
 start = time.time()
 
 
