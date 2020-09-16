@@ -15,10 +15,10 @@ config, parser = standard_config(
         (["--OUTPUT_DIRECTORY"], {"default": "/tmp"}),
         (["--BASE_PARAM_STRING"], {"default": "default"}),
         (["--NR_QUERIES_PER_ITERATION"], {"type": int, "default": 5}),
-        (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 50}),
+        (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 5}),
         (["--TRAIN_CLASSIFIER"], {"default": "MLP"}),
         (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 3000}),
+        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 3}),
         (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TRAIN_VARIANCE_BOUND"], {"type": int, "default": 1}),
         (["--TRAIN_HYPERCUBE"], {"action": "store_true"}),
@@ -34,7 +34,7 @@ config, parser = standard_config(
         (["--TRAIN_STATE_NO_LRU_WEIGHTS"], {"action": "store_true"}),
         (["--TRAIN_STATE_LRU_AREAS_LIMIT"], {"type": int, "default": 0}),
         (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 1000}),
+        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 3}),
         (["--TEST_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TEST_HYPERCUBE"], {"action": "store_true"}),
         (["--TEST_NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
@@ -206,7 +206,7 @@ if not Path(OUTPUT_DIRECTORY + "/trained_ann.pickle").is_file():
         + OUTPUT_DIRECTORY
         + " --STATE_ENCODING listwise --TARGET_ENCODING binary --SAVE_DESTINATION "
         + OUTPUT_DIRECTORY
-        + "/trained_ann.pickle --REGULAR_DROPOUT_RATE 0.1 --OPTIMIZER RMSprop --NR_HIDDEN_NEURONS 80 --NR_HIDDEN_LAYERS 2 --LOSS CosineSimilarity --EPOCHS 1000 --BATCH_SIZE 32 --ACTIVATION elu --RANDOM_SEED 1"
+        + "/trained_ann.pickle --REGULAR_DROPOUT_RATE 0.3 --OPTIMIZER Nadam --NR_HIDDEN_NEURONS 80 --NR_HIDDEN_LAYERS 1 --LOSS CosineSimilarity --EPOCHS 1000 --BATCH_SIZE 32 --ACTIVATION elu --RANDOM_SEED 1"
     )
 
 
@@ -446,7 +446,9 @@ print(comparison_path)
 
 if not Path(comparison_path).is_file():
     df = pd.read_csv(
-        trained_ann_csv_path, index_col=None, nrows=1 + params["NR_EVALUATIONS"],
+        trained_ann_csv_path,
+        index_col=None,
+        nrows=1 + params["NR_EVALUATIONS"],
     )
 
     for comparison in params["comparisons"]:
