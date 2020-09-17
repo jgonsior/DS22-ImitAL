@@ -226,7 +226,7 @@ if (
 assert os.path.exists(OUTPUT_DIRECTORY + "/states.csv")
 
 end = time.time()
-exit(-2)
+
 start = time.time()
 
 
