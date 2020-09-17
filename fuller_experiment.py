@@ -116,4 +116,4 @@ for cli_command in cli_commands.values():
         BASE_PARAM_STRING = "DEFAULT"
     cli_command += " --BASE_PARAM_STRING " + BASE_PARAM_STRING
     print(cli_command)
-    os.system(cli_command)
+    #  os.system(cli_command)
