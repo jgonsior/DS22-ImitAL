@@ -15,8 +15,7 @@ config, parser = standard_config(
         (["--OUTPUT_DIRECTORY"], {"default": "/tmp"}),
         (["--BASE_PARAM_STRING"], {"default": "default"}),
         (["--NR_QUERIES_PER_ITERATION"], {"type": int, "default": 5}),
-        (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 5}),
-        (["--AMOUNT_OF_STATES"], {"default": 1000}),
+        (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 50}),
         (["--TRAIN_CLASSIFIER"], {"default": "MLP"}),
         (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
         (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 3}),
@@ -107,91 +106,122 @@ print("\n")
 
 start = time.time()
 
-calculate AMOUNT_OF_STATES based on NR_LEARNING_SAMPLES, NR_QUERIES_PER_ITERATION, USER_QUERY_BUDGET_LIMIT, und anzahl der bereits existierenden lines im File
-AMOUNT_OF_STATES = 
+
+def create_dataset_sample(RANDOM_SEED):
+    cli_arguments = (
+        "python imit_training.py "
+        + " --DATASETS_PATH ../datasets"
+        + " --OUTPUT_DIRECTORY "
+        + OUTPUT_DIRECTORY
+        + " --CLUSTER dummy "
+        + " --NR_QUERIES_PER_ITERATION "
+        + str(params["NR_QUERIES_PER_ITERATION"])
+        + " --DATASET_NAME synthetic "
+        + " --START_SET_SIZE 1 "
+        + " --USER_QUERY_BUDGET_LIMIT "
+        + str(params["USER_QUERY_BUDGET_LIMIT"])
+        + " --RANDOM_SEED "
+        + str(RANDOM_SEED)
+        + " --N_JOBS 1"
+        + " --AMOUNT_OF_PEAKED_OBJECTS 20 "
+        + " --MAX_AMOUNT_OF_WS_PEAKS 0 "
+        + " --AMOUNT_OF_LEARN_ITERATIONS 1 "
+        + " --AMOUNT_OF_FEATURES "
+        + str(params["AMOUNT_OF_FEATURES"])
+        + " --VARIANCE_BOUND "
+        + str(params["VARIANCE_BOUND"])
+        + " --CLASSIFIER "
+        + str(params["CLASSIFIER"])
+        + " --STATE_LRU_AREAS_LIMIT "
+        + str(params["STATE_LRU_AREAS_LIMIT"])
+    )
+
+    for k in [
+        "VARIABLE_DATASET",
+        "NEW_SYNTHETIC_PARAMS",
+        "HYPERCUBE",
+        "CONVEX_HULL_SAMPLING",
+        "STOP_AFTER_MAXIMUM_ACCURACY_REACHED",
+        "GENERATE_NOISE",
+        "STATE_DISTANCES",
+        "STATE_PREDICTED_CLASS",
+        "STATE_ARGTHIRD_PROBAS",
+        "STATE_ARGSECOND_PROBAS",
+        "STATE_DIFF_PROBAS",
+        "STATE_NO_LRU_WEIGHTS",
+    ]:
+        if params[k]:
+            cli_arguments += " --" + k + " "
+    print(cli_arguments)
+
+    os.system(cli_arguments)
+    return RANDOM_SEED
 
 
-if (
-    not Path(OUTPUT_DIRECTORY + "/states.csv").is_file()
-    or sum(1 for l in open(OUTPUT_DIRECTORY + "/states.csv"))
-    < params["AMOUNT_OF_STATES"]
+error_stop_counter = 3
+
+while (
+    error_stop_counter > 0
+    and (
+        sum(1 for l in open(OUTPUT_DIRECTORY + "/states.csv"))
+        or not Path(OUTPUT_DIRECTORY + "/states.csv").is_file()
+    )
+    < params["NR_LEARNING_SAMPLES"]
 ):
     if Path(OUTPUT_DIRECTORY + "/states.csv").is_file():
-        NR_LEARNING_SAMPLES = params["NR_LEARNING_SAMPLES"] - sum(
+        amount_of_existing_states = sum(
             1 for l in open(OUTPUT_DIRECTORY + "/states.csv")
         )
     else:
-        NR_LEARNING_SAMPLES = params["NR_LEARNING_SAMPLES"]
+        amount_of_existing_states = 0
 
-    def create_dataset_sample(RANDOM_SEED):
-        cli_arguments = (
-            "python imit_training.py "
-            + " --DATASETS_PATH ../datasets"
-            + " --OUTPUT_DIRECTORY "
-            + OUTPUT_DIRECTORY
-            + " --CLUSTER dummy "
-            + " --NR_QUERIES_PER_ITERATION "
-            + str(params["NR_QUERIES_PER_ITERATION"])
-            + " --DATASET_NAME synthetic "
-            + " --START_SET_SIZE 1 "
-            + " --USER_QUERY_BUDGET_LIMIT "
-            + str(params["USER_QUERY_BUDGET_LIMIT"])
-            + " --RANDOM_SEED "
-            + str(RANDOM_SEED)
-            + " --N_JOBS 1"
-            + " --AMOUNT_OF_PEAKED_OBJECTS 20 "
-            + " --MAX_AMOUNT_OF_WS_PEAKS 0 "
-            + " --AMOUNT_OF_LEARN_ITERATIONS 1 "
-            + " --AMOUNT_OF_FEATURES "
-            + str(params["AMOUNT_OF_FEATURES"])
-            + " --VARIANCE_BOUND "
-            + str(params["VARIANCE_BOUND"])
-            + " --CLASSIFIER "
-            + str(params["CLASSIFIER"])
-            + " --STATE_LRU_AREAS_LIMIT "
-            + str(params["STATE_LRU_AREAS_LIMIT"])
-        )
-
-        for k in [
-            "VARIABLE_DATASET",
-            "NEW_SYNTHETIC_PARAMS",
-            "HYPERCUBE",
-            "CONVEX_HULL_SAMPLING",
-            "STOP_AFTER_MAXIMUM_ACCURACY_REACHED",
-            "GENERATE_NOISE",
-            "STATE_DISTANCES",
-            "STATE_PREDICTED_CLASS",
-            "STATE_ARGTHIRD_PROBAS",
-            "STATE_ARGSECOND_PROBAS",
-            "STATE_DIFF_PROBAS",
-            "STATE_NO_LRU_WEIGHTS",
-        ]:
-            if params[k]:
-                cli_arguments += " --" + k + " "
-        print(cli_arguments)
-
-        os.system(cli_arguments)
-        return RANDOM_SEED
-
-    nr_parallel_processes = int(
-        math.ceil(
-            NR_LEARNING_SAMPLES
-            / (params["USER_QUERY_BUDGET_LIMIT"] / params["NR_QUERIES_PER_ITERATION"])
-        )
+    amount_of_missing_training_samples = (
+        config.TRAIN_NR_LEARNING_SAMPLES - amount_of_existing_states
     )
-    if nr_parallel_processes == 1:
-        nr_parallel_processes = params["NR_LEARNING_SAMPLES"] + 1
 
+    amount_of_processes = amount_of_missing_training_samples / (
+        config.USER_QUERY_BUDGET_LIMIT / config.NR_QUERIES_PER_ITERATION
+    )
+
+    amount_of_processes = math.ceil(amount_of_processes)
+
+    print("running ", amount_of_processes, "processes")
     with Parallel(n_jobs=multiprocessing.cpu_count()) as parallel:
         output = parallel(
-            delayed(create_dataset_sample)(k) for k in range(1, nr_parallel_processes)
+            delayed(create_dataset_sample)(k) for k in range(0, amount_of_processes)
         )
-    #  print(output)
+    new_amount_of_existing_states = sum(
+        1 for l in open(OUTPUT_DIRECTORY + "/states.csv")
+    )
+    if new_amount_of_existing_states == amount_of_existing_states:
+        error_stop_counter -= 1
 
+if (
+    sum(1 for l in open(OUTPUT_DIRECTORY + "/states.csv"))
+    > params["NR_LEARNING_SAMPLES"]
+):
+    # black magic to trim file using python
+    with open(OUTPUT_DIRECTORY + "/states.csv", "r+") as f:
+        with open(OUTPUT_DIRECTORY + "/opt_pol.csv", "r+") as f2:
+            lines = f.readlines()
+            lines2 = f2.readlines()
+            f.seek(0)
+            f2.seek(0)
 
-if sum(1 for l in open(OUTPUT_DIRECTORY + "/states.csv")) > params["AMOUNT_OF_STATES"]:
-    print("@todo" * 1000)
-    print("please trim file so that it only contains 1000 lines for a fair comparison")
+            counter = 0
+            for l in lines:
+                counter += 1
+                if counter <= params["NR_LEARNING_SAMPLES"]:
+                    f.write(l)
+            f.truncate()
+
+            counter = 0
+            for l in lines2:
+                counter += 1
+                if counter <= params["NR_LEARNING_SAMPLES"]:
+                    f2.write(l)
+
+            f2.truncate()
 
 assert os.path.exists(OUTPUT_DIRECTORY + "/states.csv")
 
