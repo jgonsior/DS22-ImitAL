@@ -47,10 +47,11 @@ def plot_distributions(
     fig = plt.gcf()
     fig.set_size_inches(18.5, 10.5)
 
-    for selection, label in selection_list:
+    for selection, label in sorted(selection_list, key=lambda tup: tup[1]):
         #  ax = sns.distplot(selection, label=label, **kwargs)
         #  label = "{}-{:>3}: {:.4g}% ".format(label[0], label[1], selection.mean() * 100)
-        label = "{}: {:.4g}% ".format(label[0], selection.mean() * 100)
+        label = [str(l) for l in label]
+        label = "{}: {:.4g}% ".format("_".join(label), selection.mean() * 100)
         ax = sns.kdeplot(selection, label=label, **kwargs)
         #  ax = sns.distplot(selection, label=label, **kwargs)
 
