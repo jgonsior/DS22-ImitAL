@@ -30,6 +30,8 @@ config, parser = standard_config(
         (["--TRAIN_STATE_ARGSECOND_PROBAS"], {"action": "store_true"}),
         (["--TRAIN_STATE_ARGTHIRD_PROBAS"], {"action": "store_true"}),
         (["--TRAIN_STATE_DISTANCES"], {"action": "store_true"}),
+        (["--TRAIN_STATE_DISTANCES_LAB"], {"action": "store_true"}),
+        (["--TRAIN_STATE_DISTANCES_UNLAB"], {"action": "store_true"}),
         (["--TRAIN_STATE_PREDICTED_CLASS"], {"action": "store_true"}),
         (["--TRAIN_STATE_NO_LRU_WEIGHTS"], {"action": "store_true"}),
         (["--TRAIN_STATE_LRU_AREAS_LIMIT"], {"type": int, "default": 0}),
@@ -54,6 +56,7 @@ config, parser = standard_config(
             },
         ),
         (["--FINAL_PICTURE"], {"default": ""}),
+        (["--SKIP_TRAINING_DATA_GENERATION"], {"action": "store_true"}),
     ],
     standard_args=False,
     return_argparse=True,
@@ -95,141 +98,144 @@ params = {
     "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
     "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
     "STATE_DISTANCES": config.TRAIN_STATE_DISTANCES,
+    "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
+    "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
     "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
     "STATE_LRU_AREAS_LIMIT": config.TRAIN_STATE_LRU_AREAS_LIMIT,
     "STATE_NO_LRU_WEIGHTS": config.TRAIN_STATE_NO_LRU_WEIGHTS,
 }
 param_string = train_base_param_string
 
-OUTPUT_DIRECTORY = PARENT_OUTPUT_DIRECTORY + param_string
+if not config.SKIP_TRAINING_DATA_GENERATION:
+    OUTPUT_DIRECTORY = PARENT_OUTPUT_DIRECTORY + param_string
 
-Path(OUTPUT_DIRECTORY).mkdir(parents=True, exist_ok=True)
+    Path(OUTPUT_DIRECTORY).mkdir(parents=True, exist_ok=True)
 
-print("Saving to " + OUTPUT_DIRECTORY)
+    print("Saving to " + OUTPUT_DIRECTORY)
 
-print("#" * 80)
-print("Creating dataset")
-print("#" * 80)
-print("\n")
+    print("#" * 80)
+    print("Creating dataset")
+    print("#" * 80)
+    print("\n")
 
-start = time.time()
+    start = time.time()
 
+    def create_dataset_sample(RANDOM_SEED):
+        cli_arguments = (
+            "python imit_training.py "
+            + " --DATASETS_PATH ../datasets"
+            + " --OUTPUT_DIRECTORY "
+            + OUTPUT_DIRECTORY
+            + " --CLUSTER dummy "
+            + " --NR_QUERIES_PER_ITERATION "
+            + str(params["NR_QUERIES_PER_ITERATION"])
+            + " --DATASET_NAME synthetic "
+            + " --START_SET_SIZE 1 "
+            + " --USER_QUERY_BUDGET_LIMIT "
+            + str(params["USER_QUERY_BUDGET_LIMIT"])
+            + " --RANDOM_SEED "
+            + str(RANDOM_SEED)
+            + " --N_JOBS 1"
+            + " --AMOUNT_OF_PEAKED_OBJECTS 20 "
+            + " --MAX_AMOUNT_OF_WS_PEAKS 0 "
+            + " --AMOUNT_OF_LEARN_ITERATIONS 1 "
+            + " --AMOUNT_OF_FEATURES "
+            + str(params["AMOUNT_OF_FEATURES"])
+            + " --VARIANCE_BOUND "
+            + str(params["VARIANCE_BOUND"])
+            + " --CLASSIFIER "
+            + str(params["CLASSIFIER"])
+            + " --STATE_LRU_AREAS_LIMIT "
+            + str(params["STATE_LRU_AREAS_LIMIT"])
+        )
 
-def create_dataset_sample(RANDOM_SEED):
-    cli_arguments = (
-        "python imit_training.py "
-        + " --DATASETS_PATH ../datasets"
-        + " --OUTPUT_DIRECTORY "
-        + OUTPUT_DIRECTORY
-        + " --CLUSTER dummy "
-        + " --NR_QUERIES_PER_ITERATION "
-        + str(params["NR_QUERIES_PER_ITERATION"])
-        + " --DATASET_NAME synthetic "
-        + " --START_SET_SIZE 1 "
-        + " --USER_QUERY_BUDGET_LIMIT "
-        + str(params["USER_QUERY_BUDGET_LIMIT"])
-        + " --RANDOM_SEED "
-        + str(RANDOM_SEED)
-        + " --N_JOBS 1"
-        + " --AMOUNT_OF_PEAKED_OBJECTS 20 "
-        + " --MAX_AMOUNT_OF_WS_PEAKS 0 "
-        + " --AMOUNT_OF_LEARN_ITERATIONS 1 "
-        + " --AMOUNT_OF_FEATURES "
-        + str(params["AMOUNT_OF_FEATURES"])
-        + " --VARIANCE_BOUND "
-        + str(params["VARIANCE_BOUND"])
-        + " --CLASSIFIER "
-        + str(params["CLASSIFIER"])
-        + " --STATE_LRU_AREAS_LIMIT "
-        + str(params["STATE_LRU_AREAS_LIMIT"])
-    )
+        for k in [
+            "VARIABLE_DATASET",
+            "NEW_SYNTHETIC_PARAMS",
+            "HYPERCUBE",
+            "CONVEX_HULL_SAMPLING",
+            "STOP_AFTER_MAXIMUM_ACCURACY_REACHED",
+            "GENERATE_NOISE",
+            "STATE_DISTANCES",
+            "STATE_PREDICTED_CLASS",
+            "STATE_ARGTHIRD_PROBAS",
+            "STATE_ARGSECOND_PROBAS",
+            "STATE_DIFF_PROBAS",
+            "STATE_NO_LRU_WEIGHTS",
+        ]:
+            if params[k]:
+                cli_arguments += " --" + k + " "
+        print(cli_arguments)
 
-    for k in [
-        "VARIABLE_DATASET",
-        "NEW_SYNTHETIC_PARAMS",
-        "HYPERCUBE",
-        "CONVEX_HULL_SAMPLING",
-        "STOP_AFTER_MAXIMUM_ACCURACY_REACHED",
-        "GENERATE_NOISE",
-        "STATE_DISTANCES",
-        "STATE_PREDICTED_CLASS",
-        "STATE_ARGTHIRD_PROBAS",
-        "STATE_ARGSECOND_PROBAS",
-        "STATE_DIFF_PROBAS",
-        "STATE_NO_LRU_WEIGHTS",
-    ]:
-        if params[k]:
-            cli_arguments += " --" + k + " "
-    print(cli_arguments)
+        os.system(cli_arguments)
+        return RANDOM_SEED
 
-    os.system(cli_arguments)
-    return RANDOM_SEED
+    error_stop_counter = 3
 
+    while (
+        error_stop_counter > 0
+        and (
+            sum(1 for l in open(OUTPUT_DIRECTORY + "/states.csv"))
+            or not Path(OUTPUT_DIRECTORY + "/states.csv").is_file()
+        )
+        < params["NR_LEARNING_SAMPLES"]
+    ):
+        if Path(OUTPUT_DIRECTORY + "/states.csv").is_file():
+            amount_of_existing_states = sum(
+                1 for l in open(OUTPUT_DIRECTORY + "/states.csv")
+            )
+        else:
+            amount_of_existing_states = 0
 
-error_stop_counter = 3
+        amount_of_missing_training_samples = (
+            config.TRAIN_NR_LEARNING_SAMPLES - amount_of_existing_states
+        )
 
-while (
-    error_stop_counter > 0
-    and (
-        sum(1 for l in open(OUTPUT_DIRECTORY + "/states.csv"))
-        or not Path(OUTPUT_DIRECTORY + "/states.csv").is_file()
-    )
-    < params["NR_LEARNING_SAMPLES"]
-):
-    if Path(OUTPUT_DIRECTORY + "/states.csv").is_file():
-        amount_of_existing_states = sum(
+        amount_of_processes = amount_of_missing_training_samples / (
+            config.USER_QUERY_BUDGET_LIMIT / config.NR_QUERIES_PER_ITERATION
+        )
+
+        amount_of_processes = math.ceil(amount_of_processes)
+
+        print("running ", amount_of_processes, "processes")
+        with Parallel(n_jobs=multiprocessing.cpu_count()) as parallel:
+            output = parallel(
+                delayed(create_dataset_sample)(k) for k in range(0, amount_of_processes)
+            )
+        new_amount_of_existing_states = sum(
             1 for l in open(OUTPUT_DIRECTORY + "/states.csv")
         )
-    else:
-        amount_of_existing_states = 0
+        if new_amount_of_existing_states == amount_of_existing_states:
+            error_stop_counter -= 1
 
-    amount_of_missing_training_samples = (
-        config.TRAIN_NR_LEARNING_SAMPLES - amount_of_existing_states
-    )
+    if (
+        sum(1 for l in open(OUTPUT_DIRECTORY + "/states.csv"))
+        > params["NR_LEARNING_SAMPLES"]
+    ):
+        # black magic to trim file using python
+        with open(OUTPUT_DIRECTORY + "/states.csv", "r+") as f:
+            with open(OUTPUT_DIRECTORY + "/opt_pol.csv", "r+") as f2:
+                lines = f.readlines()
+                lines2 = f2.readlines()
+                f.seek(0)
+                f2.seek(0)
 
-    amount_of_processes = amount_of_missing_training_samples / (
-        config.USER_QUERY_BUDGET_LIMIT / config.NR_QUERIES_PER_ITERATION
-    )
+                counter = 0
+                for l in lines:
+                    counter += 1
+                    if counter <= params["NR_LEARNING_SAMPLES"]:
+                        f.write(l)
+                f.truncate()
 
-    amount_of_processes = math.ceil(amount_of_processes)
+                counter = 0
+                for l in lines2:
+                    counter += 1
+                    if counter <= params["NR_LEARNING_SAMPLES"]:
+                        f2.write(l)
 
-    print("running ", amount_of_processes, "processes")
-    with Parallel(n_jobs=multiprocessing.cpu_count()) as parallel:
-        output = parallel(
-            delayed(create_dataset_sample)(k) for k in range(0, amount_of_processes)
-        )
-    new_amount_of_existing_states = sum(
-        1 for l in open(OUTPUT_DIRECTORY + "/states.csv")
-    )
-    if new_amount_of_existing_states == amount_of_existing_states:
-        error_stop_counter -= 1
-
-if (
-    sum(1 for l in open(OUTPUT_DIRECTORY + "/states.csv"))
-    > params["NR_LEARNING_SAMPLES"]
-):
-    # black magic to trim file using python
-    with open(OUTPUT_DIRECTORY + "/states.csv", "r+") as f:
-        with open(OUTPUT_DIRECTORY + "/opt_pol.csv", "r+") as f2:
-            lines = f.readlines()
-            lines2 = f2.readlines()
-            f.seek(0)
-            f2.seek(0)
-
-            counter = 0
-            for l in lines:
-                counter += 1
-                if counter <= params["NR_LEARNING_SAMPLES"]:
-                    f.write(l)
-            f.truncate()
-
-            counter = 0
-            for l in lines2:
-                counter += 1
-                if counter <= params["NR_LEARNING_SAMPLES"]:
-                    f2.write(l)
-
-            f2.truncate()
+                f2.truncate()
+else:
+    OUTPUT_DIRECTORY = PARENT_OUTPUT_DIRECTORY + config.BASE_PARAM_STRING
 
 assert os.path.exists(OUTPUT_DIRECTORY + "/states.csv")
 
@@ -254,7 +260,7 @@ if not Path(OUTPUT_DIRECTORY + "/trained_ann.pickle").is_file():
         + OUTPUT_DIRECTORY
         + " --STATE_ENCODING listwise --TARGET_ENCODING binary --SAVE_DESTINATION "
         + OUTPUT_DIRECTORY
-        + "/trained_ann.pickle --REGULAR_DROPOUT_RATE 0.3 --OPTIMIZER Nadam --NR_HIDDEN_NEURONS 80 --NR_HIDDEN_LAYERS 1 --LOSS CosineSimilarity --EPOCHS 1000 --BATCH_SIZE 32 --ACTIVATION elu --RANDOM_SEED 1"
+        + "/trained_ann.pickle --REGULAR_DROPOUT_RATE 0 --OPTIMIZER Adam --NR_HIDDEN_NEURONS 240 --NR_HIDDEN_LAYERS 4 --LOSS CosineSimilarity --EPOCHS 1000 --BATCH_SIZE 32 --ACTIVATION elu --RANDOM_SEED 1"
     )
 
 
@@ -290,6 +296,8 @@ params = {
     "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
     "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
     "STATE_DISTANCES": config.TRAIN_STATE_DISTANCES,
+    "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
+    "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
     "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
     "STATE_LRU_AREAS_LIMIT": config.TRAIN_STATE_LRU_AREAS_LIMIT,
     "STATE_NO_LRU_WEIGHTS": config.TRAIN_STATE_NO_LRU_WEIGHTS,
@@ -494,7 +502,9 @@ print(comparison_path)
 
 if not Path(comparison_path).is_file():
     df = pd.read_csv(
-        trained_ann_csv_path, index_col=None, nrows=1 + params["NR_EVALUATIONS"],
+        trained_ann_csv_path,
+        index_col=None,
+        nrows=1 + params["NR_EVALUATIONS"],
     )
 
     for comparison in params["comparisons"]:

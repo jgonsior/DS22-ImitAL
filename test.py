@@ -1,100 +1,121 @@
-import matplotlib.pyplot as plt
-import numpy as np
-from scipy.spatial import (
-    ConvexHull,
-    #  Delaunay,
-    #  Voronoi,
-    #  voronoi_plot_2d,
-)
-from sklearn.datasets import make_classification
-from sklearn.metrics import pairwise_distances
-from sklearn.preprocessing import MinMaxScaler
+import pandas as pd
+import glob
+import os
 
-#  sns.set()
-#  sns.set_palette("Set2")
-
-amount_of_data = 100
-n_dimensions = 2
-amount_of_samples = 6
-#  sampling_method = "random"
-sampling_method = "var1"
-
-X, y = make_classification(
-    n_samples=amount_of_data,
-    n_features=n_dimensions,
-    n_informative=n_dimensions,
-    n_classes=2,
-    class_sep=3,
-    n_redundant=0,
-    scale=0.1,
-)
-X = MinMaxScaler().fit_transform(X)
-
-x_data = X[:, 0]
-y_data = X[:, 1]
-if n_dimensions == 3:
-    z_data = X[:, 2]
-
-fig = plt.figure()
-if n_dimensions == 3:
-    ax = fig.add_subplot(111, projection="3d")
-
-if sampling_method == "random":
-    sample = X[np.random.choice(len(X), size=amount_of_samples, replace=False)]
-elif sampling_method == "var1":
-    max_sum = 0
-    # select n random points from inside and calculate distances
-    for i in range(0, 100):
-        random_sample = X[
-            np.random.choice(len(X), size=amount_of_samples, replace=False)
-        ]
-
-        # calculate distance to each other
-        total_distance = np.sum(pairwise_distances(random_sample, random_sample))
-        if total_distance > max_sum:
-            max_sum = total_distance
-            sample = random_sample
-
-    #  sample = hull_points
-    amount_of_samples = len(sample)
-
-random_sample = X[np.random.choice(len(X), size=amount_of_samples, replace=False)]
-# variante 1: convex hull, random m points from inner, select those subset with maximum distance to each other
-# variante 2: variante 1 aber ohne convex hull_points
-# variante 3: var 1 oder var 2 aber inklusive 10 real random points on top
-# variante 4: voronoi diagram, zufällig n der flächen samplen ->
+pathes = "../datasets/tmp_taurus/"
 
 
-x_sample = sample[:, 0]
-y_sample = sample[:, 1]
-if n_dimensions == 3:
-    z_sample = sample[:, 2]
-
-# random sample
-x_random = random_sample[:, 0]
-y_random = random_sample[:, 1]
-if n_dimensions == 3:
-    z_random = random_sample[:, 2]
-
-
-x_data = np.concatenate(
-    (x_data, x_sample, x_random),
-)
-y_data = np.concatenate(
-    (y_data, y_sample, y_random),
-)
-if n_dimensions == 3:
-    z_data = np.concatenate(
-        (z_data, z_sample, z_random),
+for path in glob.glob(pathes + "/TRAIN_*"):
+    if path.endswith(".csv"):
+        continue
+    columns_to_leave = os.path.basename(path)
+    print(columns_to_leave)
+    states_to_column_mapping = {
+        "TRAIN_STATE_ARGSECOND_PROBAS": "TRAIN_STATE_ARGSECOND_PROBAS",
+        "TRAIN_STATE_ARGTHIRD_PROBAS": "TRAIN_STATE_ARGTHIRD_PROBAS --TRAIN_STATE_ARGSECOND_PROBAS",
+        "TRAIN_STATE_DIFF_PROBAS": "TRAIN_STATE_DIFF_PROBAS",
+        "TRAIN_STATE_DISTANCES": "TRAIN_STATE_DISTANCES",
+        "TRAIN_STATE_LRU_AREAS_LIMIT": "TRAIN_STATE_LRU_AREAS_LIMIT 5",
+        "TRAIN_STATE_PREDICTED_CLASS": "TRAIN_STATE_PREDICTED_CLASS",
+        "TRAIN_STATE_DIFF_PRED": "TRAIN_STATE_DIFF_PROBAS --TRAIN_STATE_PREDICTED_CLASS",
+        "TRAIN_STATE_DIFF_DIST": "TRAIN_STATE_DIFF_PROBAS --TRAIN_STATE_DISTANCES",
+        "TRAIN_STATE_DIFF_ARGTHIRD": "TRAIN_STATE_DIFF_PROBAS --TRAIN_STATE_ARGTHIRD_PROBAS",
+        "TRAIN_STATE_ARGSECOND_ARGTHIRD": "TRAIN_STATE_ARGSECOND_PROBAS --TRAIN_STATE_ARGTHIRD_PROBAS",
+        "TRAIN_STATE_ALL_STATES": "TRAIN_STATE_DIFF_PROBAS --TRAIN_STATE_ARGSECOND_PROBAS --TRAIN_STATE_ARGTHIRD_PROBAS --TRAIN_STATE_DISTANCES --TRAIN_STATE_PREDICTED_CLASS --TRAIN_STATE_NO_LRU_WEIGHTS --TRAIN_STATE_LRU_AREAS_LIMIT 5",
+        "TRAIN_STATE_ARGSECOND_ARGTHIRD_DISTANCES": "TRAIN_STATE_ARGSECOND_PROBAS --TRAIN_STATE_ARGTHIRD_PROBAS --TRAIN_STATE_DISTANCES",
+        "TRAIN_STATE_DISTANCES_LAB": "TRAIN_STATE_DISTANCES_LAB",
+        "TRAIN_STATE_DISTANCES_UNLAB": "TRAIN_STATE_DISTANCES_UNLAB",
+    }
+    os.makedirs("plots/" + columns_to_leave, exist_ok=True)
+    cli_arguments = (
+        "python full_experiment.py --RANDOM_SEED 1 --LOG_FILE log.txt --TEST_NR_LEARNING_SAMPLES 1000 --OUTPUT_DIRECTORY ../datasets/tmp_taurus/ --SKIP_TRAINING_DATA_GENERATION --FINAL_PICTURE plots/"
+        + columns_to_leave
+        + "/plot --BASE_PARAM_STRING "
+        + columns_to_leave
+        + " --"
+        + states_to_column_mapping[columns_to_leave]
     )
-y = np.concatenate((y, [2] * amount_of_samples, [3] * amount_of_samples))
-size = np.concatenate(
-    ([10] * amount_of_data, [100] * amount_of_samples, [100] * amount_of_samples)
-)
+    os.system(cli_arguments)
+exit(-2)
 
-if n_dimensions == 3:
-    ax.scatter(x_data, y_data, z_data, c=y, s=size)
-else:
-    plt.scatter(x_data, y_data, c=y, s=size)
 
-plt.show()
+for path in glob.glob(pathes + "/TRAIN_*"):
+    if path.endswith(".csv"):
+        continue
+    columns_to_leave = os.path.basename(path)
+
+    states = pd.read_csv("../datasets/tmp_taurus/ALL_STATES/states.csv")
+    opt_pol = pd.read_csv("../datasets/tmp_taurus/ALL_STATES/opt_pol.csv")
+
+    states_to_column_mapping = {
+        "TRAIN_STATE_ARGSECOND_PROBAS": ["_proba_argfirst", "_proba_argsecond"],
+        "TRAIN_STATE_ARGTHIRD_PROBAS": [
+            "_proba_argfirst",
+            "_proba_argsecond",
+            "_proba_argthird",
+        ],
+        "TRAIN_STATE_DIFF_PROBAS": ["_proba_argfirst", "_proba_diff"],
+        "TRAIN_STATE_DISTANCES_LAB": ["_proba_argfirst", "_avg_dist_lab"],
+        "TRAIN_STATE_DISTANCES_UNLAB": ["_proba_argfirst", "_avg_dist_unlab"],
+        "TRAIN_STATE_DISTANCES": [
+            "_proba_argfirst",
+            "_avg_dist_lab",
+            "_avg_dist_unlab",
+        ],
+        "TRAIN_STATE_LRU_AREAS_LIMIT": ["_proba_argfirst", "_lru_dist"],
+        "TRAIN_STATE_PREDICTED_CLASS": ["_proba_argfirst", "_pred_class"],
+        "TRAIN_STATE_DIFF_PRED": ["_proba_argfirst", "_proba_diff", "_pred_class"],
+        "TRAIN_STATE_DIFF_DIST": [
+            "_proba_argfirst",
+            "_proba_diff",
+            "_avg_dist_lab",
+            "_avg_dist_unlab",
+        ],
+        "TRAIN_STATE_DIFF_ARGTHIRD": [
+            "_proba_argfirst",
+            "_proba_diff",
+            "_proba_argthird",
+        ],
+        "TRAIN_STATE_ALL_STATES": [
+            "_proba_argfirst",
+            "_proba_argsecond",
+            "_proba_argthird",
+            "_proba_diff",
+            "_lru_dist",
+            "_pred_class",
+            "_avg_dist_unlab",
+            "_avg_dist_lab",
+        ],
+        "TRAIN_STATE_ARGSECOND_ARGTHIRD": [
+            "_proba_argfirst",
+            "_proba_argsecond",
+            "_proba_argthird",
+        ],
+        "TRAIN_STATE_DIFF_LAB": [
+            "_proba_argfirst",
+            "_avg_dist_lab",
+        ],
+        "TRAIN_STATE_DIFF_UNLAB": ["_proba_argfirst", "_avg_dist_unlab"],
+        "TRAIN_STATE_ARGSECOND_ARGTHIRD_DISTANCES": [
+            "_proba_argfirst",
+            "_proba_argsecond",
+            "_proba_argthird",
+            "_avg_dist_lab",
+            "_avg_dist_unlab",
+        ],
+    }
+
+    # filter out old columns
+
+    columns_to_keep = []
+    print(path)
+    for column_to_remove in states_to_column_mapping[columns_to_leave]:
+        for column in states.columns:
+            if column.endswith(column_to_remove):
+                columns_to_keep.append(column)
+    for column in states.columns:
+        if not column in columns_to_keep:
+            del states[column]
+    print(states)
+    states.to_csv(path + "/states.csv", index=False)
+    opt_pol.to_csv(path + "/opt_pol.csv", index=False)

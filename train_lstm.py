@@ -232,9 +232,9 @@ if config.HYPER_SEARCH:
         ],
         "regular_dropout_rate": [0, 0.1, 0.2, 0.3],
         #  "recurrentDropoutRate": [0, 0.1, 0.2],
-        "nr_hidden_neurons": [10, 20, 40, 80],  # , 120],
+        "nr_hidden_neurons": [1, 2, 3, 4, 6, 8],  # [160, 240, 480, 720, 960],
         "epochs": [1000],  # <- early stopping :)
-        "nr_hidden_layers": [1, 2, 4, 8],  # , 16],  # 16, 32, 64],  # , 2],
+        "nr_hidden_layers": [1, 2, 4, 8],  # 16, 32, 64, 96, 128],  # , 2],
         "batch_size": [8, 16, 32, 64],  # , 128],
         #  "nTs": [15000],
         #  "k2": [1000],
@@ -253,7 +253,7 @@ if config.HYPER_SEARCH:
 
     model = KerasRegressor(
         build_fn=build_nn,
-        verbose=0,
+        verbose=2,
         activation=None,
         validation_split=0.3,
         loss=None,
@@ -265,8 +265,8 @@ if config.HYPER_SEARCH:
         epochs=None,
         batch_size=None,
         callbacks=[
-            EarlyStopping(monitor="val_loss", patience=5, verbose=0),
-            ReduceLROnPlateau(monitor="val_loss", patience=3, verbose=0),
+            EarlyStopping(monitor="val_loss", patience=5, verbose=1),
+            ReduceLROnPlateau(monitor="val_loss", patience=3, verbose=1),
         ],
     )
 
@@ -276,7 +276,7 @@ if config.HYPER_SEARCH:
         cv=5,
         n_jobs=-1,
         scoring=make_scorer(_evaluate_top_k, greater_is_better=True),
-        verbose=0,
+        verbose=1,
         n_iter=config.N_ITER,
     )
 
@@ -305,7 +305,8 @@ else:
         loss=config.LOSS,
         regular_dropout_rate=config.REGULAR_DROPOUT_RATE,
         nr_hidden_layers=config.NR_HIDDEN_LAYERS,
-        nr_hidden_neurons=config.NR_HIDDEN_NEURONS,
+        nr_hidden_neurons=config.NR_HIDDEN_NEURONS
+        * np.shape(X_train)[1],  # config.NR_HIDDEN_NEURONS,
         optimizer=config.OPTIMIZER,
         epochs=config.EPOCHS,
         batch_size=config.BATCH_SIZE,
