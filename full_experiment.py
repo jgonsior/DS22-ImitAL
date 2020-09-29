@@ -57,6 +57,7 @@ config, parser = standard_config(
         ),
         (["--FINAL_PICTURE"], {"default": ""}),
         (["--SKIP_TRAINING_DATA_GENERATION"], {"action": "store_true"}),
+        (["--PLOT_METRIC"], {'default':, 'acc_auc'}),
     ],
     standard_args=False,
     return_argparse=True,
@@ -157,6 +158,8 @@ if not config.SKIP_TRAINING_DATA_GENERATION:
             "STOP_AFTER_MAXIMUM_ACCURACY_REACHED",
             "GENERATE_NOISE",
             "STATE_DISTANCES",
+            "STATE_DISTANCES_LAB",
+            "STATE_DISTANCES_UNLAB",
             "STATE_PREDICTED_CLASS",
             "STATE_ARGTHIRD_PROBAS",
             "STATE_ARGSECOND_PROBAS",
@@ -260,7 +263,7 @@ if not Path(OUTPUT_DIRECTORY + "/trained_ann.pickle").is_file():
         + OUTPUT_DIRECTORY
         + " --STATE_ENCODING listwise --TARGET_ENCODING binary --SAVE_DESTINATION "
         + OUTPUT_DIRECTORY
-        + "/trained_ann.pickle --REGULAR_DROPOUT_RATE 0 --OPTIMIZER Adam --NR_HIDDEN_NEURONS 240 --NR_HIDDEN_LAYERS 4 --LOSS CosineSimilarity --EPOCHS 1000 --BATCH_SIZE 32 --ACTIVATION elu --RANDOM_SEED 1"
+        + "/trained_ann.pickle --REGULAR_DROPOUT_RATE 0 --OPTIMIZER Adam --NR_HIDDEN_NEURONS 10 --NR_HIDDEN_LAYERS 2 --LOSS CosineSimilarity --EPOCHS 1000 --BATCH_SIZE 32 --ACTIVATION elu --RANDOM_SEED 1"
     )
 
 
@@ -339,6 +342,8 @@ if (
             "CONVEX_HULL_SAMPLING",
             "GENERATE_NOISE",
             "STATE_DISTANCES",
+            "STATE_DISTANCES_LAB",
+            "STATE_DISTANCES_UNLAB",
             "STATE_PREDICTED_CLASS",
             "STATE_ARGTHIRD_PROBAS",
             "STATE_ARGSECOND_PROBAS",
@@ -528,14 +533,15 @@ print("Done in ", end - start, " s\n")
 
 start = time.time()
 
+METRIC = config.PLOT_METRIC
 
 df = pd.read_csv(comparison_path)
-random_mean = df.loc[df["sampling"] == "random"]["acc_test_oracle"].mean()
+random_mean = df.loc[df["sampling"] == "random"][METRIC].mean()
 
-mm_mean = df.loc[df["sampling"] == "uncertainty_max_margin"]["acc_test_oracle"].mean()
+mm_mean = df.loc[df["sampling"] == "uncertainty_max_margin"][METRIC].mean()
 rest = df.loc[
     (df["sampling"] != "random") & (df["sampling"] != "uncertainty_max_margin")
-]["acc_test_oracle"].mean()
+][METRIC].mean()
 
 print("{} {} {}".format(random_mean, rest, mm_mean))
 
@@ -557,6 +563,8 @@ os.system(
     + splitted_path[1]
     + " --TITLE "
     + comparison_path
+    + " --METRIC "
+    + METRIC
 )
 
 end = time.time()
