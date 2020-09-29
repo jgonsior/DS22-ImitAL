@@ -242,6 +242,7 @@ if config.HYPER_SEARCH:
             16,
             24,
             32,
+            64,
         ],  # [160, 240, 480, 720, 960],
         "epochs": [1000],  # <- early stopping :)
         "nr_hidden_layers": [1, 2, 4, 8],  # 16, 32, 64, 96, 128],  # , 2],

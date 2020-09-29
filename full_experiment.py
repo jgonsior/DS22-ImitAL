@@ -57,7 +57,7 @@ config, parser = standard_config(
         ),
         (["--FINAL_PICTURE"], {"default": ""}),
         (["--SKIP_TRAINING_DATA_GENERATION"], {"action": "store_true"}),
-        (["--PLOT_METRIC"], {'default':, 'acc_auc'}),
+        (["--PLOT_METRIC"], {"default": "acc_auc"}),
     ],
     standard_args=False,
     return_argparse=True,
@@ -540,7 +540,10 @@ random_mean = df.loc[df["sampling"] == "random"][METRIC].mean()
 
 mm_mean = df.loc[df["sampling"] == "uncertainty_max_margin"][METRIC].mean()
 rest = df.loc[
-    (df["sampling"] != "random") & (df["sampling"] != "uncertainty_max_margin")
+    (df["sampling"] != "random")
+    & (df["sampling"] != "uncertainty_max_margin")
+    & (df["sampling"] != "uncertainty_lc")
+    & (df["sampling"] != "uncertainty_entropy")
 ][METRIC].mean()
 
 print("{} {} {}".format(random_mean, rest, mm_mean))
