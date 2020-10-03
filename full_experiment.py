@@ -263,7 +263,7 @@ if not Path(OUTPUT_DIRECTORY + "/trained_ann.pickle").is_file():
         + OUTPUT_DIRECTORY
         + " --STATE_ENCODING listwise --TARGET_ENCODING binary --SAVE_DESTINATION "
         + OUTPUT_DIRECTORY
-        + "/trained_ann.pickle --REGULAR_DROPOUT_RATE 0 --OPTIMIZER Adam --NR_HIDDEN_NEURONS 10 --NR_HIDDEN_LAYERS 2 --LOSS CosineSimilarity --EPOCHS 1000 --BATCH_SIZE 32 --ACTIVATION elu --RANDOM_SEED 1"
+        + "/trained_ann.pickle --REGULAR_DROPOUT_RATE 0.2 --OPTIMIZER Nadam --NR_HIDDEN_NEURONS 450 --NR_HIDDEN_LAYERS 2 --LOSS CosineSimilarity --EPOCHS 10000 --BATCH_SIZE 32 --ACTIVATION relu --RANDOM_SEED 1"
     )
 
 
