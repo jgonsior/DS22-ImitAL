@@ -1,9 +1,12 @@
+import numpy as np
+from sklearn.preprocessing import LabelEncoder
 import os
 import glob
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 
 parsing_dict = {
+    "dwtc.csv": [",", 0, 0, "CLASS"],
     "PLANNING_plrx.txt": ["\t", None, None, 12],
     "GERMAN_credit_data.data": ["\s+", None, None, 24],
     "FERTILITY.csv": [",", 0, None, "Diagnosis"],
@@ -31,12 +34,34 @@ for f in list(glob.glob("../datasets/uci/*")):
         del df["Unnamed: 32"]
 
     df = df.rename(columns={parsing_args[3]: "LABEL"})
-    print(df)
-    print(df.dtypes)
 
-    for column, dtype in df.dtypes:
+    for column, dtype in df.dtypes.items():
+        if column == "LABEL":
+            continue
         if dtype not in ["int64", "float64"]:
-            print(pd.get_dummies(df[column], prefix=column))
+            if len(df[column].unique()) > 2:
+                #  print(pd.get_dummies(df[column], prefix=column))
+                df = pd.concat(
+                    [
+                        pd.get_dummies(df[column], prefix=column),
+                        df.drop(column, axis=1),
+                    ],
+                    axis=1,
+                )
+            else:
+                df.loc[:, column] = df.loc[:, column].astype("category").cat.codes
+    #  print(df)
+    labelEncoder = LabelEncoder()
+    #  df["LABEL"] = labelEncoder.fit_transform(df.LABEL.values)
+
+    df = df.dropna()
+
+    #  print(df)
 
     rf = RandomForestClassifier()
-    rf.fit(df.drop("LABEL", axis=1), df["LABEL"])
+    rf.fit(df.drop("LABEL", axis=1), labelEncoder.fit_transform(df["LABEL"].values))
+    #  print(os.path.basename(f))
+    df.to_csv(
+        "../datasets/uci_cleaned/" + os.path.basename(f).split(".")[0] + ".csv",
+        index=False,
+    )
