@@ -20,6 +20,7 @@ parser.add_argument("--GROUP_COLUMNS", action="append")
 parser.add_argument("--VALUE_GROUPINGS")
 parser.add_argument("--SAVE_FILE", default=None)
 parser.add_argument("--TITLE", default="")
+parser.add_argument("--METRIC", default="acc_test")
 
 
 config = parser.parse_args()
@@ -47,10 +48,11 @@ def plot_distributions(
     fig = plt.gcf()
     fig.set_size_inches(18.5, 10.5)
 
-    for selection, label in selection_list:
+    for selection, label in sorted(selection_list, key=lambda tup: tup[1]):
         #  ax = sns.distplot(selection, label=label, **kwargs)
         #  label = "{}-{:>3}: {:.4g}% ".format(label[0], label[1], selection.mean() * 100)
-        label = "{}: {:.4g}% ".format(label[0], selection.mean() * 100)
+        label = [str(l) for l in label]
+        label = "{}: {:.4g}% ".format("_".join(label), selection.mean() * 100)
         ax = sns.kdeplot(selection, label=label, **kwargs)
         #  ax = sns.distplot(selection, label=label, **kwargs)
 
@@ -96,7 +98,7 @@ def compare_distributions(CSV_FILE, GROUP_COLUMNS, VALUE_GROUPINGS, SAVE_FILE):
         for restriction, column in zip(comb, GROUP_COLUMNS):
             sel &= df[column] == restriction
         #  print(comb)
-        selection = df.loc[sel]["acc_test_oracle"]
+        selection = df.loc[sel][config.METRIC]
         if len(selection) != 0:
             sels.append((selection, comb))
     plot_distributions(sels, axvline=True, SAVE_FILE=SAVE_FILE, title=config.TITLE)
@@ -198,7 +200,7 @@ with open(file, "rb") as f:
     table = pickle.load(f)
 
 df = pd.DataFrame(table)
-df["acc_test_oracle"] = df["acc_test_oracle"].multiply(100)
+df[config.METRIC] = df[config.METRIC].multiply(100)
 
 if file == "old_results.pickle":
     df = df.loc[
@@ -298,10 +300,10 @@ def find_best_distribution(param, save=False, one_vs_rest_params=False):
     title = ""
     selections = []
 
-    sel2 = df.loc[df["true_weak?"] == False]["acc_test_oracle"]
+    sel2 = df.loc[df["true_weak?"] == False][config.METRIC]
     selections.append((sel2, "No Weak: " + str(len(sel2))))
     for s in subsets:
-        sel1 = df.loc[df[param].isin(s) & df["true_weak?"] == True]["acc_test_oracle"]
+        sel1 = df.loc[df[param].isin(s) & df["true_weak?"] == True][config.METRIC]
 
         diff = calculate_difference(sel1, sel2)
 
@@ -337,7 +339,7 @@ def find_best_distribution(param, save=False, one_vs_rest_params=False):
 # ich habe jetzt DIE eine insgesamt beste Parameterkombination -> der nächste Schritt sind ranges, und danach subsets um mehrere Mengen von guten Kombis zu finden
 def recursive_hyper_search(param_list, sel, baseline, df, sel_dict):
     if len(param_list) == 0 or len(df.loc[sel]) == 0:
-        selection = df.loc[sel]["acc_test_oracle"]
+        selection = df.loc[sel][config.METRIC]
         #  print(selection)
         #  print(baseline)
         score = calculate_difference(selection, baseline)
@@ -395,16 +397,16 @@ def recursive_hyper_search(param_list, sel, baseline, df, sel_dict):
 
 
 def find_multiple_hyper_param_combinations(params):
-    baseline = df.loc[df["true_weak?"] == False]["acc_test_oracle"]
+    baseline = df.loc[df["true_weak?"] == False][config.METRIC]
 
     sel = df["true_weak?"] == True
     print(recursive_hyper_search(params, sel, baseline, df, {}))
 
 
 def get_distributions_for_interesting(params):
-    baseline = df.loc[df["true_weak?"] == False]["acc_test_oracle"]
-    true_interesting = df.loc[df["interesting?"] == True]["acc_test_oracle"]
-    false_interesting = df.loc[df["interesting?"] == False]["acc_test_oracle"]
+    baseline = df.loc[df["true_weak?"] == False][config.METRIC]
+    true_interesting = df.loc[df["interesting?"] == True][config.METRIC]
+    false_interesting = df.loc[df["interesting?"] == False][config.METRIC]
     highest_diff = calculate_difference(true_interesting, baseline)
     compare_two_distributions(
         [
@@ -441,9 +443,7 @@ def get_distributions_for_interesting(params):
 
         # für die balken mehrerer zusammen nehmen
         for value in param_dist[param.upper()]:
-            sel = true_interesting.loc[true_interesting[param] == value][
-                "acc_test_oracle"
-            ]
+            sel = true_interesting.loc[true_interesting[param] == value][config.METRIC]
             selections.append(
                 (sel, "{:>5} : {:>6} - {:.2%}".format(value, len(sel), sel.mean()))
             )
@@ -454,10 +454,10 @@ def get_distributions_for_interesting(params):
             save=True,
         )
 
-    #  für alpha, beta, gamma jointplots über ganzen Wertebereich, mit acc_test_oracle als highlight farbe?
+    #  für alpha, beta, gamma jointplots über ganzen Wertebereich, mit acc_auc als highlight farbe?
     cmap = sns.cubehelix_palette(start=0.0, rot=-0.75, as_cmap=True)
     #  cmap = sns.color_palette("cubehelix")
-    #  true_interesting["acc_test_oracle"] = true_interesting["acc_test_oracle"].multiply(100)
+    #  true_interesting[config.METRIC] = true_interesting[config.METRIC].multiply(100)
     for x, y in combinations(params[0], 2):
         if x in ["sampling", "cluster"] or y in ["sampling", "cluster"]:
             sns.scatterplot(
@@ -466,8 +466,8 @@ def get_distributions_for_interesting(params):
                 data=true_interesting,
                 palette=cmap,
                 #  sizes=[45, 60, 75, 90],
-                hue="acc_test_oracle",
-                size="acc_test_oracle",
+                hue=config.METRIC,
+                size=config.METRIC,
             )
         else:
             fig = plt.figure()
@@ -476,7 +476,7 @@ def get_distributions_for_interesting(params):
             surf = ax.plot_trisurf(
                 true_interesting[x],
                 true_interesting[y],
-                true_interesting["acc_test_oracle"],
+                true_interesting[config.METRIC],
                 #  cmap=plt.cm.viridis,
                 cmap=plt.cm.jet,
                 linewidth=0.2,

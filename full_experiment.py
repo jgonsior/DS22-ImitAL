@@ -18,7 +18,7 @@ config, parser = standard_config(
         (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 50}),
         (["--TRAIN_CLASSIFIER"], {"default": "MLP"}),
         (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 3000}),
+        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 1000}),
         (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TRAIN_VARIANCE_BOUND"], {"type": int, "default": 1}),
         (["--TRAIN_HYPERCUBE"], {"action": "store_true"}),
@@ -30,11 +30,13 @@ config, parser = standard_config(
         (["--TRAIN_STATE_ARGSECOND_PROBAS"], {"action": "store_true"}),
         (["--TRAIN_STATE_ARGTHIRD_PROBAS"], {"action": "store_true"}),
         (["--TRAIN_STATE_DISTANCES"], {"action": "store_true"}),
+        (["--TRAIN_STATE_DISTANCES_LAB"], {"action": "store_true"}),
+        (["--TRAIN_STATE_DISTANCES_UNLAB"], {"action": "store_true"}),
         (["--TRAIN_STATE_PREDICTED_CLASS"], {"action": "store_true"}),
         (["--TRAIN_STATE_NO_LRU_WEIGHTS"], {"action": "store_true"}),
         (["--TRAIN_STATE_LRU_AREAS_LIMIT"], {"type": int, "default": 0}),
         (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 1000}),
+        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 500}),
         (["--TEST_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TEST_HYPERCUBE"], {"action": "store_true"}),
         (["--TEST_NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
@@ -43,9 +45,21 @@ config, parser = standard_config(
         (["--TEST_GENERATE_NOISE"], {"action": "store_false"}),
         (
             ["--TEST_COMPARISONS"],
-            {"nargs": "+", "default": ["random", "uncertainty_max_margin"]},
+            {
+                "nargs": "+",
+                "default": [
+                    "random",
+                    "uncertainty_max_margin",
+                    "uncertainty_entropy",
+                    "uncertainty_lc",
+                ],
+            },
         ),
         (["--FINAL_PICTURE"], {"default": ""}),
+        (["--SKIP_TRAINING_DATA_GENERATION"], {"action": "store_true"}),
+        (["--ONLY_TRAINING_DATA"], {"action": "store_true"}),
+        (["--PLOT_METRIC"], {"default": "acc_auc"}),
+        (["--NR_HIDDEN_NEURONS"], {"type": int, "default": 300}),
     ],
     standard_args=False,
     return_argparse=True,
@@ -87,36 +101,27 @@ params = {
     "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
     "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
     "STATE_DISTANCES": config.TRAIN_STATE_DISTANCES,
+    "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
+    "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
     "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
     "STATE_LRU_AREAS_LIMIT": config.TRAIN_STATE_LRU_AREAS_LIMIT,
     "STATE_NO_LRU_WEIGHTS": config.TRAIN_STATE_NO_LRU_WEIGHTS,
 }
 param_string = train_base_param_string
 
-OUTPUT_DIRECTORY = PARENT_OUTPUT_DIRECTORY + param_string
+if not config.SKIP_TRAINING_DATA_GENERATION:
+    OUTPUT_DIRECTORY = PARENT_OUTPUT_DIRECTORY + param_string
 
-Path(OUTPUT_DIRECTORY).mkdir(parents=True, exist_ok=True)
+    Path(OUTPUT_DIRECTORY).mkdir(parents=True, exist_ok=True)
 
-print("Saving to " + OUTPUT_DIRECTORY)
+    print("Saving to " + OUTPUT_DIRECTORY)
 
-print("#" * 80)
-print("Creating dataset")
-print("#" * 80)
-print("\n")
+    print("#" * 80)
+    print("Creating dataset")
+    print("#" * 80)
+    print("\n")
 
-start = time.time()
-
-if (
-    not Path(OUTPUT_DIRECTORY + "/states.csv").is_file()
-    or sum(1 for l in open(OUTPUT_DIRECTORY + "/states.csv"))
-    < params["NR_LEARNING_SAMPLES"]
-):
-    if Path(OUTPUT_DIRECTORY + "/states.csv").is_file():
-        NR_LEARNING_SAMPLES = params["NR_LEARNING_SAMPLES"] - sum(
-            1 for l in open(OUTPUT_DIRECTORY + "/states.csv")
-        )
-    else:
-        NR_LEARNING_SAMPLES = params["NR_LEARNING_SAMPLES"]
+    start = time.time()
 
     def create_dataset_sample(RANDOM_SEED):
         cli_arguments = (
@@ -155,6 +160,8 @@ if (
             "STOP_AFTER_MAXIMUM_ACCURACY_REACHED",
             "GENERATE_NOISE",
             "STATE_DISTANCES",
+            "STATE_DISTANCES_LAB",
+            "STATE_DISTANCES_UNLAB",
             "STATE_PREDICTED_CLASS",
             "STATE_ARGTHIRD_PROBAS",
             "STATE_ARGSECOND_PROBAS",
@@ -168,20 +175,72 @@ if (
         os.system(cli_arguments)
         return RANDOM_SEED
 
-    nr_parallel_processes = int(
-        math.ceil(
-            NR_LEARNING_SAMPLES
-            / (params["USER_QUERY_BUDGET_LIMIT"] / params["NR_QUERIES_PER_ITERATION"])
-        )
-    )
-    if nr_parallel_processes == 1:
-        nr_parallel_processes = params["NR_LEARNING_SAMPLES"] + 1
+    error_stop_counter = 3
 
-    with Parallel(n_jobs=multiprocessing.cpu_count()) as parallel:
-        output = parallel(
-            delayed(create_dataset_sample)(k) for k in range(1, nr_parallel_processes)
+    while (
+        error_stop_counter > 0
+        and (
+            sum(1 for l in open(OUTPUT_DIRECTORY + "/states.csv"))
+            or not Path(OUTPUT_DIRECTORY + "/states.csv").is_file()
         )
-    #  print(output)
+        < params["NR_LEARNING_SAMPLES"]
+    ):
+        if Path(OUTPUT_DIRECTORY + "/states.csv").is_file():
+            amount_of_existing_states = sum(
+                1 for l in open(OUTPUT_DIRECTORY + "/states.csv")
+            )
+        else:
+            amount_of_existing_states = 0
+
+        amount_of_missing_training_samples = (
+            config.TRAIN_NR_LEARNING_SAMPLES - amount_of_existing_states
+        )
+
+        amount_of_processes = amount_of_missing_training_samples / (
+            config.USER_QUERY_BUDGET_LIMIT / config.NR_QUERIES_PER_ITERATION
+        )
+
+        amount_of_processes = math.ceil(amount_of_processes)
+
+        print("running ", amount_of_processes, "processes")
+        with Parallel(n_jobs=multiprocessing.cpu_count()) as parallel:
+            output = parallel(
+                delayed(create_dataset_sample)(k) for k in range(0, amount_of_processes)
+            )
+        new_amount_of_existing_states = sum(
+            1 for l in open(OUTPUT_DIRECTORY + "/states.csv")
+        )
+        if new_amount_of_existing_states == amount_of_existing_states:
+            error_stop_counter -= 1
+
+    if (
+        sum(1 for l in open(OUTPUT_DIRECTORY + "/states.csv"))
+        > params["NR_LEARNING_SAMPLES"]
+    ):
+        # black magic to trim file using python
+        with open(OUTPUT_DIRECTORY + "/states.csv", "r+") as f:
+            with open(OUTPUT_DIRECTORY + "/opt_pol.csv", "r+") as f2:
+                lines = f.readlines()
+                lines2 = f2.readlines()
+                f.seek(0)
+                f2.seek(0)
+
+                counter = 0
+                for l in lines:
+                    counter += 1
+                    if counter <= params["NR_LEARNING_SAMPLES"]:
+                        f.write(l)
+                f.truncate()
+
+                counter = 0
+                for l in lines2:
+                    counter += 1
+                    if counter <= params["NR_LEARNING_SAMPLES"]:
+                        f2.write(l)
+
+                f2.truncate()
+else:
+    OUTPUT_DIRECTORY = PARENT_OUTPUT_DIRECTORY + config.BASE_PARAM_STRING
 
 assert os.path.exists(OUTPUT_DIRECTORY + "/states.csv")
 
@@ -193,6 +252,9 @@ start = time.time()
 end = time.time()
 print("Done in ", end - start, " s\n")
 start = time.time()
+
+if config.ONLY_TRAINING_DATA:
+    exit(1)
 
 print("#" * 80)
 print("Training ANN")
@@ -206,7 +268,9 @@ if not Path(OUTPUT_DIRECTORY + "/trained_ann.pickle").is_file():
         + OUTPUT_DIRECTORY
         + " --STATE_ENCODING listwise --TARGET_ENCODING binary --SAVE_DESTINATION "
         + OUTPUT_DIRECTORY
-        + "/trained_ann.pickle --REGULAR_DROPOUT_RATE 0.1 --OPTIMIZER RMSprop --NR_HIDDEN_NEURONS 80 --NR_HIDDEN_LAYERS 2 --LOSS CosineSimilarity --EPOCHS 1000 --BATCH_SIZE 32 --ACTIVATION elu --RANDOM_SEED 1"
+        + "/trained_ann.pickle --REGULAR_DROPOUT_RATE 0.1 --OPTIMIZER Nadam --NR_HIDDEN_NEURONS "
+        + str(config.NR_HIDDEN_NEURONS)
+        + "  --NR_HIDDEN_LAYERS 2 --LOSS MeanSquaredError --EPOCHS 10000 --BATCH_SIZE 64 --ACTIVATION relu --RANDOM_SEED 1"
     )
 
 
@@ -242,6 +306,8 @@ params = {
     "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
     "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
     "STATE_DISTANCES": config.TRAIN_STATE_DISTANCES,
+    "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
+    "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
     "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
     "STATE_LRU_AREAS_LIMIT": config.TRAIN_STATE_LRU_AREAS_LIMIT,
     "STATE_NO_LRU_WEIGHTS": config.TRAIN_STATE_NO_LRU_WEIGHTS,
@@ -283,6 +349,8 @@ if (
             "CONVEX_HULL_SAMPLING",
             "GENERATE_NOISE",
             "STATE_DISTANCES",
+            "STATE_DISTANCES_LAB",
+            "STATE_DISTANCES_UNLAB",
             "STATE_PREDICTED_CLASS",
             "STATE_ARGTHIRD_PROBAS",
             "STATE_ARGSECOND_PROBAS",
@@ -470,14 +538,18 @@ print("Done in ", end - start, " s\n")
 
 start = time.time()
 
+METRIC = config.PLOT_METRIC
 
 df = pd.read_csv(comparison_path)
-random_mean = df.loc[df["sampling"] == "random"]["acc_test_oracle"].mean()
+random_mean = df.loc[df["sampling"] == "random"][METRIC].mean()
 
-mm_mean = df.loc[df["sampling"] == "uncertainty_max_margin"]["acc_test_oracle"].mean()
+mm_mean = df.loc[df["sampling"] == "uncertainty_max_margin"][METRIC].mean()
 rest = df.loc[
-    (df["sampling"] != "random") & (df["sampling"] != "uncertainty_max_margin")
-]["acc_test_oracle"].mean()
+    (df["sampling"] != "random")
+    & (df["sampling"] != "uncertainty_max_margin")
+    & (df["sampling"] != "uncertainty_lc")
+    & (df["sampling"] != "uncertainty_entropy")
+][METRIC].mean()
 
 print("{} {} {}".format(random_mean, rest, mm_mean))
 
@@ -499,6 +571,8 @@ os.system(
     + splitted_path[1]
     + " --TITLE "
     + comparison_path
+    + " --METRIC "
+    + METRIC
 )
 
 end = time.time()

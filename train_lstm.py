@@ -230,12 +230,40 @@ if config.HYPER_SEARCH:
             # spearman_loss,
             # tau_loss,
         ],
-        "regular_dropout_rate": [0, 0.1, 0.2, 0.3],
+        "regular_dropout_rate": [0.1, 0.2, 0.3],
         #  "recurrentDropoutRate": [0, 0.1, 0.2],
-        "nr_hidden_neurons": [10, 20, 40, 80],  # , 120],
-        "epochs": [1000],  # <- early stopping :)
-        "nr_hidden_layers": [1, 2, 4, 8],  # , 16],  # 16, 32, 64],  # , 2],
-        "batch_size": [8, 16, 32, 64],  # , 128],
+        "nr_hidden_neurons": [
+            #  1,
+            #  2,
+            #  3,
+            #  4,
+            #  6,
+            #  8,
+            #  16,
+            #  24,
+            #  32,
+            60,
+            #  90,
+            120,
+            #  150,
+            180,
+            #  210,
+            240,
+            #  270,
+            300
+            #  200,
+            #  300,
+            #  400,
+            #  500,
+            #  600,
+            #  700,
+            #  800,
+            #  900,
+            #  1000,
+        ],  # [160, 240, 480, 720, 960],
+        "epochs": [10000],  # <- early stopping :)
+        "nr_hidden_layers": [2, 4],  # 16, 32, 64, 96, 128],  # , 2],
+        "batch_size": [16, 32, 64],  # , 128],
         #  "nTs": [15000],
         #  "k2": [1000],
         #  "diff": [False],
@@ -253,7 +281,7 @@ if config.HYPER_SEARCH:
 
     model = KerasRegressor(
         build_fn=build_nn,
-        verbose=0,
+        verbose=2,
         activation=None,
         validation_split=0.3,
         loss=None,
@@ -265,8 +293,8 @@ if config.HYPER_SEARCH:
         epochs=None,
         batch_size=None,
         callbacks=[
-            EarlyStopping(monitor="val_loss", patience=5, verbose=0),
-            ReduceLROnPlateau(monitor="val_loss", patience=3, verbose=0),
+            EarlyStopping(monitor="val_loss", patience=5, verbose=1),
+            ReduceLROnPlateau(monitor="val_loss", patience=3, verbose=1),
         ],
     )
 
@@ -276,7 +304,7 @@ if config.HYPER_SEARCH:
         cv=5,
         n_jobs=-1,
         scoring=make_scorer(_evaluate_top_k, greater_is_better=True),
-        verbose=0,
+        verbose=1,
         n_iter=config.N_ITER,
     )
 
