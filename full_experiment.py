@@ -58,6 +58,7 @@ config, parser = standard_config(
         (["--FINAL_PICTURE"], {"default": ""}),
         (["--SKIP_TRAINING_DATA_GENERATION"], {"action": "store_true"}),
         (["--PLOT_METRIC"], {"default": "acc_auc"}),
+        (["--NR_HIDDEN_NEURONS"], {"type": int, "default": 300}),
     ],
     standard_args=False,
     return_argparse=True,
@@ -263,7 +264,9 @@ if not Path(OUTPUT_DIRECTORY + "/trained_ann.pickle").is_file():
         + OUTPUT_DIRECTORY
         + " --STATE_ENCODING listwise --TARGET_ENCODING binary --SAVE_DESTINATION "
         + OUTPUT_DIRECTORY
-        + "/trained_ann.pickle --REGULAR_DROPOUT_RATE 0.2 --OPTIMIZER Nadam --NR_HIDDEN_NEURONS 450 --NR_HIDDEN_LAYERS 2 --LOSS CosineSimilarity --EPOCHS 10000 --BATCH_SIZE 32 --ACTIVATION relu --RANDOM_SEED 1"
+        + "/trained_ann.pickle --REGULAR_DROPOUT_RATE 0.1 --OPTIMIZER Nadam --NR_HIDDEN_NEURONS "
+        + str(config.NR_HIDDEN_NEURONS)
+        + "  --NR_HIDDEN_LAYERS 2 --LOSS MeanSquaredError --EPOCHS 10000 --BATCH_SIZE 64 --ACTIVATION relu --RANDOM_SEED 1"
     )
 
 

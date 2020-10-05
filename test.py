@@ -2,7 +2,8 @@ import pandas as pd
 import glob
 import os
 
-pathes = "../datasets/tmp_taurus/"
+#  pathes = "../datasets/tmp_taurus/"
+pathes = "../datasets/nn_size_hypersearch/"
 
 
 for path in glob.glob(pathes + "/TRAIN_*"):
@@ -27,14 +28,21 @@ for path in glob.glob(pathes + "/TRAIN_*"):
         "TRAIN_STATE_DISTANCES_UNLAB": "TRAIN_STATE_DISTANCES_UNLAB",
     }
     os.makedirs("plots/" + columns_to_leave, exist_ok=True)
+    NR_HIDDEN_NEURONS = columns_to_leave[-3:]
+
     cli_arguments = (
-        "python full_experiment.py --RANDOM_SEED 1 --LOG_FILE log.txt --TEST_NR_LEARNING_SAMPLES 1000 --OUTPUT_DIRECTORY ../datasets/tmp_taurus/ --SKIP_TRAINING_DATA_GENERATION --FINAL_PICTURE plots/"
+        "python full_experiment.py --RANDOM_SEED 1 --LOG_FILE log.txt --TEST_NR_LEARNING_SAMPLES 1000 --OUTPUT_DIRECTORY "
+        + pathes
+        + " --SKIP_TRAINING_DATA_GENERATION --FINAL_PICTURE plots/"
         + columns_to_leave
         + "/plot --BASE_PARAM_STRING "
         + columns_to_leave
         + " --"
-        + states_to_column_mapping[columns_to_leave]
+        + states_to_column_mapping[columns_to_leave[:-4]]
+        + " --NR_HIDDEN_NEURONS "
+        + NR_HIDDEN_NEURONS
     )
+    #  print(cli_arguments)
     os.system(cli_arguments)
 exit(-2)
 
