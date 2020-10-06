@@ -90,11 +90,7 @@ def create_barplot(df, title, aggregated=False, value_vars=[], figsize=None):
         df = df.T
         df = df.reset_index()
         print(df)
-        df = pd.melt(
-            df,
-            value_vars=value_vars,
-            id_vars=["index"],
-        )
+        df = pd.melt(df, value_vars=value_vars, id_vars=["index"],)
         print(df)
         print(df["labels"].unique().tolist())
         for index, label in enumerate(df["labels"].unique()):
@@ -153,10 +149,6 @@ create_barplot(
     df_comparison_weak,
     "compare_weak",
     True,
-    [
-        "saved human effort",
-        "test accuracy",
-        "combined score",
-    ],
+    ["saved human effort", "test accuracy", "combined score",],
     (6, 2),
 )
