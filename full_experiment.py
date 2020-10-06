@@ -30,7 +30,6 @@ config, parser = standard_config(
         (["--TRAIN_STATE_DIFF_PROBAS"], {"action": "store_true"}),
         (["--TRAIN_STATE_ARGSECOND_PROBAS"], {"action": "store_true"}),
         (["--TRAIN_STATE_ARGTHIRD_PROBAS"], {"action": "store_true"}),
-        (["--TRAIN_STATE_DISTANCES"], {"action": "store_true"}),
         (["--TRAIN_STATE_DISTANCES_LAB"], {"action": "store_true"}),
         (["--TRAIN_STATE_DISTANCES_UNLAB"], {"action": "store_true"}),
         (["--TRAIN_STATE_PREDICTED_CLASS"], {"action": "store_true"}),
@@ -120,7 +119,7 @@ def run_python_experiment(
 ):
     def code(CLI_COMMAND):
         for k, v in CLI_ARGUMENTS.items():
-            CLI_COMMAND += " --" + k + " " + v
+            CLI_COMMAND += " --" + k + " " + str(v)
 
         if SAVE_ARGUMENT_JSON:
             with open(OUTPUT_FILE + "_params.json", "w") as f:
@@ -137,33 +136,55 @@ def run_python_experiment(
         OUTPUT_FILE_LENGTH=OUTPUT_FILE_LENGTH,
     )
 
+
 def run_parallel_experiment(
     EXPERIMENT_TITLE,
     OUTPUT_FILE,
     CLI_COMMAND,
     CLI_ARGUMENTS,
-    PARRALLEL_AMOUNT
+    PARALLEL_OFFSET,
+    PARALLEL_AMOUNT,
     OUTPUT_FILE_LENGTH=None,
     SAVE_ARGUMENT_JSON=True,
-
 ):
-    def code():
+    # save config.json
+    if SAVE_ARGUMENT_JSON:
+        with open(OUTPUT_FILE + "_params.json", "w") as f:
+            json.dump({"CLI_COMMAND": CLI_COMMAND, **CLI_ARGUMENTS}, f)
+
+    for k, v in CLI_ARGUMENTS.items():
+        print(v)
+        if isinstance(v, bool) and v == True:
+            CLI_COMMAND += " --" + k
+        elif isinstance(v, bool) and v == False:
+            pass
+        else:
+            CLI_COMMAND += " --" + k + " " + str(v)
+    print("\n" * 5)
+    print(CLI_COMMAND)
+    print("\n" * 5)
+
+    def run_parallel(CLI_COMMAND, RANDOM_SEED):
+        CLI_COMMAND += " --RANDOM_SEED " + str(RANDOM_SEED)
+        print(CLI_COMMAND)
+        os.system(CLI_COMMAND)
+
+    def code(CLI_COMMAND):
         with Parallel(
-                n_jobs=multiprocessing.cpu_count(), backend="threading"
-            ) as parallel:
-                output = parallel(
-                    delayed(run_classic_evaluation)(k)
-                    for k in range(1, PARRALLEL_AMOUNT)
-                )
+            n_jobs=multiprocessing.cpu_count(), backend="threading"
+        ) as parallel:
+            output = parallel(
+                delayed(run_parallel)(CLI_COMMAND, k + PARALLEL_OFFSET)
+                for k in range(1, PARALLEL_AMOUNT)
+            )
+
     run_code_experiment(
         EXPERIMENT_TITLE,
         OUTPUT_FILE,
         code=code,
+        code_kwargs={"CLI_COMMAND": CLI_COMMAND},
         OUTPUT_FILE_LENGTH=OUTPUT_FILE_LENGTH,
-    
     )
-
-
 
 
 print("train_base_param_string" + train_base_param_string)
@@ -187,7 +208,6 @@ params = {
     "STATE_DIFF_PROBAS": config.TRAIN_STATE_DIFF_PROBAS,
     "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
     "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
-    "STATE_DISTANCES": config.TRAIN_STATE_DISTANCES,
     "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
     "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
     "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
@@ -246,7 +266,6 @@ if not config.SKIP_TRAINING_DATA_GENERATION:
             "CONVEX_HULL_SAMPLING",
             "STOP_AFTER_MAXIMUM_ACCURACY_REACHED",
             "GENERATE_NOISE",
-            "STATE_DISTANCES",
             "STATE_DISTANCES_LAB",
             "STATE_DISTANCES_UNLAB",
             "STATE_PREDICTED_CLASS",
@@ -392,7 +411,6 @@ params = {
     "STATE_DIFF_PROBAS": config.TRAIN_STATE_DIFF_PROBAS,
     "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
     "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
-    "STATE_DISTANCES": config.TRAIN_STATE_DISTANCES,
     "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
     "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
     "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
@@ -435,7 +453,6 @@ if (
             "HYPERCUBE",
             "CONVEX_HULL_SAMPLING",
             "GENERATE_NOISE",
-            "STATE_DISTANCES",
             "STATE_DISTANCES_LAB",
             "STATE_DISTANCES_UNLAB",
             "STATE_PREDICTED_CLASS",
@@ -474,21 +491,6 @@ print("Done in ", end - start, " s\n")
 
 # remove STATE stuff
 
-params = {
-    "USER_QUERY_BUDGET_LIMIT": config.USER_QUERY_BUDGET_LIMIT,
-    "VARIABLE_DATASET": config.TEST_VARIABLE_DATASET,
-    "comparisons": config.TEST_COMPARISONS,
-    # ["random", "uncertainty_max_margin"],
-    "NR_EVALUATIONS": config.TEST_NR_LEARNING_SAMPLES,
-    "AMOUNT_OF_FEATURES": config.TEST_AMOUNT_OF_FEATURES,
-    "HYPERCUBE": config.TEST_HYPERCUBE,
-    "NEW_SYNTHETIC_PARAMS": config.TEST_NEW_SYNTHETIC_PARAMS,
-    "CONVEX_HULL_SAMPLING": config.TEST_CONVEX_HULL_SAMPLING,
-    "NR_QUERIES_PER_ITERATION": config.NR_QUERIES_PER_ITERATION,
-    "CLASSIFIER": config.TEST_CLASSIFIER,
-    "GENERATE_NOISE": config.TEST_GENERATE_NOISE,
-}
-
 CLASSIC_PREFIX = test_base_param_string
 
 
@@ -497,37 +499,29 @@ for comparison in params["comparisons"]:
         PARENT_OUTPUT_DIRECTORY + "classics/" + comparison + CLASSIC_PREFIX + ".csv"
     )
     run_parallel_experiment(
-        "Creating " + comparison + "evaluation data",
-        comparison_path + ".png",
+        "Creating " + comparison + "-evaluation data",
+        OUTPUT_FILE=COMPARISON_PATH,
         CLI_COMMAND="python single_al_cycle.py",
         CLI_ARGUMENTS={
-            "OUTPUT_DIRECTORY":
-                COMPARISON_PATH,
-            "SAMPLING":
-                comparison,
-            "CLUSTER": "dummy","NR_QUERIES_PER_ITERATION":
-                config.TEST_NR_QUERIES_PER_ITERATION,
+            "OUTPUT_DIRECTORY": COMPARISON_PATH,
+            "SAMPLING": comparison,
+            "CLUSTER": "dummy",
+            "NR_QUERIES_PER_ITERATION": config.NR_QUERIES_PER_ITERATION,
             "DATASET_NAME": "synthetic",
             "START_SET_SIZE": 1,
-            "USER_QUERY_BUDGET_LIMIT":
-                config.USER_QUERY_BUDGET_LIMIT,
-            "RANDOM_SEED":
-                RANDOM_SEED,
+            "USER_QUERY_BUDGET_LIMIT": config.USER_QUERY_BUDGET_LIMIT,
             "N_JOBS": 1,
-                "AMOUNT_OF_FEATURES":
-                config.TEST_AMOUNT_OF_FEATURES,
-            "CLASSIFIER":
-                config.TEST_CLASSIFIER,
-            "VARIABLE_DATASET":config.TEST_VARIABLE_DATASET,
-            "NEW_SYNTHETIC_PARAMS":config.TEST_NEW_SYNTHETIC_PARAMS,
-            "HYPERCUBE":config.TEST_HYPERCUBE,
-            "CONVEX_HULL_SAMPLING":config.TEST_CONVEX_HULL_SAMPLING,
-            "GENERATE_NOISE":config.TEST_GENERATE_NOISE,
-           
+            "AMOUNT_OF_FEATURES": config.TEST_AMOUNT_OF_FEATURES,
+            "CLASSIFIER": config.TEST_CLASSIFIER,
+            "VARIABLE_DATASET": config.TEST_VARIABLE_DATASET,
+            "NEW_SYNTHETIC_PARAMS": config.TEST_NEW_SYNTHETIC_PARAMS,
+            "HYPERCUBE": config.TEST_HYPERCUBE,
+            "CONVEX_HULL_SAMPLING": config.TEST_CONVEX_HULL_SAMPLING,
+            "GENERATE_NOISE": config.TEST_GENERATE_NOISE,
         },
-        PARRALLEL_OFFSET= 100000,
-PARRALLEL_AMOUNT= config.NR_EVALUATIONS + 1,
-       OUTPUT_FILE_LENGTH=params["NR_EVALUATIONS"] 
+        PARALLEL_OFFSET=100000,
+        PARALLEL_AMOUNT=config.TEST_NR_LEARNING_SAMPLES + 1,
+        OUTPUT_FILE_LENGTH=params["NR_EVALUATIONS"],
     )
 
 if config.FINAL_PICTURE == "":
@@ -544,9 +538,7 @@ else:
 
 def code():
     df = pd.read_csv(
-        trained_ann_csv_path,
-        index_col=None,
-        nrows=1 + params["NR_EVALUATIONS"],
+        trained_ann_csv_path, index_col=None, nrows=1 + params["NR_EVALUATIONS"],
     )
 
     for comparison in params["comparisons"]:

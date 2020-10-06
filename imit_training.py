@@ -45,11 +45,12 @@ if not os.path.isfile(config.OUTPUT_DIRECTORY + "/states.csv"):
         columns += [
             str(i) + "_pred_class" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
         ]
-    if config.STATE_DISTANCES:
+    if config.STATE_DISTANCES_LAB:
         columns += [
             str(i) + "_proba_avg_dist_lab"
             for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
         ]
+    if config.STATE_DISTANCES_UNLAB:
         columns += [
             str(i) + "_proba_avg_dist_unlab"
             for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
@@ -163,7 +164,8 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
         DATA_PATH=hyper_parameters["OUTPUT_DIRECTORY"],
         CONVEX_HULL_SAMPLING=hyper_parameters["CONVEX_HULL_SAMPLING"],
         VARIANCE_BOUND=hyper_parameters["VARIANCE_BOUND"],
-        STATE_DISTANCES=hyper_parameters["STATE_DISTANCES"],
+        STATE_DISTANCES_LAB=hyper_parameters["STATE_DISTANCES_LAB"],
+        STATE_DISTANCES_UNLAB=hyper_parameters["STATE_DISTANCES_UNLAB"],
         STATE_DIFF_PROBAS=hyper_parameters["STATE_DIFF_PROBAS"],
         STATE_ARGTHIRD_PROBAS=hyper_parameters["STATE_ARGTHIRD_PROBAS"],
         STATE_PREDICTED_CLASS=hyper_parameters["STATE_PREDICTED_CLASS"],
