@@ -42,8 +42,9 @@ for path in glob.glob(pathes + "/TRAIN_*"):
         + " --NR_HIDDEN_NEURONS "
         + NR_HIDDEN_NEURONS
     )
-    #  print(cli_arguments)
+    print(cli_arguments)
     os.system(cli_arguments)
+    exit(-1)
 exit(-2)
 
 
@@ -99,10 +100,7 @@ for path in glob.glob(pathes + "/TRAIN_*"):
             "_proba_argsecond",
             "_proba_argthird",
         ],
-        "TRAIN_STATE_DIFF_LAB": [
-            "_proba_argfirst",
-            "_avg_dist_lab",
-        ],
+        "TRAIN_STATE_DIFF_LAB": ["_proba_argfirst", "_avg_dist_lab",],
         "TRAIN_STATE_DIFF_UNLAB": ["_proba_argfirst", "_avg_dist_unlab"],
         "TRAIN_STATE_ARGSECOND_ARGTHIRD_DISTANCES": [
             "_proba_argfirst",

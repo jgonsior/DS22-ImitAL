@@ -1,3 +1,4 @@
+import json
 import math
 import multiprocessing
 import os
@@ -78,6 +79,92 @@ if test_base_param_string == "":
     test_base_param_string = "DEFAULT"
 
 PARENT_OUTPUT_DIRECTORY = config.OUTPUT_DIRECTORY
+
+
+def run_code_experiment(
+    EXPERIMENT_TITLE, OUTPUT_FILE, code, code_kwargs={}, OUTPUT_FILE_LENGTH=None
+):
+    # check if folder for OUTPUT_FILE exists
+    Path(os.path.dirname(OUTPUT_FILE)).mkdir(parents=True, exist_ok=True)
+
+    # check if OUTPUT_FILE exists
+    if os.path.isfile(OUTPUT_FILE):
+        if OUTPUT_FILE_LENGTH is not None:
+            if sum(1 for l in open(OUTPUT_FILE)) == OUTPUT_FILE_LENGTH:
+                return
+        else:
+            return
+
+    # if not run it
+    print("#" * 80)
+    print(EXPERIMENT_TITLE + "\n")
+    print("Saving to " + OUTPUT_FILE)
+
+    start = time.time()
+    code(**code_kwargs)
+    end = time.time()
+
+    assert os.path.exists(OUTPUT_FILE)
+    print("Done in ", end - start, " s\n")
+    print("#" * 80)
+    print("\n" * 5)
+
+
+def run_python_experiment(
+    EXPERIMENT_TITLE,
+    OUTPUT_FILE,
+    CLI_COMMAND,
+    CLI_ARGUMENTS,
+    OUTPUT_FILE_LENGTH=None,
+    SAVE_ARGUMENT_JSON=True,
+):
+    def code(CLI_COMMAND):
+        for k, v in CLI_ARGUMENTS.items():
+            CLI_COMMAND += " --" + k + " " + v
+
+        if SAVE_ARGUMENT_JSON:
+            with open(OUTPUT_FILE + "_params.json", "w") as f:
+                json.dump({"CLI_COMMAND": CLI_COMMAND, **CLI_ARGUMENTS}, f)
+
+        print(CLI_COMMAND)
+        os.system(CLI_COMMAND)
+
+    run_code_experiment(
+        EXPERIMENT_TITLE,
+        OUTPUT_FILE,
+        code=code,
+        code_kwargs={"CLI_COMMAND": CLI_COMMAND},
+        OUTPUT_FILE_LENGTH=OUTPUT_FILE_LENGTH,
+    )
+
+def run_parallel_experiment(
+    EXPERIMENT_TITLE,
+    OUTPUT_FILE,
+    CLI_COMMAND,
+    CLI_ARGUMENTS,
+    PARRALLEL_AMOUNT
+    OUTPUT_FILE_LENGTH=None,
+    SAVE_ARGUMENT_JSON=True,
+
+):
+    def code():
+        with Parallel(
+                n_jobs=multiprocessing.cpu_count(), backend="threading"
+            ) as parallel:
+                output = parallel(
+                    delayed(run_classic_evaluation)(k)
+                    for k in range(1, PARRALLEL_AMOUNT)
+                )
+    run_code_experiment(
+        EXPERIMENT_TITLE,
+        OUTPUT_FILE,
+        code=code,
+        OUTPUT_FILE_LENGTH=OUTPUT_FILE_LENGTH,
+    
+    )
+
+
+
 
 print("train_base_param_string" + train_base_param_string)
 print("test_base_param_string" + test_base_param_string)
@@ -404,101 +491,44 @@ params = {
 
 CLASSIC_PREFIX = test_base_param_string
 
-#
-#  for k, v in params.items():
-#      if k in ["USER_QUERY_BUDGET_LIMIT", "NR_QUERIES_PER_ITERATION"]:
-#          if parser.get_default(k) == v:
-#              continue
-#      elif parser.get_default("TEST_" + k) == v:
-#          continue
-#      #  k = "".join([x[0] for x in k.split("_")])
-#
-#      if k == "comparisons" or k == "FINAL_PICTURE":
-#          continue
-#      #  k = "".join([x[0] for x in k.split("_")])
-#
-#      if v == True:
-#          CLASSIC_PREFIX += "_TEST" + k.lower() + "_T"
-#      elif v == False:
-#          CLASSIC_PREFIX += "_TEST" + k.lower() + "_F"
-#      else:
-#          CLASSIC_PREFIX += "_TEST" + str(v)
-#
 
-
-print("#" * 80)
-print("Creating classic evaluation data")
-print("#" * 80)
-print("\n")
-
-# check if the other evaluation csvs already exist
 for comparison in params["comparisons"]:
-    start = time.time()
     COMPARISON_PATH = (
         PARENT_OUTPUT_DIRECTORY + "classics/" + comparison + CLASSIC_PREFIX + ".csv"
     )
-
-    Path(COMPARISON_PATH).parent.mkdir(parents=True, exist_ok=True)
-    #  Path(COMPARISON_PATH).touch()
-    print(COMPARISON_PATH)
-    if (
-        not Path(COMPARISON_PATH).is_file()
-        or sum(1 for l in open(COMPARISON_PATH)) < params["NR_EVALUATIONS"]
-    ):
-
-        def run_classic_evaluation(RANDOM_SEED):
-            RANDOM_SEED += 100000
-            cli_arguments = (
-                "python single_al_cycle.py --OUTPUT_DIRECTORY "
-                + COMPARISON_PATH
-                + " --SAMPLING "
-                + comparison
-                + " --CLUSTER dummy --NR_QUERIES_PER_ITERATION "
-                + str(params["NR_QUERIES_PER_ITERATION"])
-                + " --DATASET_NAME synthetic --START_SET_SIZE 1 --USER_QUERY_BUDGET_LIMIT "
-                + str(params["USER_QUERY_BUDGET_LIMIT"])
-                + " --RANDOM_SEED "
-                + str(RANDOM_SEED)
-                + " --N_JOBS 1"
-                + " --AMOUNT_OF_FEATURES "
-                + str(params["AMOUNT_OF_FEATURES"])
-                + " --CLASSIFIER "
-                + str(params["CLASSIFIER"])
-            )
-
-            for k in [
-                "VARIABLE_DATASET",
-                "NEW_SYNTHETIC_PARAMS",
-                "HYPERCUBE",
-                "CONVEX_HULL_SAMPLING",
-                "GENERATE_NOISE",
-            ]:
-                if params[k]:
-                    cli_arguments += " --" + k + " "
-
-            print(cli_arguments)
-            os.system(cli_arguments)
-
-            return RANDOM_SEED
-
-        with Parallel(
-            n_jobs=multiprocessing.cpu_count(), backend="threading"
-        ) as parallel:
-            output = parallel(
-                delayed(run_classic_evaluation)(k)
-                for k in range(1, params["NR_EVALUATIONS"] + 1)
-            )
-        #  print(output)
-    assert os.path.exists(COMPARISON_PATH)
-    amount_of_lines = sum(1 for l in open(COMPARISON_PATH))
-    end = time.time()
-    print("Done in ", end - start, " s\n")
-
-start = time.time()
-print("#" * 80)
-print("Generating evaluation CSV")
-print("#" * 80)
-print("\n")
+    run_parallel_experiment(
+        "Creating " + comparison + "evaluation data",
+        comparison_path + ".png",
+        CLI_COMMAND="python single_al_cycle.py",
+        CLI_ARGUMENTS={
+            "OUTPUT_DIRECTORY":
+                COMPARISON_PATH,
+            "SAMPLING":
+                comparison,
+            "CLUSTER": "dummy","NR_QUERIES_PER_ITERATION":
+                config.TEST_NR_QUERIES_PER_ITERATION,
+            "DATASET_NAME": "synthetic",
+            "START_SET_SIZE": 1,
+            "USER_QUERY_BUDGET_LIMIT":
+                config.USER_QUERY_BUDGET_LIMIT,
+            "RANDOM_SEED":
+                RANDOM_SEED,
+            "N_JOBS": 1,
+                "AMOUNT_OF_FEATURES":
+                config.TEST_AMOUNT_OF_FEATURES,
+            "CLASSIFIER":
+                config.TEST_CLASSIFIER,
+            "VARIABLE_DATASET":config.TEST_VARIABLE_DATASET,
+            "NEW_SYNTHETIC_PARAMS":config.TEST_NEW_SYNTHETIC_PARAMS,
+            "HYPERCUBE":config.TEST_HYPERCUBE,
+            "CONVEX_HULL_SAMPLING":config.TEST_CONVEX_HULL_SAMPLING,
+            "GENERATE_NOISE":config.TEST_GENERATE_NOISE,
+           
+        },
+        PARRALLEL_OFFSET= 100000,
+PARRALLEL_AMOUNT= config.NR_EVALUATIONS + 1,
+       OUTPUT_FILE_LENGTH=params["NR_EVALUATIONS"] 
+    )
 
 if config.FINAL_PICTURE == "":
     comparison_path = (
@@ -510,11 +540,13 @@ if config.FINAL_PICTURE == "":
     )
 else:
     comparison_path = config.FINAL_PICTURE
-print(comparison_path)
 
-if not Path(comparison_path).is_file():
+
+def code():
     df = pd.read_csv(
-        trained_ann_csv_path, index_col=None, nrows=1 + params["NR_EVALUATIONS"],
+        trained_ann_csv_path,
+        index_col=None,
+        nrows=1 + params["NR_EVALUATIONS"],
     )
 
     for comparison in params["comparisons"]:
@@ -532,48 +564,18 @@ if not Path(comparison_path).is_file():
     #  print(df)
     df.to_csv(comparison_path, index=False)
 
-assert os.path.exists(comparison_path)
-end = time.time()
-print("Done in ", end - start, " s\n")
 
-start = time.time()
+run_code_experiment("Generating evaluation CSVs", comparison_path, code=code)
 
-METRIC = config.PLOT_METRIC
-
-df = pd.read_csv(comparison_path)
-random_mean = df.loc[df["sampling"] == "random"][METRIC].mean()
-
-mm_mean = df.loc[df["sampling"] == "uncertainty_max_margin"][METRIC].mean()
-rest = df.loc[
-    (df["sampling"] != "random")
-    & (df["sampling"] != "uncertainty_max_margin")
-    & (df["sampling"] != "uncertainty_lc")
-    & (df["sampling"] != "uncertainty_entropy")
-][METRIC].mean()
-
-print("{} {} {}".format(random_mean, rest, mm_mean))
-
-print("#" * 80)
-print("Evaluation plots")
-print("#" * 80)
-print("\n")
-
-splitted_path = os.path.split(comparison_path)
-
-os.system(
-    "python compare_distributions.py --CSV_FILE "
-    + comparison_path
-    + "  --GROUP_COLUMNS sampling"
-    + " --SAVE_FILE "
-    + splitted_path[0]
-    + "/"
-    + str(mm_mean - rest)
-    + splitted_path[1]
-    + " --TITLE "
-    + comparison_path
-    + " --METRIC "
-    + METRIC
+run_python_experiment(
+    "Evaluation plots",
+    comparison_path + ".png",
+    CLI_COMMAND="python compare_distributions.py",
+    CLI_ARGUMENTS={
+        "CSV_FILE": comparison_path,
+        "GROUP_COLUMNS": "sampling",
+        "SAVE_FILE": comparison_path,
+        "TITLE": comparison_path,
+        "METRIC": config.PLOT_METRIC,
+    },
 )
-
-end = time.time()
-print("Done in ", end - start, " s\n")
