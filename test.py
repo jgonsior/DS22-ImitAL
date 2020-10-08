@@ -11,6 +11,8 @@ for path in glob.glob(pathes + "/TRAIN_*"):
         continue
     columns_to_leave = os.path.basename(path)
     print(columns_to_leave)
+    if columns_to_leave != "TRAIN_STATE_ARGSECOND_ARGTHIRD_DISTANCES":
+        continue
     states_to_column_mapping = {
         "TRAIN_STATE_ARGSECOND_PROBAS": "TRAIN_STATE_ARGSECOND_PROBAS",
         "TRAIN_STATE_ARGTHIRD_PROBAS": "TRAIN_STATE_ARGTHIRD_PROBAS --TRAIN_STATE_ARGSECOND_PROBAS",
@@ -31,7 +33,7 @@ for path in glob.glob(pathes + "/TRAIN_*"):
     NR_HIDDEN_NEURONS = "300"
 
     cli_arguments = (
-        "python full_experiment.py --RANDOM_SEED 1 --LOG_FILE log.txt --TEST_NR_LEARNING_SAMPLES 10 --OUTPUT_DIRECTORY "
+        "python full_experiment.py --RANDOM_SEED 1 --LOG_FILE log.txt --TEST_NR_LEARNING_SAMPLES 8 --OUTPUT_DIRECTORY "
         + pathes
         + " --SKIP_TRAINING_DATA_GENERATION --FINAL_PICTURE plots/"
         + columns_to_leave
@@ -46,7 +48,7 @@ for path in glob.glob(pathes + "/TRAIN_*"):
     )
     print(cli_arguments)
     os.system(cli_arguments)
-    exit(-1)
+    #  exit(-1)
 exit(-2)
 
 

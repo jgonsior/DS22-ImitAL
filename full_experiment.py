@@ -344,7 +344,7 @@ run_python_experiment(
 )
 
 evaluation_arguments = {
-    "DATASET_NAME": "synthetic",
+    #  "DATASET_NAME": "synthetic",
     "AMOUNT_OF_FEATURES": config.TEST_AMOUNT_OF_FEATURES,
     "CLASSIFIER": config.TEST_CLASSIFIER,
     "VARIABLE_DATASET": config.TEST_VARIABLE_DATASET,
@@ -356,54 +356,48 @@ evaluation_arguments = {
 }
 
 
-trained_ann_csv_path = config.OUTPUT_DIRECTORY + config.BASE_PARAM_STRING + ".csv"
-run_parallel_experiment(
-    "Creating ann-evaluation data",
-    OUTPUT_FILE=trained_ann_csv_path,
-    CLI_COMMAND="python single_al_cycle.py",
-    CLI_ARGUMENTS={
-        "NN_BINARY": config.OUTPUT_DIRECTORY
-        + train_base_param_string
-        + "/trained_ann.pickle",
-        "OUTPUT_DIRECTORY": trained_ann_csv_path,
-        "SAMPLING": "trained_nn",
-        "STATE_LRU_AREAS_LIMIT": config.TRAIN_STATE_LRU_AREAS_LIMIT,
-        "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
-        "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
-        "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
-        "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
-        "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
-        "STATE_DIFF_PROBAS": config.TRAIN_STATE_DIFF_PROBAS,
-        "STATE_NO_LRU_WEIGHTS": config.TRAIN_STATE_NO_LRU_WEIGHTS,
-        **evaluation_arguments,
-    },
-    PARALLEL_OFFSET=100000,
-    PARALLEL_AMOUNT=config.TEST_NR_LEARNING_SAMPLES,
-    OUTPUT_FILE_LENGTH=config.TEST_NR_LEARNING_SAMPLES,
-)
+for DATASET_NAME in [
+    "synthetic",
+    "dwtc",
+    "BREAST",
+    "DIABETES",
+    #  "FERTILITY",
+    "GERMAN",
+    "HABERMAN",
+    "HEART",
+    "ILPD",
+    "IONOSPHERE",
+    "PIMA",
+    "PLANNING",
+    "australian",
+]:
+    evaluation_arguments["DATASET_NAME"] = DATASET_NAME
 
-# rename sampling column
-p = Path(trained_ann_csv_path)
-text = p.read_text()
-text = text.replace("trained_nn", config.OUTPUT_DIRECTORY)
-p.write_text(text)
-
-
-for comparison in config.TEST_COMPARISONS:
-    COMPARISON_PATH = (
-        PARENT_OUTPUT_DIRECTORY
-        + "classics/"
-        + comparison
-        + test_base_param_string
-        + ".csv"
+    EVALUATION_FILE_TRAINED_NN_PATH = (
+        config.OUTPUT_DIRECTORY + config.BASE_PARAM_STRING + "_" + DATASET_NAME + ".csv"
     )
+
+    original_test_base_param_string = test_base_param_string
+    test_base_param_string += "_" + DATASET_NAME
+
     run_parallel_experiment(
-        "Creating " + comparison + "-evaluation data",
-        OUTPUT_FILE=COMPARISON_PATH,
+        "Creating ann-evaluation data",
+        OUTPUT_FILE=EVALUATION_FILE_TRAINED_NN_PATH,
         CLI_COMMAND="python single_al_cycle.py",
         CLI_ARGUMENTS={
-            "OUTPUT_DIRECTORY": COMPARISON_PATH,
-            "SAMPLING": comparison,
+            "NN_BINARY": config.OUTPUT_DIRECTORY
+            + train_base_param_string
+            + "/trained_ann.pickle",
+            "OUTPUT_DIRECTORY": EVALUATION_FILE_TRAINED_NN_PATH,
+            "SAMPLING": "trained_nn",
+            "STATE_LRU_AREAS_LIMIT": config.TRAIN_STATE_LRU_AREAS_LIMIT,
+            "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
+            "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
+            "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
+            "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
+            "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
+            "STATE_DIFF_PROBAS": config.TRAIN_STATE_DIFF_PROBAS,
+            "STATE_NO_LRU_WEIGHTS": config.TRAIN_STATE_NO_LRU_WEIGHTS,
             **evaluation_arguments,
         },
         PARALLEL_OFFSET=100000,
@@ -411,168 +405,80 @@ for comparison in config.TEST_COMPARISONS:
         OUTPUT_FILE_LENGTH=config.TEST_NR_LEARNING_SAMPLES,
     )
 
-if config.FINAL_PICTURE == "":
-    comparison_path = (
-        PARENT_OUTPUT_DIRECTORY
-        + test_base_param_string
-        + "_".join(config.TEST_COMPARISONS)
-        + ".csv"
-    )
-else:
-    comparison_path = config.FINAL_PICTURE
-
-
-def concatenate_evaluation_csvs():
-    df = pd.read_csv(
-        trained_ann_csv_path, index_col=None, nrows=1 + config.TEST_NR_LEARNING_SAMPLES,
-    )
+    # rename sampling column
+    p = Path(EVALUATION_FILE_TRAINED_NN_PATH)
+    text = p.read_text()
+    text = text.replace("trained_nn", config.OUTPUT_DIRECTORY)
+    p.write_text(text)
 
     for comparison in config.TEST_COMPARISONS:
-        df2 = pd.read_csv(
+        COMPARISON_PATH = (
             PARENT_OUTPUT_DIRECTORY
             + "classics/"
             + comparison
             + test_base_param_string
-            + ".csv",
+            + ".csv"
+        )
+        run_parallel_experiment(
+            "Creating " + comparison + "-evaluation data",
+            OUTPUT_FILE=COMPARISON_PATH,
+            CLI_COMMAND="python single_al_cycle.py",
+            CLI_ARGUMENTS={
+                "OUTPUT_DIRECTORY": COMPARISON_PATH,
+                "SAMPLING": comparison,
+                **evaluation_arguments,
+            },
+            PARALLEL_OFFSET=100000,
+            PARALLEL_AMOUNT=config.TEST_NR_LEARNING_SAMPLES,
+            OUTPUT_FILE_LENGTH=config.TEST_NR_LEARNING_SAMPLES,
+        )
+
+    if config.FINAL_PICTURE == "":
+        comparison_path = (
+            PARENT_OUTPUT_DIRECTORY
+            + test_base_param_string
+            + "_".join(config.TEST_COMPARISONS)
+            + ".csv"
+        )
+    else:
+        comparison_path = config.FINAL_PICTURE + "_" + DATASET_NAME
+
+    def concatenate_evaluation_csvs():
+        df = pd.read_csv(
+            EVALUATION_FILE_TRAINED_NN_PATH,
             index_col=None,
             nrows=1 + config.TEST_NR_LEARNING_SAMPLES,
         )
-        df = pd.concat([df, df2])
 
-    #  print(df)
-    df.to_csv(comparison_path, index=False)
+        for comparison in config.TEST_COMPARISONS:
+            df2 = pd.read_csv(
+                PARENT_OUTPUT_DIRECTORY
+                + "classics/"
+                + comparison
+                + test_base_param_string
+                + ".csv",
+                index_col=None,
+                nrows=1 + config.TEST_NR_LEARNING_SAMPLES,
+            )
+            df = pd.concat([df, df2])
 
+        #  print(df)
+        df.to_csv(comparison_path, index=False)
 
-run_code_experiment(
-    "Generating evaluation CSVs", comparison_path, code=concatenate_evaluation_csvs
-)
-
-run_python_experiment(
-    "Evaluation plots",
-    comparison_path + ".png",
-    CLI_COMMAND="python compare_distributions.py",
-    CLI_ARGUMENTS={
-        "CSV_FILE": comparison_path,
-        "GROUP_COLUMNS": "sampling",
-        "SAVE_FILE": comparison_path,
-        "TITLE": comparison_path,
-        "METRIC": config.PLOT_METRIC,
-    },
-)
-
-
-#########################################################################################
-#########################################################################################
-#########################################################################################
-#########################################################################################
-#########################################################################################
-#### Evaluate on uci datasets
-#########################################################################################
-#########################################################################################
-#########################################################################################
-#########################################################################################
-
-
-trained_ann_csv_path = config.OUTPUT_DIRECTORY + config.BASE_PARAM_STRING + ".csv"
-run_parallel_experiment(
-    "Creating ann-evaluation data",
-    OUTPUT_FILE=trained_ann_csv_path,
-    CLI_COMMAND="python single_al_cycle.py",
-    CLI_ARGUMENTS={
-        "NN_BINARY": config.OUTPUT_DIRECTORY
-        + train_base_param_string
-        + "/trained_ann.pickle",
-        "OUTPUT_DIRECTORY": trained_ann_csv_path,
-        "SAMPLING": "trained_nn",
-        "STATE_LRU_AREAS_LIMIT": config.TRAIN_STATE_LRU_AREAS_LIMIT,
-        "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
-        "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
-        "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
-        "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
-        "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
-        "STATE_DIFF_PROBAS": config.TRAIN_STATE_DIFF_PROBAS,
-        "STATE_NO_LRU_WEIGHTS": config.TRAIN_STATE_NO_LRU_WEIGHTS,
-        **evaluation_arguments,
-    },
-    PARALLEL_OFFSET=100000,
-    PARALLEL_AMOUNT=config.TEST_NR_LEARNING_SAMPLES,
-    OUTPUT_FILE_LENGTH=config.TEST_NR_LEARNING_SAMPLES,
-)
-
-# rename sampling column
-p = Path(trained_ann_csv_path)
-text = p.read_text()
-text = text.replace("trained_nn", config.OUTPUT_DIRECTORY)
-p.write_text(text)
-
-
-for comparison in config.TEST_COMPARISONS:
-    COMPARISON_PATH = (
-        PARENT_OUTPUT_DIRECTORY
-        + "classics/"
-        + comparison
-        + test_base_param_string
-        + ".csv"
+    run_code_experiment(
+        "Generating evaluation CSVs", comparison_path, code=concatenate_evaluation_csvs
     )
-    run_parallel_experiment(
-        "Creating " + comparison + "-evaluation data",
-        OUTPUT_FILE=COMPARISON_PATH,
-        CLI_COMMAND="python single_al_cycle.py",
+
+    run_python_experiment(
+        "Evaluation plots",
+        comparison_path + ".png",
+        CLI_COMMAND="python compare_distributions.py",
         CLI_ARGUMENTS={
-            "OUTPUT_DIRECTORY": COMPARISON_PATH,
-            "SAMPLING": comparison,
-            **evaluation_arguments,
+            "CSV_FILE": comparison_path,
+            "GROUP_COLUMNS": "sampling",
+            "SAVE_FILE": comparison_path,
+            "TITLE": comparison_path,
+            "METRIC": config.PLOT_METRIC,
         },
-        PARALLEL_OFFSET=100000,
-        PARALLEL_AMOUNT=config.TEST_NR_LEARNING_SAMPLES,
-        OUTPUT_FILE_LENGTH=config.TEST_NR_LEARNING_SAMPLES,
     )
-
-if config.FINAL_PICTURE == "":
-    comparison_path = (
-        PARENT_OUTPUT_DIRECTORY
-        + test_base_param_string
-        + "_".join(config.TEST_COMPARISONS)
-        + ".csv"
-    )
-else:
-    comparison_path = config.FINAL_PICTURE
-
-
-def concatenate_evaluation_csvs():
-    df = pd.read_csv(
-        trained_ann_csv_path, index_col=None, nrows=1 + config.TEST_NR_LEARNING_SAMPLES,
-    )
-
-    for comparison in config.TEST_COMPARISONS:
-        df2 = pd.read_csv(
-            PARENT_OUTPUT_DIRECTORY
-            + "classics/"
-            + comparison
-            + test_base_param_string
-            + ".csv",
-            index_col=None,
-            nrows=1 + config.TEST_NR_LEARNING_SAMPLES,
-        )
-        df = pd.concat([df, df2])
-
-    #  print(df)
-    df.to_csv(comparison_path, index=False)
-
-
-run_code_experiment(
-    "Generating evaluation CSVs", comparison_path, code=concatenate_evaluation_csvs
-)
-
-run_python_experiment(
-    "Evaluation plots",
-    comparison_path + ".png",
-    CLI_COMMAND="python compare_distributions.py",
-    CLI_ARGUMENTS={
-        "CSV_FILE": comparison_path,
-        "GROUP_COLUMNS": "sampling",
-        "SAVE_FILE": comparison_path,
-        "TITLE": comparison_path,
-        "METRIC": config.PLOT_METRIC,
-    },
-)
+    test_base_param_string = original_test_base_param_string
