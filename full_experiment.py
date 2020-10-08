@@ -87,11 +87,15 @@ def run_code_experiment(
 ):
     # check if folder for OUTPUT_FILE exists
     Path(os.path.dirname(OUTPUT_FILE)).mkdir(parents=True, exist_ok=True)
+    # if not run it
+    print("#" * 80)
+    print(EXPERIMENT_TITLE + "\n")
+    print("Saving to " + OUTPUT_FILE)
 
     # check if OUTPUT_FILE exists
     if os.path.isfile(OUTPUT_FILE):
         if OUTPUT_FILE_LENGTH is not None:
-            if sum(1 for l in open(OUTPUT_FILE)) == OUTPUT_FILE_LENGTH:
+            if sum(1 for l in open(OUTPUT_FILE)) >= OUTPUT_FILE_LENGTH:
                 return
         else:
             return
@@ -148,15 +152,17 @@ def run_parallel_experiment(
     PARALLEL_AMOUNT,
     OUTPUT_FILE_LENGTH=None,
     SAVE_ARGUMENT_JSON=True,
-    RESTART_IF_NOT_ENOUGH_SAMPLES=True,
+    RESTART_IF_NOT_ENOUGH_SAMPLES=False,
 ):
+    # check if folder for OUTPUT_FILE exists
+    Path(os.path.dirname(OUTPUT_FILE)).mkdir(parents=True, exist_ok=True)
+
     # save config.json
     if SAVE_ARGUMENT_JSON:
         with open(OUTPUT_FILE + "_params.json", "w") as f:
             json.dump({"CLI_COMMAND": CLI_COMMAND, **CLI_ARGUMENTS}, f)
 
     for k, v in CLI_ARGUMENTS.items():
-        print(v)
         if isinstance(v, bool) and v == True:
             CLI_COMMAND += " --" + k
         elif isinstance(v, bool) and v == False:
@@ -164,13 +170,17 @@ def run_parallel_experiment(
         else:
             CLI_COMMAND += " --" + k + " " + str(v)
     print("\n" * 5)
-    print(CLI_COMMAND)
-    print("\n" * 5)
 
     def run_parallel(CLI_COMMAND, RANDOM_SEED):
         CLI_COMMAND += " --RANDOM_SEED " + str(RANDOM_SEED)
         print(CLI_COMMAND)
         os.system(CLI_COMMAND)
+
+    # if file exists already and isn't empty we don't need to recreate all samples
+    if Path(OUTPUT_FILE).is_file():
+        existing_length = sum(1 for l in open(OUTPUT_FILE)) - 1
+        PARALLEL_AMOUNT -= existing_length
+        PARALLEL_OFFSET = existing_length
 
     def code(CLI_COMMAND, PARALLEL_AMOUNT, PARALLEL_OFFSET):
         with Parallel(
@@ -178,7 +188,7 @@ def run_parallel_experiment(
         ) as parallel:
             output = parallel(
                 delayed(run_parallel)(CLI_COMMAND, k + PARALLEL_OFFSET)
-                for k in range(1, PARALLEL_AMOUNT)
+                for k in range(1, PARALLEL_AMOUNT + 1)
             )
 
     run_code_experiment(
@@ -199,7 +209,7 @@ def run_parallel_experiment(
         while (
             error_stop_counter > 0
             and (sum(1 for l in open(OUTPUT_FILE)) or not Path(OUTPUT_FILE).is_file())
-            < OUTPUT_FILE_LENGTH
+            <= OUTPUT_FILE_LENGTH
         ):
             if Path(OUTPUT_FILE).is_file():
                 amount_of_existing_states = sum(1 for l in open(OUTPUT_FILE))
@@ -233,7 +243,9 @@ def run_parallel_experiment(
             if new_amount_of_existing_states == amount_of_existing_states:
                 error_stop_counter -= 1
 
-        if sum(1 for l in open(OUTPUT_FILE)) > OUTPUT_FILE_LENGTH:
+        if sum(1 for l in open(OUTPUT_FILE)) > OUTPUT_FILE_LENGTH + 1:
+            print(OUTPUT_FILE)
+            print(os.path.dirname(OUTPUT_FILE))
             # black magic to trim file using python
             with open(OUTPUT_FILE, "r+") as f:
                 with open(os.path.dirname(OUTPUT_FILE) + "/opt_pol.csv", "r+") as f2:
@@ -245,14 +257,14 @@ def run_parallel_experiment(
                     counter = 0
                     for l in lines:
                         counter += 1
-                        if counter <= OUTPUT_FILE_LENGTH:
+                        if counter <= OUTPUT_FILE_LENGTH + 1:
                             f.write(l)
                     f.truncate()
 
                     counter = 0
                     for l in lines2:
                         counter += 1
-                        if counter <= OUTPUT_FILE_LENGTH:
+                        if counter <= OUTPUT_FILE_LENGTH + 1:
                             f2.write(l)
 
                     f2.truncate()
@@ -270,8 +282,8 @@ if not config.SKIP_TRAINING_DATA_GENERATION:
     OUTPUT_FILE = PARENT_OUTPUT_DIRECTORY + train_base_param_string
     run_parallel_experiment(
         "Creating dataset",
-        OUTPUT_FILE=PARENT_OUTPUT_DIRECTORY + train_base_param_string + "states.csv",
-        CLI_COMMAND="python imit.py",
+        OUTPUT_FILE=PARENT_OUTPUT_DIRECTORY + train_base_param_string + "/states.csv",
+        CLI_COMMAND="python imit_training.py",
         CLI_ARGUMENTS={
             "DATASETS_PATH": "../datasets",
             "OUTPUT_DIRECTORY": PARENT_OUTPUT_DIRECTORY + train_base_param_string,
@@ -285,7 +297,7 @@ if not config.SKIP_TRAINING_DATA_GENERATION:
             "VARIABLE_DATASET": config.TRAIN_VARIABLE_DATASET,
             "NEW_SYNTHETIC_PARAMS": config.TRAIN_NEW_SYNTHETIC_PARAMS,
             "HYPERCUBE": config.TRAIN_HYPERCUBE,
-            "CONVEX_HULL_SAMPLING": config.CONVEX_HULL_SAMPLING,
+            "CONVEX_HULL_SAMPLING": config.TRAIN_CONVEX_HULL_SAMPLING,
             "STOP_AFTER_MAXIMUM_ACCURACY_REACHED": config.TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED,
             "GENERATE_NOISE": config.TRAIN_GENERATE_NOISE,
             "STATE_LRU_AREAS_LIMIT": config.TRAIN_STATE_LRU_AREAS_LIMIT,
@@ -299,8 +311,8 @@ if not config.SKIP_TRAINING_DATA_GENERATION:
             **shared_arguments,
         },
         PARALLEL_OFFSET=0,
-        PARALLEL_AMOUNT=config.TRAIN_NR_LEARNING_SAMPLES + 1,
-        OUTPUT_FILE_LENGTH=config.NR_LEARNING_SAMPLES,
+        PARALLEL_AMOUNT=config.TRAIN_NR_LEARNING_SAMPLES,
+        OUTPUT_FILE_LENGTH=config.TRAIN_NR_LEARNING_SAMPLES,
         RESTART_IF_NOT_ENOUGH_SAMPLES=True,
     )
 
@@ -310,17 +322,19 @@ if config.ONLY_TRAINING_DATA:
 
 run_python_experiment(
     "Tain ANN",
-    OUTPUT_DIRECTORY + "/trained_ann.pickle",
-    CLI_COMMAND="python trian_lstm.py",
+    config.OUTPUT_DIRECTORY + train_base_param_string + "/trained_ann.pickle",
+    CLI_COMMAND="python train_lstm.py",
     CLI_ARGUMENTS={
-        "DATA_PATH": OUTPUT_DIRECTORY,
+        "DATA_PATH": config.OUTPUT_DIRECTORY + train_base_param_string,
         "STATE_ENCODING": "listwise",
         "TARGET_ENCODING": "binary",
-        "SAVE_DESTINATION": OUTPUT_DIRECTORY + "/trained_ann.pickle",
+        "SAVE_DESTINATION": config.OUTPUT_DIRECTORY
+        + train_base_param_string
+        + "/trained_ann.pickle",
         "REGULAR_DROPOUT_RATE": 0.1,
         "OPTIMIZER": "Nadam",
         "NR_HIDDEN_NEURONS": config.NR_HIDDEN_NEURONS,
-        "NR_HIDDEN_LAYERS": config.NR_HIDDEN_LAYERS,
+        "NR_HIDDEN_LAYERS": 2,
         "LOSS": "MeanSquaredError",
         "EPOCHS": 10000,
         "BATCH_SIZE": 64,
@@ -342,13 +356,15 @@ evaluation_arguments = {
 }
 
 
-trained_ann_csv_path = (config.OUTPUT_DIRECTORY + config.BASE_PARAM_STRING + ".csv",)
+trained_ann_csv_path = config.OUTPUT_DIRECTORY + config.BASE_PARAM_STRING + ".csv"
 run_parallel_experiment(
     "Creating ann-evaluation data",
     OUTPUT_FILE=trained_ann_csv_path,
     CLI_COMMAND="python single_al_cycle.py",
     CLI_ARGUMENTS={
-        "NN_BINARY": config.OUTPUT_DIRECTORY + "/trained_nn.pickle",
+        "NN_BINARY": config.OUTPUT_DIRECTORY
+        + train_base_param_string
+        + "/trained_ann.pickle",
         "OUTPUT_DIRECTORY": trained_ann_csv_path,
         "SAMPLING": "trained_nn",
         "STATE_LRU_AREAS_LIMIT": config.TRAIN_STATE_LRU_AREAS_LIMIT,
@@ -362,8 +378,8 @@ run_parallel_experiment(
         **evaluation_arguments,
     },
     PARALLEL_OFFSET=100000,
-    PARALLEL_AMOUNT=config.TEST_NR_LEARNING_SAMPLES + 1,
-    OUTPUT_FILE_LENGTH=params["NR_EVALUATIONS"],
+    PARALLEL_AMOUNT=config.TEST_NR_LEARNING_SAMPLES,
+    OUTPUT_FILE_LENGTH=config.TEST_NR_LEARNING_SAMPLES,
 )
 
 # rename sampling column
@@ -373,7 +389,7 @@ text = text.replace("trained_nn", config.OUTPUT_DIRECTORY)
 p.write_text(text)
 
 
-for comparison in params["comparisons"]:
+for comparison in config.TEST_COMPARISONS:
     COMPARISON_PATH = (
         PARENT_OUTPUT_DIRECTORY
         + "classics/"
@@ -391,8 +407,8 @@ for comparison in params["comparisons"]:
             **evaluation_arguments,
         },
         PARALLEL_OFFSET=100000,
-        PARALLEL_AMOUNT=config.TEST_NR_LEARNING_SAMPLES + 1,
-        OUTPUT_FILE_LENGTH=params["NR_EVALUATIONS"],
+        PARALLEL_AMOUNT=config.TEST_NR_LEARNING_SAMPLES,
+        OUTPUT_FILE_LENGTH=config.TEST_NR_LEARNING_SAMPLES,
     )
 
 if config.FINAL_PICTURE == "":
@@ -400,7 +416,7 @@ if config.FINAL_PICTURE == "":
         PARENT_OUTPUT_DIRECTORY
         + param_string
         + test_base_param_string
-        + "_".join(params["comparisons"])
+        + "_".join(config.TEST_COMPARISONS)
         + ".csv"
     )
 else:
@@ -409,10 +425,10 @@ else:
 
 def generate_evaluation_csvs():
     df = pd.read_csv(
-        trained_ann_csv_path, index_col=None, nrows=1 + params["NR_EVALUATIONS"],
+        trained_ann_csv_path, index_col=None, nrows=1 + config.TEST_NR_LEARNING_SAMPLES,
     )
 
-    for comparison in params["comparisons"]:
+    for comparison in config.TEST_COMPARISONS:
         df2 = pd.read_csv(
             PARENT_OUTPUT_DIRECTORY
             + "classics/"
@@ -420,7 +436,7 @@ def generate_evaluation_csvs():
             + test_base_param_string
             + ".csv",
             index_col=None,
-            nrows=1 + params["NR_EVALUATIONS"],
+            nrows=1 + config.TEST_NR_LEARNING_SAMPLES,
         )
         df = pd.concat([df, df2])
 
