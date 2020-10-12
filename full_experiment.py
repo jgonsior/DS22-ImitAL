@@ -376,7 +376,6 @@ for DATASET_NAME in [
     if DATASET_NAME != "synthetic":
         config.TEST_NR_LEARNING_SAMPLES = 100
         evaluation_arguments["USER_QUERY_BUDGET_LIMIT"] = 20
-
     evaluation_arguments["DATASET_NAME"] = DATASET_NAME
 
     EVALUATION_FILE_TRAINED_NN_PATH = (
