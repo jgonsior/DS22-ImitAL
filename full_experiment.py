@@ -1,3 +1,5 @@
+import numpy as np
+from tabulate import tabulate
 import json
 import math
 import multiprocessing
@@ -373,6 +375,8 @@ for DATASET_NAME in [
 ]:
     if DATASET_NAME != "synthetic":
         config.TEST_NR_LEARNING_SAMPLES = 100
+        evaluation_arguments["USER_QUERY_BUDGET_LIMIT"] = 20
+
     evaluation_arguments["DATASET_NAME"] = DATASET_NAME
 
     EVALUATION_FILE_TRAINED_NN_PATH = (
@@ -483,4 +487,102 @@ for DATASET_NAME in [
             "METRIC": config.PLOT_METRIC,
         },
     )
+
+    # print evaluation table using all metrics at once
+
+    METRIC_TABLE_SUMMARY = config.FINAL_PICTURE + "_" + DATASET_NAME + "_" "table.txt"
+
+    def plot_all_metrics_as_a_table():
+        sources = []
+        df = pd.read_csv(
+            EVALUATION_FILE_TRAINED_NN_PATH,
+            index_col=None,
+            nrows=1 + config.TEST_NR_LEARNING_SAMPLES,
+        )
+        sources.append(df["sampling"][0])
+
+        for comparison in config.TEST_COMPARISONS:
+            df2 = pd.read_csv(
+                PARENT_OUTPUT_DIRECTORY
+                + "classics/"
+                + comparison
+                + test_base_param_string
+                + ".csv",
+                index_col=None,
+                nrows=1 + config.TEST_NR_LEARNING_SAMPLES,
+            )
+            sources.append(df2["sampling"][0])
+            df = pd.concat([df, df2])
+
+        metrics = [
+            "acc_auc",
+            "acc_test",
+            "acc_train",
+            "roc_auc_macro_oracle",
+            "roc_auc_weighted_oracle",
+        ]
+
+        table = pd.DataFrame(columns=["Source", *metrics])
+        for source in sources:
+            metric_values = {"Source": source}
+            for metric in metrics:
+                metric_values[metric] = df.loc[df["sampling"] == source][metric].mean()
+                #  metric_values[metric] = df.loc[df["sampling"] == source][
+                #      metric
+                #  ].median()
+                metric_values[metric + "_diff_to_mm"] = np.NaN
+            table = table.append(metric_values, ignore_index=True)
+
+        # add to table +- columns for each metric
+        for source in sources:
+            for metric in metrics:
+                max_value = table.loc[table["Source"] == "uncertainty_max_margin"][
+                    metric
+                ].max()
+                table.loc[table["Source"] == source, metric + "_diff_to_mm"] = (
+                    table.loc[table["Source"] == source][metric] - max_value
+                )
+
+        print(
+            tabulate(
+                table,
+                headers="keys",
+                showindex=False,
+                floatfmt=".2%",
+                tablefmt="fancy_grid",
+            )
+        )
+        with open(METRIC_TABLE_SUMMARY, "w") as f:
+            f.write(
+                "\n"
+                + DATASET_NAME
+                + "\n\n\n"
+                + tabulate(
+                    table,
+                    headers="keys",
+                    showindex=False,
+                    floatfmt=".2%",
+                    tablefmt="fancy_grid",
+                )
+            )
+        with open(config.FINAL_PICTURE + "_table.txt", "a") as f:
+            f.write(
+                "\n"
+                + DATASET_NAME
+                + "\n\n\n"
+                + tabulate(
+                    table,
+                    headers="keys",
+                    showindex=False,
+                    floatfmt=".2%",
+                    tablefmt="fancy_grid",
+                )
+            )
+
+    run_code_experiment(
+        "Printing dataset_metrics",
+        METRIC_TABLE_SUMMARY,
+        code=plot_all_metrics_as_a_table,
+    )
     test_base_param_string = original_test_base_param_string
+    #  exit(-1)
