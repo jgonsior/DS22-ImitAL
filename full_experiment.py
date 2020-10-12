@@ -337,8 +337,8 @@ run_python_experiment(
         "NR_HIDDEN_LAYERS": 2,
         "LOSS": "MeanSquaredError",
         "EPOCHS": 10000,
-        "BATCH_SIZE": 64,
-        "ACTIVATION": "relu",
+        "BATCH_SIZE": 32,
+        "ACTIVATION": "tanh",
         "RANDOM_SEED": 1,
     },
 )
@@ -371,6 +371,8 @@ for DATASET_NAME in [
     "PLANNING",
     "australian",
 ]:
+    if DATASET_NAME != "synthetic":
+        config.TEST_NR_LEARNING_SAMPLES = 100
     evaluation_arguments["DATASET_NAME"] = DATASET_NAME
 
     EVALUATION_FILE_TRAINED_NN_PATH = (

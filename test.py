@@ -33,7 +33,7 @@ for path in glob.glob(pathes + "/TRAIN_*"):
     NR_HIDDEN_NEURONS = "300"
 
     cli_arguments = (
-        "python full_experiment.py --RANDOM_SEED 1 --LOG_FILE log.txt --TEST_NR_LEARNING_SAMPLES 8 --OUTPUT_DIRECTORY "
+        "python full_experiment.py --RANDOM_SEED 1 --LOG_FILE log.txt --TEST_NR_LEARNING_SAMPLES 24 --OUTPUT_DIRECTORY "
         + pathes
         + " --SKIP_TRAINING_DATA_GENERATION --FINAL_PICTURE plots/"
         + columns_to_leave
