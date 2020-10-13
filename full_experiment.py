@@ -21,6 +21,7 @@ config, parser = standard_config(
         (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 50}),
         (["--TRAIN_CLASSIFIER"], {"default": "MLP"}),
         (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
+        (["--TRAIN_AMOUNT_OF_PEAKED_SAMPLES"], {"type": int, "default": 20}),
         (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 1000}),
         (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
         (["--TRAIN_VARIANCE_BOUND"], {"type": int, "default": 1}),
@@ -186,7 +187,8 @@ def run_parallel_experiment(
 
     def code(CLI_COMMAND, PARALLEL_AMOUNT, PARALLEL_OFFSET):
         with Parallel(
-            n_jobs=multiprocessing.cpu_count(), backend="threading"
+            n_jobs=1,
+            backend="threading",  # multiprocessing.cpu_count(), backend="threading"
         ) as parallel:
             output = parallel(
                 delayed(run_parallel)(CLI_COMMAND, k + PARALLEL_OFFSET)
@@ -291,7 +293,7 @@ if not config.SKIP_TRAINING_DATA_GENERATION:
             "OUTPUT_DIRECTORY": PARENT_OUTPUT_DIRECTORY + train_base_param_string,
             "DATASET_NAME": "synthetic",
             "SAMPLING": "trained_nn",
-            "AMOUNT_OF_PEAKED_OBJECTS": 20,
+            "AMOUNT_OF_PEAKED_OBJECTS": config.TRAIN_AMOUNT_OF_PEAKED_SAMPLES,
             "MAX_AMOUNT_OF_WS_PEAKS": 0,
             "AMOUNT_OF_LEARN_ITERATIONS": 1,
             "AMOUNT_OF_FEATURES": config.TRAIN_AMOUNT_OF_FEATURES,
@@ -359,19 +361,20 @@ evaluation_arguments = {
 
 
 for DATASET_NAME in [
-    "synthetic",
-    "dwtc",
-    "BREAST",
-    "DIABETES",
+    "emnist-byclass-test",
+    #  "synthetic",
+    #  "dwtc",
+    #  "BREAST",
+    #  "DIABETES",
     #  "FERTILITY",
-    "GERMAN",
-    "HABERMAN",
-    "HEART",
-    "ILPD",
-    "IONOSPHERE",
-    "PIMA",
-    "PLANNING",
-    "australian",
+    #  "GERMAN",
+    #  "HABERMAN",
+    #  "HEART",
+    #  "ILPD",
+    #  "IONOSPHERE",
+    #  "PIMA",
+    #  "PLANNING",
+    #  "australian",
 ]:
     if DATASET_NAME != "synthetic":
         config.TEST_NR_LEARNING_SAMPLES = 1000
