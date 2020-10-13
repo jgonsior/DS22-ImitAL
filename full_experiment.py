@@ -374,7 +374,7 @@ for DATASET_NAME in [
     "australian",
 ]:
     if DATASET_NAME != "synthetic":
-        config.TEST_NR_LEARNING_SAMPLES = 100
+        config.TEST_NR_LEARNING_SAMPLES = 1000
         evaluation_arguments["USER_QUERY_BUDGET_LIMIT"] = 20
     evaluation_arguments["DATASET_NAME"] = DATASET_NAME
 
