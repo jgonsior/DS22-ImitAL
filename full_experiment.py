@@ -187,7 +187,8 @@ def run_parallel_experiment(
 
     def code(CLI_COMMAND, PARALLEL_AMOUNT, PARALLEL_OFFSET):
         with Parallel(
-            n_jobs=multiprocessing.cpu_count(), backend="threading"
+            n_jobs=1,
+            backend="threading",  # multiprocessing.cpu_count(), backend="threading"
         ) as parallel:
             output = parallel(
                 delayed(run_parallel)(CLI_COMMAND, k + PARALLEL_OFFSET)
@@ -360,19 +361,20 @@ evaluation_arguments = {
 
 
 for DATASET_NAME in [
-    "synthetic",
-    "dwtc",
-    "BREAST",
-    "DIABETES",
+    "emnist-byclass-test",
+    #  "synthetic",
+    #  "dwtc",
+    #  "BREAST",
+    #  "DIABETES",
     #  "FERTILITY",
-    "GERMAN",
-    "HABERMAN",
-    "HEART",
-    "ILPD",
-    "IONOSPHERE",
-    "PIMA",
-    "PLANNING",
-    "australian",
+    #  "GERMAN",
+    #  "HABERMAN",
+    #  "HEART",
+    #  "ILPD",
+    #  "IONOSPHERE",
+    #  "PIMA",
+    #  "PLANNING",
+    #  "australian",
 ]:
     if DATASET_NAME != "synthetic":
         config.TEST_NR_LEARNING_SAMPLES = 100
