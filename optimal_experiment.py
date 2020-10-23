@@ -86,8 +86,7 @@ if train_base_param_string == "":
 if test_base_param_string == "":
     test_base_param_string = "DEFAULT"
 
-PARENT_OUTPUT_DIRECTORY = config.OUTPUT_DIRECTORY
-
+PARENT_OUTPUT_DIRECTORY = config.OUTPUT_DIRECTORY + "/"
 
 shared_arguments = {
     "CLUSTER": "dummy",
@@ -96,7 +95,7 @@ shared_arguments = {
     "USER_QUERY_BUDGET_LIMIT": config.USER_QUERY_BUDGET_LIMIT,
     "N_JOBS": 1,
 }
-exit(-1)
+
 evaluation_arguments = {
     #  "DATASET_NAME": "synthetic",
     "AMOUNT_OF_FEATURES": config.TEST_AMOUNT_OF_FEATURES,
@@ -115,24 +114,16 @@ for DATASET_NAME in [
 ]:
     evaluation_arguments["DATASET_NAME"] = DATASET_NAME
 
-    EVALUATION_FILE_TRAINED_NN_PATH = (
-        config.OUTPUT_DIRECTORY + config.BASE_PARAM_STRING + "_" + DATASET_NAME + ".csv"
-    )
-
     original_test_base_param_string = test_base_param_string
     test_base_param_string += "_" + DATASET_NAME
 
     optimal_results = pd.read_csv(
-        PARENT_OUTPUT_DIRECTORY
-        + "/"
-        + config.BASE_PARAM_STRING
-        + "/dataset_creation.csv"
+        PARENT_OUTPUT_DIRECTORY + config.BASE_PARAM_STRING + "/dataset_creation.csv",
+        nrows=config.TEST_NR_LEARNING_SAMPLES + 10,
     )
     RANDOM_IDS = optimal_results["random_seed"].unique()[
         : config.TEST_NR_LEARNING_SAMPLES
     ]
-    print(RANDOM_IDS)
-    exit(-1)
 
     for comparison in config.TEST_COMPARISONS:
         COMPARISON_PATH = (
@@ -151,8 +142,8 @@ for DATASET_NAME in [
                 "SAMPLING": comparison,
                 **evaluation_arguments,
             },
+            PARALLEL_OFFSET=0,
             RANDOM_IDS=[1, 2, 3, 4, 5, 6, 7, 9, 20],
-            PARALLEL_AMOUNT=config.TEST_NR_LEARNING_SAMPLES,
             OUTPUT_FILE_LENGTH=config.TEST_NR_LEARNING_SAMPLES,
         )
 
@@ -167,11 +158,8 @@ for DATASET_NAME in [
         comparison_path = config.FINAL_PICTURE + "_" + DATASET_NAME
 
     def concatenate_evaluation_csvs():
-        df = pd.read_csv(
-            EVALUATION_FILE_TRAINED_NN_PATH,
-            index_col=None,
-            nrows=1 + config.TEST_NR_LEARNING_SAMPLES,
-        )
+        df = optimal_results
+        df["sampling"] = "optimal"
 
         for comparison in config.TEST_COMPARISONS:
             df2 = pd.read_csv(
@@ -211,11 +199,7 @@ for DATASET_NAME in [
 
     def plot_all_metrics_as_a_table():
         sources = []
-        df = pd.read_csv(
-            EVALUATION_FILE_TRAINED_NN_PATH,
-            index_col=None,
-            nrows=1 + config.TEST_NR_LEARNING_SAMPLES,
-        )
+        df = optimal_results
         sources.append(df["sampling"][0])
 
         for comparison in config.TEST_COMPARISONS:

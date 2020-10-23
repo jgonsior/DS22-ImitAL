@@ -76,8 +76,9 @@ def run_parallel_experiment(
     OUTPUT_FILE,
     CLI_COMMAND,
     CLI_ARGUMENTS,
-    PARALLEL_OFFSET,
-    PARALLEL_AMOUNT,
+    RANDOM_IDS=None,
+    PARALLEL_OFFSET=0,
+    PARALLEL_AMOUNT=0,
     OUTPUT_FILE_LENGTH=None,
     SAVE_ARGUMENT_JSON=True,
     RESTART_IF_NOT_ENOUGH_SAMPLES=False,
@@ -110,6 +111,11 @@ def run_parallel_experiment(
         PARALLEL_AMOUNT -= existing_length
         PARALLEL_OFFSET = existing_length
 
+    if RANDOM_IDS:
+        ids = RANDOM_IDS
+    else:
+        ids = range(1, PARALLEL_AMOUNT + 1)
+
     def code(CLI_COMMAND, PARALLEL_AMOUNT, PARALLEL_OFFSET):
         with Parallel(
             #  n_jobs=1,
@@ -118,7 +124,7 @@ def run_parallel_experiment(
         ) as parallel:
             output = parallel(
                 delayed(run_parallel)(CLI_COMMAND, k + PARALLEL_OFFSET)
-                for k in range(1, PARALLEL_AMOUNT + 1)
+                for k in RANDOM_IDS
             )
 
     run_code_experiment(
