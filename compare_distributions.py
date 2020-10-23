@@ -21,6 +21,8 @@ parser.add_argument("--VALUE_GROUPINGS")
 parser.add_argument("--SAVE_FILE", default=None)
 parser.add_argument("--TITLE", default="")
 parser.add_argument("--METRIC", default="acc_test")
+parser.add_argument("--FILTER_KEY", default=None)
+parser.add_argument("--FILTER_VALUE", default=None)
 
 
 config = parser.parse_args()
@@ -31,7 +33,11 @@ if len(sys.argv[:-1]) == 0:
 
 
 def plot_distributions(
-    selection_list, axvline=False, SAVE_FILE=None, title="", **kwargs,
+    selection_list,
+    axvline=False,
+    SAVE_FILE=None,
+    title="",
+    **kwargs,
 ):
     sns.set(
         font_scale=1,
@@ -53,7 +59,7 @@ def plot_distributions(
         #  ax = sns.distplot(selection, label=label, **kwargs)
 
         #  ax.set_xlim(0.45, 0.65)
-        #  ax.set_xlim(0.60, 0.85)
+        #  ax.set_xlim(0.75, 0.8)
         #  ax.set_xlim(80, 875)
         if axvline:
             mean = selection.mean()
@@ -85,6 +91,9 @@ def plot_distributions(
 
 def compare_distributions(CSV_FILE, GROUP_COLUMNS, VALUE_GROUPINGS, SAVE_FILE):
     df = pd.read_csv(CSV_FILE)
+
+    if config.FILTER_KEY is not None:
+        df = df.loc[df[config.FILTER_KEY] == int(config.FILTER_VALUE)]
     #  print(df.head)
     #  exit(-1)
     # group df by all possible GROUP_COLUMNS combinations
@@ -211,7 +220,11 @@ df = df.query("sampling != 'random'")
 
 
 def compare_two_distributions(
-    selection_list, axvline=False, save=False, title="", **kwargs,
+    selection_list,
+    axvline=False,
+    save=False,
+    title="",
+    **kwargs,
 ):
     sns.set(
         font_scale=1,
@@ -441,7 +454,10 @@ def get_distributions_for_interesting(params):
                 (sel, "{:>5} : {:>6} - {:.2%}".format(value, len(sel), sel.mean()))
             )
         compare_two_distributions(
-            selections, axvline=True, title=param, save=True,
+            selections,
+            axvline=True,
+            title=param,
+            save=True,
         )
 
     #  für alpha, beta, gamma jointplots über ganzen Wertebereich, mit acc_auc als highlight farbe?

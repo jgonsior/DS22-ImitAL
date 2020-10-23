@@ -23,7 +23,9 @@ from tensorflow.keras.callbacks import (
 parser = argparse.ArgumentParser()
 parser.add_argument("--DATA_PATH", default="../datasets/")
 parser.add_argument(
-    "--CLASSIFIER", default="RF", help="Supported types: RF, DTree, NB, SVM, Linear",
+    "--CLASSIFIER",
+    default="RF",
+    help="Supported types: RF, DTree, NB, SVM, Linear",
 )
 parser.add_argument("--N_JOBS", type=int, default=-1)
 parser.add_argument(
@@ -190,7 +192,13 @@ def build_nn(
 ):
     model = Sequential()
 
-    model.add(Dense(units=X.shape[1], input_shape=X.shape[1:], activation=activation,))
+    model.add(
+        Dense(
+            units=X.shape[1],
+            input_shape=X.shape[1:],
+            activation=activation,
+        )
+    )
 
     for _ in range(0, nr_hidden_layers):
         model.add(
@@ -234,24 +242,28 @@ if config.HYPER_SEARCH:
             #  16,
             #  24,
             #  32,
-            60,
+            #  60,
             #  90,
-            120,
+            #  120,
             #  150,
-            180,
+            #  180,
             #  210,
-            240,
+            #  240,
             #  270,
-            300
+            #  300
+            100,
             #  200,
-            #  300,
+            300,
             #  400,
-            #  500,
+            500,
             #  600,
-            #  700,
+            700,
             #  800,
-            #  900,
+            900,
             #  1000,
+            1100,
+            1300,
+            1500,
         ],  # [160, 240, 480, 720, 960],
         "epochs": [10000],  # <- early stopping :)
         "nr_hidden_layers": [2, 4],  # 16, 32, 64, 96, 128],  # , 2],
@@ -337,7 +349,10 @@ else:
     )
 
     fitted_model = model.fit(
-        X=X_train, y=Y_train, epochs=config.EPOCHS, batch_size=config.BATCH_SIZE,
+        X=X_train,
+        y=Y_train,
+        epochs=config.EPOCHS,
+        batch_size=config.BATCH_SIZE,
     )
 
     #  Y_pred = fitted_model.predict(X_test)
