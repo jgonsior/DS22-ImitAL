@@ -8,7 +8,7 @@ from pathlib import Path
 import time
 import pandas as pd
 from joblib import Parallel, delayed
-from experimens_lib import (
+from experiments_lib import (
     run_code_experiment,
     run_python_experiment,
     run_parallel_experiment,
@@ -88,6 +88,7 @@ if test_base_param_string == "":
 
 PARENT_OUTPUT_DIRECTORY = config.OUTPUT_DIRECTORY
 
+
 shared_arguments = {
     "CLUSTER": "dummy",
     "NR_QUERIES_PER_ITERATION": config.NR_QUERIES_PER_ITERATION,
@@ -95,72 +96,7 @@ shared_arguments = {
     "USER_QUERY_BUDGET_LIMIT": config.USER_QUERY_BUDGET_LIMIT,
     "N_JOBS": 1,
 }
-
-if not config.SKIP_TRAINING_DATA_GENERATION:
-    OUTPUT_FILE = PARENT_OUTPUT_DIRECTORY + train_base_param_string
-    run_parallel_experiment(
-        "Creating dataset",
-        OUTPUT_FILE=PARENT_OUTPUT_DIRECTORY + train_base_param_string + "/states.csv",
-        CLI_COMMAND="python imit_training.py",
-        CLI_ARGUMENTS={
-            "DATASETS_PATH": "../datasets",
-            "OUTPUT_DIRECTORY": PARENT_OUTPUT_DIRECTORY + train_base_param_string,
-            "DATASET_NAME": "synthetic",
-            "SAMPLING": "trained_nn",
-            "AMOUNT_OF_PEAKED_OBJECTS": config.TRAIN_AMOUNT_OF_PEAKED_SAMPLES,
-            "MAX_AMOUNT_OF_WS_PEAKS": 0,
-            "AMOUNT_OF_LEARN_ITERATIONS": 1,
-            "AMOUNT_OF_FEATURES": config.TRAIN_AMOUNT_OF_FEATURES,
-            "VARIANCE_BOUND": config.TRAIN_VARIANCE_BOUND,
-            "VARIABLE_DATASET": config.TRAIN_VARIABLE_DATASET,
-            "NEW_SYNTHETIC_PARAMS": config.TRAIN_NEW_SYNTHETIC_PARAMS,
-            "HYPERCUBE": config.TRAIN_HYPERCUBE,
-            "CONVEX_HULL_SAMPLING": config.TRAIN_CONVEX_HULL_SAMPLING,
-            "STOP_AFTER_MAXIMUM_ACCURACY_REACHED": config.TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED,
-            "GENERATE_NOISE": config.TRAIN_GENERATE_NOISE,
-            "STATE_LRU_AREAS_LIMIT": config.TRAIN_STATE_LRU_AREAS_LIMIT,
-            "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
-            "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
-            "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
-            "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
-            "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
-            "STATE_DIFF_PROBAS": config.TRAIN_STATE_DIFF_PROBAS,
-            "STATE_NO_LRU_WEIGHTS": config.TRAIN_STATE_NO_LRU_WEIGHTS,
-            **shared_arguments,
-        },
-        PARALLEL_OFFSET=0,
-        PARALLEL_AMOUNT=config.TRAIN_NR_LEARNING_SAMPLES,
-        OUTPUT_FILE_LENGTH=config.TRAIN_NR_LEARNING_SAMPLES,
-        RESTART_IF_NOT_ENOUGH_SAMPLES=True,
-    )
-
-if config.ONLY_TRAINING_DATA:
-    exit(1)
-
-
-run_python_experiment(
-    "Train ANN",
-    config.OUTPUT_DIRECTORY + train_base_param_string + "/trained_ann.pickle",
-    CLI_COMMAND="python train_lstm.py",
-    CLI_ARGUMENTS={
-        "DATA_PATH": config.OUTPUT_DIRECTORY + train_base_param_string,
-        "STATE_ENCODING": "listwise",
-        "TARGET_ENCODING": "binary",
-        "SAVE_DESTINATION": config.OUTPUT_DIRECTORY
-        + train_base_param_string
-        + "/trained_ann.pickle",
-        "REGULAR_DROPOUT_RATE": 0.1,
-        "OPTIMIZER": "Nadam",
-        "NR_HIDDEN_NEURONS": config.NR_HIDDEN_NEURONS,
-        "NR_HIDDEN_LAYERS": 2,
-        "LOSS": "MeanSquaredError",
-        "EPOCHS": 10000,
-        "BATCH_SIZE": 32,
-        "ACTIVATION": "tanh",
-        "RANDOM_SEED": 1,
-    },
-)
-
+exit(-1)
 evaluation_arguments = {
     #  "DATASET_NAME": "synthetic",
     "AMOUNT_OF_FEATURES": config.TEST_AMOUNT_OF_FEATURES,
@@ -175,24 +111,8 @@ evaluation_arguments = {
 
 
 for DATASET_NAME in [
-    #  "emnist-byclass-test",
     "synthetic",
-    "dwtc",
-    "BREAST",
-    "DIABETES",
-    "FERTILITY",
-    "GERMAN",
-    "HABERMAN",
-    "HEART",
-    "ILPD",
-    "IONOSPHERE",
-    "PIMA",
-    "PLANNING",
-    "australian",
 ]:
-    if DATASET_NAME != "synthetic":
-        config.TEST_NR_LEARNING_SAMPLES = 100
-        evaluation_arguments["USER_QUERY_BUDGET_LIMIT"] = 20
     evaluation_arguments["DATASET_NAME"] = DATASET_NAME
 
     EVALUATION_FILE_TRAINED_NN_PATH = (
@@ -202,36 +122,17 @@ for DATASET_NAME in [
     original_test_base_param_string = test_base_param_string
     test_base_param_string += "_" + DATASET_NAME
 
-    run_parallel_experiment(
-        "Creating ann-evaluation data",
-        OUTPUT_FILE=EVALUATION_FILE_TRAINED_NN_PATH,
-        CLI_COMMAND="python single_al_cycle.py",
-        CLI_ARGUMENTS={
-            "NN_BINARY": config.OUTPUT_DIRECTORY
-            + train_base_param_string
-            + "/trained_ann.pickle",
-            "OUTPUT_DIRECTORY": EVALUATION_FILE_TRAINED_NN_PATH,
-            "SAMPLING": "trained_nn",
-            "STATE_LRU_AREAS_LIMIT": config.TRAIN_STATE_LRU_AREAS_LIMIT,
-            "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
-            "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
-            "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
-            "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
-            "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
-            "STATE_DIFF_PROBAS": config.TRAIN_STATE_DIFF_PROBAS,
-            "STATE_NO_LRU_WEIGHTS": config.TRAIN_STATE_NO_LRU_WEIGHTS,
-            **evaluation_arguments,
-        },
-        PARALLEL_OFFSET=100000,
-        PARALLEL_AMOUNT=config.TEST_NR_LEARNING_SAMPLES,
-        OUTPUT_FILE_LENGTH=config.TEST_NR_LEARNING_SAMPLES,
+    optimal_results = pd.read_csv(
+        PARENT_OUTPUT_DIRECTORY
+        + "/"
+        + config.BASE_PARAM_STRING
+        + "/dataset_creation.csv"
     )
-
-    # rename sampling column
-    p = Path(EVALUATION_FILE_TRAINED_NN_PATH)
-    text = p.read_text()
-    text = text.replace("trained_nn", config.OUTPUT_DIRECTORY)
-    p.write_text(text)
+    RANDOM_IDS = optimal_results["random_seed"].unique()[
+        : config.TEST_NR_LEARNING_SAMPLES
+    ]
+    print(RANDOM_IDS)
+    exit(-1)
 
     for comparison in config.TEST_COMPARISONS:
         COMPARISON_PATH = (
@@ -250,7 +151,7 @@ for DATASET_NAME in [
                 "SAMPLING": comparison,
                 **evaluation_arguments,
             },
-            PARALLEL_OFFSET=100000,
+            RANDOM_IDS=[1, 2, 3, 4, 5, 6, 7, 9, 20],
             PARALLEL_AMOUNT=config.TEST_NR_LEARNING_SAMPLES,
             OUTPUT_FILE_LENGTH=config.TEST_NR_LEARNING_SAMPLES,
         )
