@@ -125,27 +125,27 @@ for DATASET_NAME in [
         : config.TEST_NR_LEARNING_SAMPLES
     ]
 
-    for comparison in config.TEST_COMPARISONS:
-        COMPARISON_PATH = (
-            PARENT_OUTPUT_DIRECTORY
-            + "classics/"
-            + comparison
-            + test_base_param_string
-            + ".csv"
-        )
-        run_parallel_experiment(
-            "Creating " + comparison + "-evaluation data",
-            OUTPUT_FILE=COMPARISON_PATH,
-            CLI_COMMAND="python single_al_cycle.py",
-            CLI_ARGUMENTS={
-                "OUTPUT_DIRECTORY": COMPARISON_PATH,
-                "SAMPLING": comparison,
-                **evaluation_arguments,
-            },
-            PARALLEL_OFFSET=0,
-            RANDOM_IDS=[1, 2, 3, 4, 5, 6, 7, 9, 20],
-            OUTPUT_FILE_LENGTH=config.TEST_NR_LEARNING_SAMPLES,
-        )
+    #  for comparison in config.TEST_COMPARISONS:
+    #      COMPARISON_PATH = (
+    #          PARENT_OUTPUT_DIRECTORY
+    #          + "classics/"
+    #          + comparison
+    #          + test_base_param_string
+    #          + ".csv"
+    #      )
+    #      run_parallel_experiment(
+    #          "Creating " + comparison + "-evaluation data",
+    #          OUTPUT_FILE=COMPARISON_PATH,
+    #          CLI_COMMAND="python single_al_cycle.py",
+    #          CLI_ARGUMENTS={
+    #              "OUTPUT_DIRECTORY": COMPARISON_PATH,
+    #              "SAMPLING": comparison,
+    #              **evaluation_arguments,
+    #          },
+    #          PARALLEL_OFFSET=0,
+    #          RANDOM_IDS=[1, 2, 3, 4, 5, 6, 7, 9, 20],
+    #          OUTPUT_FILE_LENGTH=config.TEST_NR_LEARNING_SAMPLES,
+    #      )
 
     if config.FINAL_PICTURE == "":
         comparison_path = (
