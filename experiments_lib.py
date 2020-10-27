@@ -8,6 +8,110 @@ from pathlib import Path
 import time
 import pandas as pd
 from joblib import Parallel, delayed
+from active_learning.experiment_setup_lib import standard_config
+
+
+def get_config():
+    config, parser = standard_config(
+        [
+            (["--RANDOM_SEED"], {"default": 1, "type": int}),
+            (["--LOG_FILE"], {"default": "log.txt"}),
+            (["--OUTPUT_DIRECTORY"], {"default": "/tmp"}),
+            (["--BASE_PARAM_STRING"], {"default": "default"}),
+            (["--NR_QUERIES_PER_ITERATION"], {"type": int, "default": 5}),
+            (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 50}),
+            (["--TRAIN_CLASSIFIER"], {"default": "MLP"}),
+            (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
+            (["--TRAIN_AMOUNT_OF_PEAKED_SAMPLES"], {"type": int, "default": 20}),
+            (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 1000}),
+            (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
+            (["--TRAIN_HYPERCUBE"], {"action": "store_true"}),
+            (["--TRAIN_NEW_SYNTHETIC_PARAMS"], {"action": "store_false"}),
+            (
+                ["--TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED"],
+                {"action": "store_false"},
+            ),
+            (["--TRAIN_GENERATE_NOISE"], {"action": "store_true"}),
+            (["--TRAIN_STATE_DIFF_PROBAS"], {"action": "store_true"}),
+            (["--TRAIN_STATE_ARGSECOND_PROBAS"], {"action": "store_true"}),
+            (["--TRAIN_STATE_ARGTHIRD_PROBAS"], {"action": "store_true"}),
+            (["--TRAIN_STATE_DISTANCES_LAB"], {"action": "store_true"}),
+            (["--TRAIN_STATE_DISTANCES_UNLAB"], {"action": "store_true"}),
+            (["--TRAIN_STATE_PREDICTED_CLASS"], {"action": "store_true"}),
+            (["--TRAIN_INITIAL_BATCH_SAMPLING_METHOD"], {"default": "random"}),
+            (["--TRAIN_INITIAL_BATCH_SAMPLING_ARG"], {"type": int, "default": 100}),
+            (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
+            (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 500}),
+            (["--TEST_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
+            (["--TEST_HYPERCUBE"], {"action": "store_true"}),
+            (["--TEST_NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
+            (["--TEST_CLASSIFIER"], {"default": "MLP"}),
+            (["--TEST_GENERATE_NOISE"], {"action": "store_false"}),
+            (
+                ["--TEST_COMPARISONS"],
+                {
+                    "nargs": "+",
+                    "default": [
+                        "random",
+                        "uncertainty_max_margin",
+                        "uncertainty_entropy",
+                        "uncertainty_lc",
+                    ],
+                },
+            ),
+            (["--FINAL_PICTURE"], {"default": ""}),
+            (["--SKIP_TRAINING_DATA_GENERATION"], {"action": "store_true"}),
+            (["--ONLY_TRAINING_DATA"], {"action": "store_true"}),
+            (["--PLOT_METRIC"], {"default": "acc_auc"}),
+            (["--NR_HIDDEN_NEURONS"], {"type": int, "default": 300}),
+        ],
+        standard_args=False,
+        return_argparse=True,
+    )
+
+    # calculate resulting pathes
+    splitted_base_param_string = config.BASE_PARAM_STRING.split("#")
+    train_base_param_string = "#".join(
+        [x for x in splitted_base_param_string if not x.startswith("TEST_")]
+    )
+    test_base_param_string = "#".join(
+        [x for x in splitted_base_param_string if not x.startswith("TRAIN_")]
+    )
+
+    if train_base_param_string == "":
+        train_base_param_string = "DEFAULT"
+    if test_base_param_string == "":
+        test_base_param_string = "DEFAULT"
+
+    PARENT_OUTPUT_DIRECTORY = config.OUTPUT_DIRECTORY + "/"
+
+    shared_arguments = {
+        "CLUSTER": "dummy",
+        "NR_QUERIES_PER_ITERATION": config.NR_QUERIES_PER_ITERATION,
+        "START_SET_SIZE": 1,
+        "USER_QUERY_BUDGET_LIMIT": config.USER_QUERY_BUDGET_LIMIT,
+        "N_JOBS": 1,
+    }
+
+    evaluation_arguments = {
+        #  "DATASET_NAME": "synthetic",
+        "AMOUNT_OF_FEATURES": config.TEST_AMOUNT_OF_FEATURES,
+        "CLASSIFIER": config.TEST_CLASSIFIER,
+        "VARIABLE_DATASET": config.TEST_VARIABLE_DATASET,
+        "NEW_SYNTHETIC_PARAMS": config.TEST_NEW_SYNTHETIC_PARAMS,
+        "HYPERCUBE": config.TEST_HYPERCUBE,
+        "GENERATE_NOISE": config.TEST_GENERATE_NOISE,
+        **shared_arguments,
+    }
+
+    return (
+        config,
+        shared_arguments,
+        PARENT_OUTPUT_DIRECTORY,
+        train_base_param_string,
+        test_base_param_string,
+        evaluation_arguments,
+    )
 
 
 def run_code_experiment(
@@ -117,14 +221,17 @@ def run_parallel_experiment(
         ids = range(1, PARALLEL_AMOUNT + 1)
 
     def code(CLI_COMMAND, PARALLEL_AMOUNT, PARALLEL_OFFSET):
+        print("oho")
+        print(CLI_COMMAND)
+        print(PARALLEL_AMOUNT)
+        print(PARALLEL_OFFSET)
         with Parallel(
             #  n_jobs=1,
             multiprocessing.cpu_count(),
             backend="threading",
         ) as parallel:
             output = parallel(
-                delayed(run_parallel)(CLI_COMMAND, k + PARALLEL_OFFSET)
-                for k in RANDOM_IDS
+                delayed(run_parallel)(CLI_COMMAND, k + PARALLEL_OFFSET) for k in ids
             )
 
     run_code_experiment(

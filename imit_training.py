@@ -55,10 +55,6 @@ if not os.path.isfile(config.OUTPUT_DIRECTORY + "/states.csv"):
             str(i) + "_proba_avg_dist_unlab"
             for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
         ]
-    if config.STATE_LRU_AREAS_LIMIT > 0:
-        columns += [
-            str(i) + "_lru_dist" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
-        ]
 
     states = pd.DataFrame(data=None, columns=columns)
 
@@ -162,16 +158,14 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
 
     active_learner.init_sampling_classifier(
         DATA_PATH=hyper_parameters["OUTPUT_DIRECTORY"],
-        CONVEX_HULL_SAMPLING=hyper_parameters["CONVEX_HULL_SAMPLING"],
-        VARIANCE_BOUND=hyper_parameters["VARIANCE_BOUND"],
         STATE_DISTANCES_LAB=hyper_parameters["STATE_DISTANCES_LAB"],
         STATE_DISTANCES_UNLAB=hyper_parameters["STATE_DISTANCES_UNLAB"],
         STATE_DIFF_PROBAS=hyper_parameters["STATE_DIFF_PROBAS"],
         STATE_ARGTHIRD_PROBAS=hyper_parameters["STATE_ARGTHIRD_PROBAS"],
         STATE_PREDICTED_CLASS=hyper_parameters["STATE_PREDICTED_CLASS"],
-        STATE_LRU_AREAS_LIMIT=hyper_parameters["STATE_LRU_AREAS_LIMIT"],
         STATE_ARGSECOND_PROBAS=hyper_parameters["STATE_ARGSECOND_PROBAS"],
-        STATE_NO_LRU_WEIGHTS=hyper_parameters["STATE_NO_LRU_WEIGHTS"],
+        INITIAL_BATCH_SAMPLING_METHOD=hyper_parameters["INITIAL_BATCH_SAMPLING_METHOD"],
+        INITIAL_BATCH_SAMPLING_ARG=hyper_parameters["INITIAL_BATCH_SAMPLING_ARG"],
     )
     active_learner.MAX_AMOUNT_OF_WS_PEAKS = hyper_parameters["MAX_AMOUNT_OF_WS_PEAKS"]
 

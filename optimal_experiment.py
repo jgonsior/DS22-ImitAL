@@ -12,101 +12,68 @@ from experiments_lib import (
     run_code_experiment,
     run_python_experiment,
     run_parallel_experiment,
+    get_config,
 )
-from active_learning.experiment_setup_lib import standard_config
 
-config, parser = standard_config(
-    [
-        (["--RANDOM_SEED"], {"default": 1, "type": int}),
-        (["--LOG_FILE"], {"default": "log.txt"}),
-        (["--OUTPUT_DIRECTORY"], {"default": "/tmp"}),
-        (["--BASE_PARAM_STRING"], {"default": "default"}),
-        (["--NR_QUERIES_PER_ITERATION"], {"type": int, "default": 5}),
-        (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 50}),
-        (["--TRAIN_CLASSIFIER"], {"default": "MLP"}),
-        (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TRAIN_AMOUNT_OF_PEAKED_SAMPLES"], {"type": int, "default": 20}),
-        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 1000}),
-        (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
-        (["--TRAIN_VARIANCE_BOUND"], {"type": int, "default": 1}),
-        (["--TRAIN_HYPERCUBE"], {"action": "store_true"}),
-        (["--TRAIN_NEW_SYNTHETIC_PARAMS"], {"action": "store_false"}),
-        (["--TRAIN_CONVEX_HULL_SAMPLING"], {"action": "store_false"}),
-        (["--TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED"], {"action": "store_false"}),
-        (["--TRAIN_GENERATE_NOISE"], {"action": "store_true"}),
-        (["--TRAIN_STATE_DIFF_PROBAS"], {"action": "store_true"}),
-        (["--TRAIN_STATE_ARGSECOND_PROBAS"], {"action": "store_true"}),
-        (["--TRAIN_STATE_ARGTHIRD_PROBAS"], {"action": "store_true"}),
-        (["--TRAIN_STATE_DISTANCES_LAB"], {"action": "store_true"}),
-        (["--TRAIN_STATE_DISTANCES_UNLAB"], {"action": "store_true"}),
-        (["--TRAIN_STATE_PREDICTED_CLASS"], {"action": "store_true"}),
-        (["--TRAIN_STATE_NO_LRU_WEIGHTS"], {"action": "store_true"}),
-        (["--TRAIN_STATE_LRU_AREAS_LIMIT"], {"type": int, "default": 0}),
-        (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 500}),
-        (["--TEST_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
-        (["--TEST_HYPERCUBE"], {"action": "store_true"}),
-        (["--TEST_NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
-        (["--TEST_CONVEX_HULL_SAMPLING"], {"action": "store_false"}),
-        (["--TEST_CLASSIFIER"], {"default": "MLP"}),
-        (["--TEST_GENERATE_NOISE"], {"action": "store_false"}),
-        (
-            ["--TEST_COMPARISONS"],
-            {
-                "nargs": "+",
-                "default": [
-                    "random",
-                    "uncertainty_max_margin",
-                    "uncertainty_entropy",
-                    "uncertainty_lc",
-                ],
+(
+    config,
+    shared_arguments,
+    PARENT_OUTPUT_DIRECTORY,
+    train_base_param_string,
+    test_base_param_string,
+    evaluation_arguments,
+) = get_config()
+
+if not config.SKIP_TRAINING_DATA_GENERATION:
+
+    for initial_batch_sampling_method, initial_batch_sampling_arg in [
+        ("random", -1),
+        ("furthest", 10),
+        ("furthest", 100),
+        ("graph_density", -1),
+    ]:
+        OUTPUT_FILE = (
+            PARENT_OUTPUT_DIRECTORY
+            + train_base_param_string
+            + "_"
+            + initial_batch_sampling_method
+        )
+        run_parallel_experiment(
+            "Creating dataset",
+            OUTPUT_FILE=OUTPUT_FILE + "/states.csv",
+            CLI_COMMAND="python imit_training.py",
+            CLI_ARGUMENTS={
+                "DATASETS_PATH": "../datasets",
+                "OUTPUT_DIRECTORY": PARENT_OUTPUT_DIRECTORY + train_base_param_string,
+                "DATASET_NAME": "synthetic",
+                "SAMPLING": "trained_nn",
+                "AMOUNT_OF_PEAKED_OBJECTS": config.TRAIN_AMOUNT_OF_PEAKED_SAMPLES,
+                "MAX_AMOUNT_OF_WS_PEAKS": 0,
+                "AMOUNT_OF_LEARN_ITERATIONS": 1,
+                "AMOUNT_OF_FEATURES": config.TRAIN_AMOUNT_OF_FEATURES,
+                "VARIABLE_DATASET": config.TRAIN_VARIABLE_DATASET,
+                "NEW_SYNTHETIC_PARAMS": config.TRAIN_NEW_SYNTHETIC_PARAMS,
+                "HYPERCUBE": config.TRAIN_HYPERCUBE,
+                "STOP_AFTER_MAXIMUM_ACCURACY_REACHED": config.TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED,
+                "GENERATE_NOISE": config.TRAIN_GENERATE_NOISE,
+                "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
+                "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
+                "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
+                "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
+                "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
+                "STATE_DIFF_PROBAS": config.TRAIN_STATE_DIFF_PROBAS,
+                "INITIAL_BATCH_SAMPLING_METHOD": initial_batch_sampling_method,
+                "INITIAL_BATCH_SAMPLING_ARG": initial_batch_sampling_arg,
+                **shared_arguments,
             },
-        ),
-        (["--FINAL_PICTURE"], {"default": ""}),
-        (["--SKIP_TRAINING_DATA_GENERATION"], {"action": "store_true"}),
-        (["--ONLY_TRAINING_DATA"], {"action": "store_true"}),
-        (["--PLOT_METRIC"], {"default": "acc_auc"}),
-        (["--NR_HIDDEN_NEURONS"], {"type": int, "default": 300}),
-    ],
-    standard_args=False,
-    return_argparse=True,
-)
+            PARALLEL_OFFSET=0,
+            PARALLEL_AMOUNT=config.TRAIN_NR_LEARNING_SAMPLES,
+            OUTPUT_FILE_LENGTH=config.TRAIN_NR_LEARNING_SAMPLES,
+            RESTART_IF_NOT_ENOUGH_SAMPLES=True,
+        )
 
-# calculate resulting pathes
-splitted_base_param_string = config.BASE_PARAM_STRING.split("#")
-train_base_param_string = "#".join(
-    [x for x in splitted_base_param_string if not x.startswith("TEST_")]
-)
-test_base_param_string = "#".join(
-    [x for x in splitted_base_param_string if not x.startswith("TRAIN_")]
-)
-
-if train_base_param_string == "":
-    train_base_param_string = "DEFAULT"
-if test_base_param_string == "":
-    test_base_param_string = "DEFAULT"
-
-PARENT_OUTPUT_DIRECTORY = config.OUTPUT_DIRECTORY + "/"
-
-shared_arguments = {
-    "CLUSTER": "dummy",
-    "NR_QUERIES_PER_ITERATION": config.NR_QUERIES_PER_ITERATION,
-    "START_SET_SIZE": 1,
-    "USER_QUERY_BUDGET_LIMIT": config.USER_QUERY_BUDGET_LIMIT,
-    "N_JOBS": 1,
-}
-
-evaluation_arguments = {
-    #  "DATASET_NAME": "synthetic",
-    "AMOUNT_OF_FEATURES": config.TEST_AMOUNT_OF_FEATURES,
-    "CLASSIFIER": config.TEST_CLASSIFIER,
-    "VARIABLE_DATASET": config.TEST_VARIABLE_DATASET,
-    "NEW_SYNTHETIC_PARAMS": config.TEST_NEW_SYNTHETIC_PARAMS,
-    "HYPERCUBE": config.TEST_HYPERCUBE,
-    "CONVEX_HULL_SAMPLING": config.TEST_CONVEX_HULL_SAMPLING,
-    "GENERATE_NOISE": config.TEST_GENERATE_NOISE,
-    **shared_arguments,
-}
+if config.ONLY_TRAINING_DATA:
+    exit(1)
 
 
 for DATASET_NAME in [
@@ -124,28 +91,6 @@ for DATASET_NAME in [
     RANDOM_IDS = optimal_results["random_seed"].unique()[
         : config.TEST_NR_LEARNING_SAMPLES
     ]
-
-    #  for comparison in config.TEST_COMPARISONS:
-    #      COMPARISON_PATH = (
-    #          PARENT_OUTPUT_DIRECTORY
-    #          + "classics/"
-    #          + comparison
-    #          + test_base_param_string
-    #          + ".csv"
-    #      )
-    #      run_parallel_experiment(
-    #          "Creating " + comparison + "-evaluation data",
-    #          OUTPUT_FILE=COMPARISON_PATH,
-    #          CLI_COMMAND="python single_al_cycle.py",
-    #          CLI_ARGUMENTS={
-    #              "OUTPUT_DIRECTORY": COMPARISON_PATH,
-    #              "SAMPLING": comparison,
-    #              **evaluation_arguments,
-    #          },
-    #          PARALLEL_OFFSET=0,
-    #          RANDOM_IDS=[1, 2, 3, 4, 5, 6, 7, 9, 20],
-    #          OUTPUT_FILE_LENGTH=config.TEST_NR_LEARNING_SAMPLES,
-    #      )
 
     if config.FINAL_PICTURE == "":
         comparison_path = (
@@ -286,4 +231,3 @@ for DATASET_NAME in [
         code=plot_all_metrics_as_a_table,
     )
     test_base_param_string = original_test_base_param_string
-    #  exit(-1)

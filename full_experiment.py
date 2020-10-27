@@ -8,93 +8,22 @@ from pathlib import Path
 import time
 import pandas as pd
 from joblib import Parallel, delayed
-from experimens_lib import (
+from experiments_lib import (
     run_code_experiment,
     run_python_experiment,
     run_parallel_experiment,
-)
-from active_learning.experiment_setup_lib import standard_config
-
-config, parser = standard_config(
-    [
-        (["--RANDOM_SEED"], {"default": 1, "type": int}),
-        (["--LOG_FILE"], {"default": "log.txt"}),
-        (["--OUTPUT_DIRECTORY"], {"default": "/tmp"}),
-        (["--BASE_PARAM_STRING"], {"default": "default"}),
-        (["--NR_QUERIES_PER_ITERATION"], {"type": int, "default": 5}),
-        (["--USER_QUERY_BUDGET_LIMIT"], {"type": int, "default": 50}),
-        (["--TRAIN_CLASSIFIER"], {"default": "MLP"}),
-        (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TRAIN_AMOUNT_OF_PEAKED_SAMPLES"], {"type": int, "default": 20}),
-        (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 1000}),
-        (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
-        (["--TRAIN_VARIANCE_BOUND"], {"type": int, "default": 1}),
-        (["--TRAIN_HYPERCUBE"], {"action": "store_true"}),
-        (["--TRAIN_NEW_SYNTHETIC_PARAMS"], {"action": "store_false"}),
-        (["--TRAIN_CONVEX_HULL_SAMPLING"], {"action": "store_false"}),
-        (["--TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED"], {"action": "store_false"}),
-        (["--TRAIN_GENERATE_NOISE"], {"action": "store_true"}),
-        (["--TRAIN_STATE_DIFF_PROBAS"], {"action": "store_true"}),
-        (["--TRAIN_STATE_ARGSECOND_PROBAS"], {"action": "store_true"}),
-        (["--TRAIN_STATE_ARGTHIRD_PROBAS"], {"action": "store_true"}),
-        (["--TRAIN_STATE_DISTANCES_LAB"], {"action": "store_true"}),
-        (["--TRAIN_STATE_DISTANCES_UNLAB"], {"action": "store_true"}),
-        (["--TRAIN_STATE_PREDICTED_CLASS"], {"action": "store_true"}),
-        (["--TRAIN_STATE_NO_LRU_WEIGHTS"], {"action": "store_true"}),
-        (["--TRAIN_STATE_LRU_AREAS_LIMIT"], {"type": int, "default": 0}),
-        (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
-        (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 500}),
-        (["--TEST_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
-        (["--TEST_HYPERCUBE"], {"action": "store_true"}),
-        (["--TEST_NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
-        (["--TEST_CONVEX_HULL_SAMPLING"], {"action": "store_false"}),
-        (["--TEST_CLASSIFIER"], {"default": "MLP"}),
-        (["--TEST_GENERATE_NOISE"], {"action": "store_false"}),
-        (
-            ["--TEST_COMPARISONS"],
-            {
-                "nargs": "+",
-                "default": [
-                    "random",
-                    "uncertainty_max_margin",
-                    "uncertainty_entropy",
-                    "uncertainty_lc",
-                ],
-            },
-        ),
-        (["--FINAL_PICTURE"], {"default": ""}),
-        (["--SKIP_TRAINING_DATA_GENERATION"], {"action": "store_true"}),
-        (["--ONLY_TRAINING_DATA"], {"action": "store_true"}),
-        (["--PLOT_METRIC"], {"default": "acc_auc"}),
-        (["--NR_HIDDEN_NEURONS"], {"type": int, "default": 300}),
-    ],
-    standard_args=False,
-    return_argparse=True,
+    get_config,
 )
 
-# calculate resulting pathes
-splitted_base_param_string = config.BASE_PARAM_STRING.split("#")
-train_base_param_string = "#".join(
-    [x for x in splitted_base_param_string if not x.startswith("TEST_")]
-)
-test_base_param_string = "#".join(
-    [x for x in splitted_base_param_string if not x.startswith("TRAIN_")]
-)
+(
+    config,
+    shared_arguments,
+    PARENT_OUTPUT_DIRECTORY,
+    train_base_param_string,
+    test_base_param_string,
+    evaluation_arguments,
+) = get_config()
 
-if train_base_param_string == "":
-    train_base_param_string = "DEFAULT"
-if test_base_param_string == "":
-    test_base_param_string = "DEFAULT"
-
-PARENT_OUTPUT_DIRECTORY = config.OUTPUT_DIRECTORY
-
-shared_arguments = {
-    "CLUSTER": "dummy",
-    "NR_QUERIES_PER_ITERATION": config.NR_QUERIES_PER_ITERATION,
-    "START_SET_SIZE": 1,
-    "USER_QUERY_BUDGET_LIMIT": config.USER_QUERY_BUDGET_LIMIT,
-    "N_JOBS": 1,
-}
 
 if not config.SKIP_TRAINING_DATA_GENERATION:
     OUTPUT_FILE = PARENT_OUTPUT_DIRECTORY + train_base_param_string
@@ -111,21 +40,17 @@ if not config.SKIP_TRAINING_DATA_GENERATION:
             "MAX_AMOUNT_OF_WS_PEAKS": 0,
             "AMOUNT_OF_LEARN_ITERATIONS": 1,
             "AMOUNT_OF_FEATURES": config.TRAIN_AMOUNT_OF_FEATURES,
-            "VARIANCE_BOUND": config.TRAIN_VARIANCE_BOUND,
             "VARIABLE_DATASET": config.TRAIN_VARIABLE_DATASET,
             "NEW_SYNTHETIC_PARAMS": config.TRAIN_NEW_SYNTHETIC_PARAMS,
             "HYPERCUBE": config.TRAIN_HYPERCUBE,
-            "CONVEX_HULL_SAMPLING": config.TRAIN_CONVEX_HULL_SAMPLING,
             "STOP_AFTER_MAXIMUM_ACCURACY_REACHED": config.TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED,
             "GENERATE_NOISE": config.TRAIN_GENERATE_NOISE,
-            "STATE_LRU_AREAS_LIMIT": config.TRAIN_STATE_LRU_AREAS_LIMIT,
             "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
             "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
             "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
             "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
             "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
             "STATE_DIFF_PROBAS": config.TRAIN_STATE_DIFF_PROBAS,
-            "STATE_NO_LRU_WEIGHTS": config.TRAIN_STATE_NO_LRU_WEIGHTS,
             **shared_arguments,
         },
         PARALLEL_OFFSET=0,
@@ -160,19 +85,6 @@ run_python_experiment(
         "RANDOM_SEED": 1,
     },
 )
-
-evaluation_arguments = {
-    #  "DATASET_NAME": "synthetic",
-    "AMOUNT_OF_FEATURES": config.TEST_AMOUNT_OF_FEATURES,
-    "CLASSIFIER": config.TEST_CLASSIFIER,
-    "VARIABLE_DATASET": config.TEST_VARIABLE_DATASET,
-    "NEW_SYNTHETIC_PARAMS": config.TEST_NEW_SYNTHETIC_PARAMS,
-    "HYPERCUBE": config.TEST_HYPERCUBE,
-    "CONVEX_HULL_SAMPLING": config.TEST_CONVEX_HULL_SAMPLING,
-    "GENERATE_NOISE": config.TEST_GENERATE_NOISE,
-    **shared_arguments,
-}
-
 
 for DATASET_NAME in [
     #  "emnist-byclass-test",
@@ -212,14 +124,12 @@ for DATASET_NAME in [
             + "/trained_ann.pickle",
             "OUTPUT_DIRECTORY": EVALUATION_FILE_TRAINED_NN_PATH,
             "SAMPLING": "trained_nn",
-            "STATE_LRU_AREAS_LIMIT": config.TRAIN_STATE_LRU_AREAS_LIMIT,
             "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
             "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
             "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
             "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
             "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
             "STATE_DIFF_PROBAS": config.TRAIN_STATE_DIFF_PROBAS,
-            "STATE_NO_LRU_WEIGHTS": config.TRAIN_STATE_NO_LRU_WEIGHTS,
             **evaluation_arguments,
         },
         PARALLEL_OFFSET=100000,
