@@ -32,19 +32,22 @@ if not config.SKIP_TRAINING_DATA_GENERATION:
         ("furthest", 100),
         ("graph_density", -1),
     ]:
-        OUTPUT_FILE = (
-            PARENT_OUTPUT_DIRECTORY
+        run_parallel_experiment(
+            "Creating dataset",
+            OUTPUT_FILE=PARENT_OUTPUT_DIRECTORY
             + train_base_param_string
             + "_"
             + initial_batch_sampling_method
-        )
-        run_parallel_experiment(
-            "Creating dataset",
-            OUTPUT_FILE=OUTPUT_FILE + "/states.csv",
+            + str(initial_batch_sampling_arg)
+            + "/states.csv",
             CLI_COMMAND="python imit_training.py",
             CLI_ARGUMENTS={
                 "DATASETS_PATH": "../datasets",
-                "OUTPUT_DIRECTORY": PARENT_OUTPUT_DIRECTORY + train_base_param_string,
+                "OUTPUT_DIRECTORY": PARENT_OUTPUT_DIRECTORY
+                + train_base_param_string
+                + "_"
+                + initial_batch_sampling_method
+                + str(initial_batch_sampling_arg),
                 "DATASET_NAME": "synthetic",
                 "SAMPLING": "trained_nn",
                 "AMOUNT_OF_PEAKED_OBJECTS": config.TRAIN_AMOUNT_OF_PEAKED_SAMPLES,
