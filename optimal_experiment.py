@@ -24,14 +24,18 @@ from experiments_lib import (
     evaluation_arguments,
 ) = get_config()
 
-if not config.SKIP_TRAINING_DATA_GENERATION:
+LIST_OF_BATCH_SAMPLING_METHODS = [
+    ("random", -1),
+    ("furthest", 10),
+    ("furthest", 100),
+    #  ("graph_density", -1),
+]
 
-    for initial_batch_sampling_method, initial_batch_sampling_arg in [
-        ("random", -1),
-        ("furthest", 10),
-        ("furthest", 100),
-        ("graph_density", -1),
-    ]:
+if not config.SKIP_TRAINING_DATA_GENERATION:
+    for (
+        initial_batch_sampling_method,
+        initial_batch_sampling_arg,
+    ) in LIST_OF_BATCH_SAMPLING_METHODS:
         run_parallel_experiment(
             "Creating dataset",
             OUTPUT_FILE=PARENT_OUTPUT_DIRECTORY
@@ -87,14 +91,6 @@ for DATASET_NAME in [
     original_test_base_param_string = test_base_param_string
     test_base_param_string += "_" + DATASET_NAME
 
-    optimal_results = pd.read_csv(
-        PARENT_OUTPUT_DIRECTORY + config.BASE_PARAM_STRING + "/dataset_creation.csv",
-        nrows=config.TEST_NR_LEARNING_SAMPLES + 10,
-    )
-    RANDOM_IDS = optimal_results["random_seed"].unique()[
-        : config.TEST_NR_LEARNING_SAMPLES
-    ]
-
     if config.FINAL_PICTURE == "":
         comparison_path = (
             PARENT_OUTPUT_DIRECTORY
@@ -106,8 +102,7 @@ for DATASET_NAME in [
         comparison_path = config.FINAL_PICTURE + "_" + DATASET_NAME
 
     def concatenate_evaluation_csvs():
-        df = optimal_results
-        df["sampling"] = "optimal"
+        df = pd.DataFrame()  # optimal_results
 
         for comparison in config.TEST_COMPARISONS:
             df2 = pd.read_csv(
@@ -120,6 +115,24 @@ for DATASET_NAME in [
                 nrows=1 + config.TEST_NR_LEARNING_SAMPLES,
             )
             df = pd.concat([df, df2])
+
+        for (
+            initial_batch_sampling_method,
+            initial_batch_sampling_arg,
+        ) in LIST_OF_BATCH_SAMPLING_METHODS:
+            optimal_results = pd.read_csv(
+                PARENT_OUTPUT_DIRECTORY
+                + config.BASE_PARAM_STRING
+                + "_"
+                + initial_batch_sampling_method
+                + str(initial_batch_sampling_arg)
+                + "/dataset_creation.csv",
+                nrows=config.TEST_NR_LEARNING_SAMPLES + 10,
+            )
+            optimal_results["sampling"] = initial_batch_sampling_method + str(
+                initial_batch_sampling_arg
+            )
+            df = pd.concat([df, optimal_results])
 
         #  print(df)
         df.to_csv(comparison_path, index=False)
@@ -147,7 +160,7 @@ for DATASET_NAME in [
 
     def plot_all_metrics_as_a_table():
         sources = []
-        df = optimal_results
+        df = df  # optimal_results
         sources.append(df["sampling"][0])
 
         for comparison in config.TEST_COMPARISONS:

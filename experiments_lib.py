@@ -221,10 +221,6 @@ def run_parallel_experiment(
         ids = range(1, PARALLEL_AMOUNT + 1)
 
     def code(CLI_COMMAND, PARALLEL_AMOUNT, PARALLEL_OFFSET):
-        print("oho")
-        print(CLI_COMMAND)
-        print(PARALLEL_AMOUNT)
-        print(PARALLEL_OFFSET)
         with Parallel(
             #  n_jobs=1,
             multiprocessing.cpu_count(),
