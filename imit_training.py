@@ -93,6 +93,7 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
         RANDOM_SEED=hyper_parameters["RANDOM_SEED"],
         hyper_parameters=hyper_parameters,
         df=None,
+        TEST_FRACTION=hyper_parameters["TEST_FRACTION"],
         DATASET_NAME=hyper_parameters["DATASET_NAME"],
         DATASETS_PATH=hyper_parameters["DATASETS_PATH"],
         PLOT_EVOLUTION=hyper_parameters["PLOT_EVOLUTION"],
