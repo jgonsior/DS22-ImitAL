@@ -28,7 +28,7 @@ LIST_OF_BATCH_SAMPLING_METHODS = [
     ("random", -1),
     ("furthest", 10),
     ("furthest", 100),
-    #  ("graph_density", -1),
+    ("graph_density", -1),
 ]
 
 if not config.SKIP_TRAINING_DATA_GENERATION:
