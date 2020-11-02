@@ -1,19 +1,22 @@
+import math
 import pandas as pd
 import numpy as np
 import timeit
 from sklearn.datasets import make_classification
 
-X, Y = make_classification(n_samples=1000, n_features=20)
+n_samples = 1000
+
+X, Y = make_classification(n_samples=n_samples, n_features=20)
 
 
 def pandas():
     df = pd.DataFrame(X)
 
-    labeled_X = df[500:]
-    unlabeled_X = df[:500]
+    labeled_X = df[math.floor(n_samples / 2) :]
+    unlabeled_X = df[: math.floor(n_samples / 2)]
 
-    unlabeled_Y = pd.DataFrame(data=Y[500:], columns=["label"])
-    labeled_Y = pd.DataFrame(data=Y[:500], columns=["label"])
+    unlabeled_Y = pd.DataFrame(data=Y[math.floor(n_samples / 2) :], columns=["label"])
+    labeled_Y = pd.DataFrame(data=Y[: math.floor(n_samples / 2)], columns=["label"])
 
     for i in range(0, 50):
         query_indices = unlabeled_X.sample(5).index
@@ -32,15 +35,15 @@ def pandas():
 
 
 def numpy():
-    labeled_mask = np.arange(500, 1000)
-    unlabeled_mask = np.arange(0, 500)
+    labeled_mask = np.arange(math.floor(n_samples / 2), n_samples)
+    unlabeled_mask = np.arange(0, math.floor(n_samples / 2))
 
     for i in range(0, 50):
         query_indices = np.random.choice(unlabeled_mask, 5)
         Y_query = [1, 2, 3, 4, 5]
 
-        np.append(labeled_mask, query_indices, axis=0)
-        np.delete(unlabeled_mask, query_indices, axis=0)
+        labeled_mask = np.append(labeled_mask, query_indices, axis=0)
+        unlabeled_mask = np.delete(unlabeled_mask, query_indices, axis=0)
 
         Y[query_indices] = Y_query
 
