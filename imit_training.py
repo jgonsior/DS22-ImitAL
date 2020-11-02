@@ -113,20 +113,30 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
         )
 
         tmp_clf.fit(
-            pd.concat([data_storage.train_unlabeled_X, data_storage.train_labeled_X]),
-            data_storage.train_unlabeled_Y["label"].to_list()
-            + data_storage.train_labeled_Y["label"].to_list(),
+            data_storage.X[
+                np.concatenate(
+                    (data_storage.labeled_mask, data_storage.unlabeled_mask), axis=0
+                )
+            ],
+            data_storage.experiment_Y[
+                np.concatenate(
+                    (data_storage.labeled_mask, data_storage.unlabeled_mask), axis=0
+                )
+            ],
         )
-        tmp_Y_pred = tmp_clf.predict(data_storage.test_X)
+        tmp_Y_pred = tmp_clf.predict(data_storage.X[data_storage.test_mask])
         THEORETICALLY_BEST_ACHIEVABLE_ACCURACY = (
-            accuracy_score(data_storage.test_Y, tmp_Y_pred) * 0.95
+            accuracy_score(
+                data_storage.experiment_Y[data_storage.test_mask], tmp_Y_pred
+            )
+            * 0.95
         )
         hyper_parameters[
             "THEORETICALLY_BEST_ACHIEVABLE_ACCURACY"
         ] = THEORETICALLY_BEST_ACHIEVABLE_ACCURACY
 
-    hyper_parameters["LEN_TRAIN_DATA"] = len(data_storage.train_unlabeled_Y) + len(
-        data_storage.train_labeled_Y
+    hyper_parameters["LEN_TRAIN_DATA"] = len(data_storage.unlabeled_mask) + len(
+        data_storage.labeled_mask
     )
     cluster_strategy = DummyClusterStrategy()
     cluster_strategy.set_data_storage(data_storage, hyper_parameters["N_JOBS"])
