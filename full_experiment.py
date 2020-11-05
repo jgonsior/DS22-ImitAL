@@ -52,6 +52,8 @@ if not config.SKIP_TRAINING_DATA_GENERATION:
             "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
             "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
             "STATE_DIFF_PROBAS": config.TRAIN_STATE_DIFF_PROBAS,
+            "INITIAL_BATCH_SAMPLING_METHOD": config.INITIAL_BATCH_SAMPLING_METHOD,
+            "INITIAL_BATCH_SAMPLING_ARG": config.INITIAL_BATCH_SAMPLING_ARG,
             **shared_arguments,
         },
         PARALLEL_OFFSET=0,
@@ -104,7 +106,7 @@ for DATASET_NAME in [
     "australian",
 ]:
     if DATASET_NAME != "synthetic":
-        config.TEST_NR_LEARNING_SAMPLES = 100
+        #  config.TEST_NR_LEARNING_SAMPLES = 100
         evaluation_arguments["USER_QUERY_BUDGET_LIMIT"] = 20
     evaluation_arguments["DATASET_NAME"] = DATASET_NAME
 
@@ -131,6 +133,8 @@ for DATASET_NAME in [
             "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
             "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
             "STATE_DIFF_PROBAS": config.TRAIN_STATE_DIFF_PROBAS,
+            "INITIAL_BATCH_SAMPLING_METHOD": config.INITIAL_BATCH_SAMPLING_METHOD,
+            "INITIAL_BATCH_SAMPLING_ARG": config.INITIAL_BATCH_SAMPLING_ARG,
             **evaluation_arguments,
         },
         PARALLEL_OFFSET=100000,
