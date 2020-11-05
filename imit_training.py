@@ -118,7 +118,7 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
                     (data_storage.labeled_mask, data_storage.unlabeled_mask), axis=0
                 )
             ],
-            data_storage.experiment_Y[
+            data_storage.Y[
                 np.concatenate(
                     (data_storage.labeled_mask, data_storage.unlabeled_mask), axis=0
                 )
@@ -126,10 +126,7 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
         )
         tmp_Y_pred = tmp_clf.predict(data_storage.X[data_storage.test_mask])
         THEORETICALLY_BEST_ACHIEVABLE_ACCURACY = (
-            accuracy_score(
-                data_storage.experiment_Y[data_storage.test_mask], tmp_Y_pred
-            )
-            * 0.95
+            accuracy_score(data_storage.Y[data_storage.test_mask], tmp_Y_pred) * 0.95
         )
         hyper_parameters[
             "THEORETICALLY_BEST_ACHIEVABLE_ACCURACY"

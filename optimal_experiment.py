@@ -1,3 +1,4 @@
+import glob
 import numpy as np
 from tabulate import tabulate
 import json
@@ -116,22 +117,15 @@ for DATASET_NAME in [
             )
             df = pd.concat([df, df2])
 
-        for (
-            initial_batch_sampling_method,
-            initial_batch_sampling_arg,
-        ) in LIST_OF_BATCH_SAMPLING_METHODS:
+        for csv_file in list(
+            glob.glob(PARENT_OUTPUT_DIRECTORY + "/*/dataset_creation.csv")
+        ):
+            print(csv_file)
             optimal_results = pd.read_csv(
-                PARENT_OUTPUT_DIRECTORY
-                + config.BASE_PARAM_STRING
-                + "_"
-                + initial_batch_sampling_method
-                + str(initial_batch_sampling_arg)
-                + "/dataset_creation.csv",
+                csv_file,
                 nrows=config.TEST_NR_LEARNING_SAMPLES + 10,
             )
-            optimal_results["sampling"] = initial_batch_sampling_method + str(
-                initial_batch_sampling_arg
-            )
+            optimal_results["sampling"] = csv_file.split("/")[-2]
             df = pd.concat([df, optimal_results])
 
         #  print(df)

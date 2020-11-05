@@ -33,6 +33,7 @@ if not config.SKIP_TRAINING_DATA_GENERATION:
         CLI_COMMAND="python imit_training.py",
         CLI_ARGUMENTS={
             "DATASETS_PATH": "../datasets",
+            "CLASSIFIER": config.TRAIN_CLASSIFIER,
             "OUTPUT_DIRECTORY": PARENT_OUTPUT_DIRECTORY + train_base_param_string,
             "DATASET_NAME": "synthetic",
             "SAMPLING": "trained_nn",

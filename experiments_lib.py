@@ -64,6 +64,7 @@ def get_config():
             (["--ONLY_TRAINING_DATA"], {"action": "store_true"}),
             (["--PLOT_METRIC"], {"default": "acc_auc"}),
             (["--NR_HIDDEN_NEURONS"], {"type": int, "default": 300}),
+            (["--COMPARE_ALL_FOLDERS"], {"action": "store_true"}),
         ],
         standard_args=False,
         return_argparse=True,
