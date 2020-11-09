@@ -102,6 +102,7 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
         HYPERCUBE=hyper_parameters["HYPERCUBE"],
         AMOUNT_OF_FEATURES=hyper_parameters["AMOUNT_OF_FEATURES"],
         GENERATE_NOISE=hyper_parameters["GENERATE_NOISE"],
+        INITIAL_BATCH_SAMPLING_METHOD=hyper_parameters["INITIAL_BATCH_SAMPLING_METHOD"]
         #  hyper_parameters["START_SET_SIZE"],
         #  hyper_parameters["TEST_FRACTION"],
     )

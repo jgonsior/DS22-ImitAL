@@ -92,18 +92,18 @@ run_python_experiment(
 for DATASET_NAME in [
     #  "emnist-byclass-test",
     "synthetic",
-    "dwtc",
-    "BREAST",
-    "DIABETES",
-    "FERTILITY",
-    "GERMAN",
-    "HABERMAN",
-    "HEART",
-    "ILPD",
-    "IONOSPHERE",
-    "PIMA",
-    "PLANNING",
-    "australian",
+    #  "dwtc",
+    #  "BREAST",
+    #  "DIABETES",
+    #  "FERTILITY",
+    #  "GERMAN",
+    #  "HABERMAN",
+    #  "HEART",
+    #  "ILPD",
+    #  "IONOSPHERE",
+    #  "PIMA",
+    #  "PLANNING",
+    #  "australian",
 ]:
     if DATASET_NAME != "synthetic":
         #  config.TEST_NR_LEARNING_SAMPLES = 100
@@ -186,6 +186,19 @@ for DATASET_NAME in [
             index_col=None,
             nrows=1 + config.TEST_NR_LEARNING_SAMPLES,
         )
+        df["sampling"] = "Imitation Learned Neural Network"
+
+        if config.INCLUDE_OPTIMAL_IN_PLOT or config.INCLUDE_ONLY_OPTIMAL_IN_PLOT:
+            optimal_df = pd.read_csv(
+                PARENT_OUTPUT_DIRECTORY[:-1]
+                + config.BASE_PARAM_STRING
+                + "/dataset_creation.csv"
+            )
+            optimal_df["sampling"] = "Optimal Strategy"
+            df = pd.concat([df, optimal_df])
+
+        if config.INCLUDE_ONLY_OPTIMAL_IN_PLOT:
+            df = optimal_df
 
         for comparison in config.TEST_COMPARISONS:
             df2 = pd.read_csv(

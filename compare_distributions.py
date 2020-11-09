@@ -58,7 +58,7 @@ def plot_distributions(
         ax = sns.kdeplot(selection, label=label, **kwargs)
         #  ax = sns.distplot(selection, label=label, **kwargs)
 
-        #  ax.set_xlim(0.45, 0.65)
+        ax.set_xlim(0.3, 1.02)
         #  ax.set_xlim(0.75, 0.8)
         #  ax.set_xlim(80, 875)
         if axvline:
@@ -74,7 +74,7 @@ def plot_distributions(
                 )
             ax.axvline(mean, color=plt.gca().lines[-1].get_color())
             ax.axvspan(low, high, alpha=0.2, color=plt.gca().lines[-1].get_color())
-        ax.set_xticklabels(["{0:g}%".format(x) for x in ax.get_xticks()])
+        ax.set_xticklabels(["{:.0%}".format(x) for x in ax.get_xticks()])
     ax.set_title(title)
     ax.legend()
     plt.xlabel(config.METRIC)

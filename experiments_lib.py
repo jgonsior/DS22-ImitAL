@@ -63,6 +63,8 @@ def get_config():
             (["--SKIP_TRAINING_DATA_GENERATION"], {"action": "store_true"}),
             (["--ONLY_TRAINING_DATA"], {"action": "store_true"}),
             (["--PLOT_METRIC"], {"default": "acc_auc"}),
+            (["--INCLUDE_OPTIMAL_IN_PLOT"], {"action": "store_true"}),
+            (["--INCLUDE_ONLY_OPTIMAL_IN_PLOT"], {"action": "store_true"}),
             (["--NR_HIDDEN_NEURONS"], {"type": int, "default": 300}),
             (["--COMPARE_ALL_FOLDERS"], {"action": "store_true"}),
             (["--INITIAL_BATCH_SAMPLING_METHOD"], {"default": "furthest"}),
