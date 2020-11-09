@@ -16,7 +16,7 @@ from active_learning.experiment_setup_lib import (
     init_logger,
     get_classifier,
 )
-from active_learning.sampling_strategies import ImitationLearner
+from active_learning.sampling_strategies import ImitationLearner, ImitationBatchLearner
 from fake_experiment_oracle import FakeExperimentOracle
 
 #  import np.random.distributions as dists
@@ -160,7 +160,10 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
         "weak_supervision_label_sources": weak_supervision_label_sources,
     }
 
-    active_learner = ImitationLearner(**active_learner_params)
+    if config.SAMPLING == "single":
+        active_learner = ImitationLearner(**active_learner_params)
+    elif config.SAMPLING == "batch":
+        active_learner = ImitationBatchLearner(**active_learner_params)
     active_learner.set_amount_of_peaked_objects(
         hyper_parameters["AMOUNT_OF_PEAKED_OBJECTS"],
     )
