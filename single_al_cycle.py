@@ -10,7 +10,11 @@ from active_learning.experiment_setup_lib import (
 )
 from fake_experiment_oracle import FakeExperimentOracle
 
-config = get_active_config([(["--NN_BINARY_PATH"], {"type": str}),])
+config = get_active_config(
+    [
+        (["--NN_BINARY_PATH"], {"type": str}),
+    ]
+)
 
 init_logger(config.LOG_FILE)
 

@@ -7,7 +7,20 @@ from sklearn.metrics import accuracy_score
 from active_learning.experiment_setup_lib import get_dataset, standard_config
 
 config = standard_config(
-    [(["--DATASET_NAME"], {"required": True,},), (["--PICKLE"], {"required": True,},),]
+    [
+        (
+            ["--DATASET_NAME"],
+            {
+                "required": True,
+            },
+        ),
+        (
+            ["--PICKLE"],
+            {
+                "required": True,
+            },
+        ),
+    ]
 )
 
 for filename in [
