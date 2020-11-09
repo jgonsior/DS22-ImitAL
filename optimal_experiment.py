@@ -43,6 +43,8 @@ if not config.SKIP_TRAINING_DATA_GENERATION:
                 OUTPUT_FILE=PARENT_OUTPUT_DIRECTORY
                 + train_base_param_string
                 + "_"
+                + BATCH_MODE
+                + "_"
                 + initial_batch_sampling_method
                 + str(initial_batch_sampling_arg)
                 + "/states.csv",
@@ -51,6 +53,8 @@ if not config.SKIP_TRAINING_DATA_GENERATION:
                     "DATASETS_PATH": "../datasets",
                     "OUTPUT_DIRECTORY": PARENT_OUTPUT_DIRECTORY
                     + train_base_param_string
+                    + "_"
+                    + BATCH_MODE
                     + "_"
                     + initial_batch_sampling_method
                     + str(initial_batch_sampling_arg),
