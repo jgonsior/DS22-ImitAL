@@ -43,7 +43,7 @@ def numpy():
         Y_query = [1, 2, 3, 4, 5]
 
         labeled_mask = np.append(labeled_mask, query_indices, axis=0)
-        unlabeled_mask = np.delete(unlabeled_mask, query_indices, axis=0)
+        unlabeled_mask = np.delete(unlabeled_mask, query_indices)
 
         Y[query_indices] = Y_query
 
@@ -57,7 +57,7 @@ def numpy():
 
 n_iter = 10
 
-pd_time = timeit.timeit(lambda: pandas(), number=n_iter)
 np_time = timeit.timeit(lambda: numpy(), number=n_iter)
+pd_time = timeit.timeit(lambda: pandas(), number=n_iter)
 print(pd_time)
 print(np_time)
