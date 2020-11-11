@@ -261,11 +261,11 @@ def run_parallel_experiment(
                 amount_of_existing_states = 0
 
             amount_of_missing_training_samples = (
-                config.TRAIN_NR_LEARNING_SAMPLES - amount_of_existing_states
+                TRAIN_NR_LEARNING_SAMPLES - amount_of_existing_states
             )
 
             amount_of_processes = amount_of_missing_training_samples / (
-                config.USER_QUERY_BUDGET_LIMIT / config.NR_QUERIES_PER_ITERATION
+                USER_QUERY_BUDGET_LIMIT / NR_QUERIES_PER_ITERATION
             )
 
             amount_of_processes = math.ceil(amount_of_processes)

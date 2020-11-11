@@ -38,16 +38,20 @@ if not config.SKIP_TRAINING_DATA_GENERATION:
             initial_batch_sampling_method,
             initial_batch_sampling_arg,
         ) in LIST_OF_BATCH_SAMPLING_METHODS:
-            run_parallel_experiment(
-                "Creating dataset",
-                OUTPUT_FILE=PARENT_OUTPUT_DIRECTORY
+            OUTPUT_FILE = (
+                PARENT_OUTPUT_DIRECTORY
                 + train_base_param_string
                 + "_"
                 + BATCH_MODE
                 + "_"
                 + initial_batch_sampling_method
                 + str(initial_batch_sampling_arg)
-                + "/states.csv",
+                + "/dataset_creation.csv"
+            )
+            print(OUTPUT_FILE)
+            run_parallel_experiment(
+                "Creating dataset",
+                OUTPUT_FILE=OUTPUT_FILE,
                 CLI_COMMAND="python imit_training.py",
                 CLI_ARGUMENTS={
                     "DATASETS_PATH": "../datasets",
