@@ -1,63 +1,92 @@
-import math
-import pandas as pd
 import numpy as np
+from scipy.stats import entropy
+from math import log, e
+import pandas as pd
+
 import timeit
-from sklearn.datasets import make_classification
-
-n_samples = 1000
-
-X, Y = make_classification(n_samples=n_samples, n_features=20)
+from sklearn.metrics.cluster import entropy as sk_entropy
 
 
-def pandas():
-    df = pd.DataFrame(X)
-
-    labeled_X = df[math.floor(n_samples / 2) :]
-    unlabeled_X = df[: math.floor(n_samples / 2)]
-
-    unlabeled_Y = pd.DataFrame(data=Y[math.floor(n_samples / 2) :], columns=["label"])
-    labeled_Y = pd.DataFrame(data=Y[: math.floor(n_samples / 2)], columns=["label"])
-
-    for i in range(0, 50):
-        query_indices = unlabeled_X.sample(5).index
-        Y_query = [1, 2, 3, 4, 5]
-        labeled_X = labeled_X.append(unlabeled_X.loc[query_indices])
-        labeled_Y = labeled_Y.append(Y_query)
-        unlabeled_X = unlabeled_X.drop(query_indices)
-        unlabeled_Y = unlabeled_Y.drop(query_indices)
-
-        for i in range(0, 5):
-            mean = labeled_X.mean()
-            mean += labeled_Y.mean()
-            mean += unlabeled_Y.mean()
-            mean += unlabeled_Y.mean()
-        print(mean)
+def entropy1(labels, base=None):
+    value, counts = np.unique(labels, return_counts=True)
+    return entropy(counts, base=base)
 
 
-def numpy():
-    labeled_mask = np.arange(math.floor(n_samples / 2), n_samples)
-    unlabeled_mask = np.arange(0, math.floor(n_samples / 2))
+def entropy2(labels, base=None):
+    """ Computes entropy of label distribution. """
 
-    for i in range(0, 50):
-        query_indices = np.random.choice(unlabeled_mask, 5)
-        Y_query = [1, 2, 3, 4, 5]
+    n_labels = len(labels)
 
-        labeled_mask = np.append(labeled_mask, query_indices, axis=0)
-        unlabeled_mask = np.delete(unlabeled_mask, query_indices)
+    if n_labels <= 1:
+        return 0
 
-        Y[query_indices] = Y_query
+    value, counts = np.unique(labels, return_counts=True)
+    probs = counts / n_labels
+    n_classes = np.count_nonzero(probs)
 
-        for i in range(0, 5):
-            mean = np.mean(X[labeled_mask])
-            mean += np.mean(Y[labeled_mask])
-            mean += np.mean(X[unlabeled_mask])
-            mean += np.mean(Y[unlabeled_mask])
-        print(mean)
+    if n_classes <= 1:
+        return 0
+
+    ent = 0.0
+
+    # Compute entropy
+    base = e if base is None else base
+    for i in probs:
+        ent -= i * log(i, base)
+
+    return ent
 
 
-n_iter = 10
+def entropy3(labels, base=None):
+    return sk_entropy(labels)
+    #  vc = pd.Series(labels).value_counts(normalize=True, sort=False)
+    #  base = e if base is None else base
+    #  return -(vc * np.log(vc) / np.log(base)).sum()
 
-np_time = timeit.timeit(lambda: numpy(), number=n_iter)
-pd_time = timeit.timeit(lambda: pandas(), number=n_iter)
-print(pd_time)
-print(np_time)
+
+def entropy4(labels, base=None):
+    value, counts = np.unique(labels, return_counts=True)
+    norm_counts = counts / counts.sum()
+    base = e if base is None else base
+    return -(norm_counts * np.log(norm_counts) / np.log(base)).sum()
+
+
+repeat_number = 1000
+
+labels = np.random.choice
+
+label_list_str = str(np.random.sample(10000).tolist())
+
+a = timeit.repeat(
+    stmt="""entropy1(labels)""",
+    setup="""labels=""" + label_list_str + """;from __main__ import entropy1""",
+    repeat=3,
+    number=repeat_number,
+)
+
+b = timeit.repeat(
+    stmt="""entropy2(labels)""",
+    setup="""labels=""" + label_list_str + """;from __main__ import entropy2""",
+    repeat=3,
+    number=repeat_number,
+)
+
+c = timeit.repeat(
+    stmt="""entropy3(labels)""",
+    setup="""labels=""" + label_list_str + """;from __main__ import entropy3""",
+    repeat=3,
+    number=repeat_number,
+)
+
+d = timeit.repeat(
+    stmt="""entropy4(labels)""",
+    setup="""labels=""" + label_list_str + """;from __main__ import entropy4""",
+    repeat=3,
+    number=repeat_number,
+)
+
+# for loop to print out results of timeit
+for approach, timeit_results in zip(
+    ["scipy/numpy", "numpy/math", "pandas/numpy", "numpy"], [a, b, c, d]
+):
+    print("Method: {}, Avg.: {:.6f}".format(approach, np.array(timeit_results).mean()))
