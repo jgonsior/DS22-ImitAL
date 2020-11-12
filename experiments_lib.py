@@ -246,7 +246,7 @@ def run_parallel_experiment(
         },
         OUTPUT_FILE_LENGTH=OUTPUT_FILE_LENGTH,
     )
-
+    return
     if RESTART_IF_NOT_ENOUGH_SAMPLES:
         error_stop_counter = 3
 

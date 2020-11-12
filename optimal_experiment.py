@@ -26,18 +26,33 @@ from experiments_lib import (
 ) = get_config()
 
 LIST_OF_BATCH_SAMPLING_METHODS = [
+    #  ("random", -1),
     ("random", -1),
-    ("furthest", 10),
+    ("furthest", 50),
+    ("furthest_lab", 50),
+    ("graph_density2", 50),
     ("furthest", 100),
-    ("graph_density", -1),
+    ("furthest_lab", 100),
+    ("graph_density2", 100),
+    ("furthest", 500),
+    ("furthest_lab", 500),
+    ("graph_density2", 500),
+    ("furthest", 1000),
+    ("furthest_lab", 1000),
+    ("graph_density2", 1000),
 ]
 
 if not config.SKIP_TRAINING_DATA_GENERATION:
-    for BATCH_MODE in ["single", "batch"]:
+    for BATCH_MODE in ["batch", "single"]:
         for (
             initial_batch_sampling_method,
             initial_batch_sampling_arg,
         ) in LIST_OF_BATCH_SAMPLING_METHODS:
+            if BATCH_MODE == "single" and initial_batch_sampling_method in [
+                "graph_density2",
+                "furthest_lab",
+            ]:
+                continue
             OUTPUT_FILE = (
                 PARENT_OUTPUT_DIRECTORY
                 + train_base_param_string
