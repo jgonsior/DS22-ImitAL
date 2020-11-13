@@ -20,8 +20,8 @@ from active_learning.sampling_strategies.learnedBaseBatchSampling import (
 # compare that ranking to the optimum
 # profit!!
 init_logger("console")
-NR_ITERATIONS = 3
-NR_BATCHES = 5
+NR_ITERATIONS = 100000
+NR_BATCHES = 50
 
 
 @jit(nopython=True)
@@ -120,7 +120,7 @@ for RANDOM_SEED in range(0, NR_ITERATIONS):
             size=NR_BATCHES,
             replace=False,
         )
-        for x in range(0, 5)
+        for x in range(0, NR_BATCHES)
     ]
 
     with parallel_backend("loky", n_jobs=multiprocessing.cpu_count()):
@@ -144,7 +144,7 @@ for RANDOM_SEED in range(0, NR_ITERATIONS):
             function(a, data_storage, clf) for a in possible_batches
         ]
 
-    print(df)
+    #  print(df)
     if RANDOM_SEED == 0:
         df.to_csv("metric_test.csv", index=False, header=True)
     else:
