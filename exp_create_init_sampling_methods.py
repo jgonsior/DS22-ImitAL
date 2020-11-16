@@ -21,7 +21,7 @@ from active_learning.sampling_strategies.learnedBaseBatchSampling import (
 # compare that ranking to the optimum
 # profit!!
 init_logger("console")
-NR_ITERATIONS = 1
+NR_ITERATIONS = 10000
 
 
 @jit(nopython=True)
