@@ -18,7 +18,7 @@ from sklearn.metrics import (
 df = pd.read_csv("metric_test_50.csv")
 
 # step 2: calculate correctnesses of rankings
-TOP_N = 15
+TOP_N = 50
 AMOUNT_OF_METRICS = 6
 NR_BATCHES = 50
 current_baseline = None
@@ -45,18 +45,19 @@ def get_top_n(df_series, TOP_N=TOP_N):
     return sorted_index[:TOP_N]
 
 
-def jaccard_comparison(baseline, to_compare):
-    return jaccard_score(baseline, to_compare, average="weighted")
+def _jac_score(a, b):
+    return len(np.intersect1d(a, b)) / len(np.union1d(a, b))
 
 
 metrics = [
     jaccard_score,
+    "jaccard_score_binary",
+    dcg_score,
     ndcg_score,
     "ndcg_score_top_k",
     cohen_kappa_score,
     label_ranking_loss,
     label_ranking_average_precision_score,
-    dcg_score,
 ]
 
 evaluation = {}
@@ -81,11 +82,19 @@ for i in range(0, math.ceil((len(df) / AMOUNT_OF_METRICS))):
                 # top_n rankings
                 baseline = get_top_n(current_baseline.argsort(axis=0))
                 to_compare = get_top_n(df.iloc[j].drop("source"))
-                if metric_function == jaccard_score:
-                    kwargs = {"average": "weighted"}
+
+                if metric == jaccard_score:
+                    metric_function = _jac_score
                 else:
                     baseline = sorted(baseline)
                     to_compare = sorted(to_compare)
+            elif metric == "jaccard_score_binary":
+                baseline = _binarize_targets(current_baseline, TOP_N=TOP_N)[0].tolist()
+                to_compare = _binarize_targets(df.iloc[j].drop("source"), TOP_N=TOP_N)[
+                    0
+                ].tolist()
+                kwargs = {"average": "micro"}
+                metric_function = jaccard_score
             elif (
                 metric == ndcg_score
                 or metric == "ndcg_score_top_k"
@@ -108,7 +117,6 @@ for i in range(0, math.ceil((len(df) / AMOUNT_OF_METRICS))):
                 to_compare = np.reshape(
                     df.iloc[j].drop("source").to_numpy(), (1, NR_BATCHES)
                 )
-
             evaluation[metric][df.iloc[j]["source"]] += metric_function(
                 baseline, to_compare, **kwargs
             )
