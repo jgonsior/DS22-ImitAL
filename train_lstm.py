@@ -11,7 +11,7 @@ from keras.layers import Dense, Dropout
 from keras.models import Sequential
 from scikeras.wrappers import KerasRegressor
 from scipy.stats import spearmanr, kendalltau
-from sklearn.metrics import accuracy_score, mean_squared_error
+from sklearn.metrics import accuracy_score
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.model_selection import train_test_split
@@ -63,10 +63,8 @@ if config.RANDOM_SEED != -1 and config.RANDOM_SEED != -2:
     np.random.seed(config.RANDOM_SEED)
     random.seed(config.RANDOM_SEED)
 
-
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
 
 DATA_PATH = config.DATA_PATH
 states = pd.read_csv(DATA_PATH + "/states.csv")

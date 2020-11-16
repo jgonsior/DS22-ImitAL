@@ -1,12 +1,10 @@
-from active_learning.experiment_setup_lib import log_it
-from sklearn.metrics import accuracy_score
-import os
 import os
 import random
 from timeit import default_timer as timer
 
 import numpy as np
 import pandas as pd
+from sklearn.metrics import accuracy_score
 
 from active_learning.al_cycle_wrapper import eval_al
 from active_learning.cluster_strategies import DummyClusterStrategy
@@ -16,6 +14,7 @@ from active_learning.experiment_setup_lib import (
     init_logger,
     get_classifier,
 )
+from active_learning.experiment_setup_lib import log_it
 from active_learning.sampling_strategies import ImitationLearner, ImitationBatchLearner
 from fake_experiment_oracle import FakeExperimentOracle
 

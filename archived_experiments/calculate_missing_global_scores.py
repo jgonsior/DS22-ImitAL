@@ -97,7 +97,6 @@ global_score_no_weak_acc_norm_field = peewee.FloatField(index=True, null=True)
 global_score_with_weak_roc_auc_norm_field = peewee.FloatField(index=True, null=True)
 global_score_with_weak_acc_norm_field = peewee.FloatField(index=True, null=True)
 
-
 migrator = PostgresqlMigrator(db)
 
 migrate(
@@ -150,7 +149,6 @@ migrate(
         "global_score_with_weak_roc_auc_norm_old",
     ),
 )
-
 
 db.bind([experiment_setup_lib.ExperimentResult])
 
@@ -225,7 +223,6 @@ for experimentresult in ExperimentResult.select(ExperimentResult):
 
     print(experimentresult.id_field)
     experimentresult.save()
-
 
 migrate(
     migrator.add_not_null("experimentresult", "global_score_no_weak_roc_auc"),

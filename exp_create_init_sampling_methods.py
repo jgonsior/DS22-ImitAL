@@ -1,21 +1,16 @@
 import copy
+import multiprocessing
+import random
+
+import numpy as np
+import pandas as pd
 from joblib import Parallel, delayed, parallel_backend
 from numba import jit
-import random
-import math
-import pandas as pd
-import numpy as np
-import timeit
-from sklearn.datasets import make_classification
+from sklearn.metrics import pairwise_distances, accuracy_score
+from sklearn.neural_network import MLPClassifier
+
 from active_learning.dataStorage import DataStorage
 from active_learning.experiment_setup_lib import init_logger
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.neural_network import MLPClassifier
-from sklearn.metrics import pairwise_distances, accuracy_score
-import multiprocessing
-from active_learning.sampling_strategies.learnedBaseBatchSampling import (
-    LearnedBaseBatchSampling,
-)
 
 # let batches get ordered by different initial_batch_sampling_methodata_storage
 # compare that ranking to the optimum

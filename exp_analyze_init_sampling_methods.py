@@ -1,22 +1,10 @@
+import math
 from pprint import pprint
-import copy
-from joblib import Parallel, delayed, parallel_backend
-from numba import jit
-import random
-import math
-import pandas as pd
+
+import matplotlib.pyplot as plt
 import numpy as np
-import timeit
-from sklearn.datasets import make_classification
-from active_learning.dataStorage import DataStorage
-from active_learning.experiment_setup_lib import init_logger
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import pairwise_distances, accuracy_score
-import multiprocessing
-from active_learning.sampling_strategies.learnedBaseBatchSampling import (
-    LearnedBaseBatchSampling,
-)
-import math
+import pandas as pd
+import seaborn as sns
 from sklearn.metrics import (
     jaccard_score,
     ndcg_score,
@@ -26,12 +14,12 @@ from sklearn.metrics import (
     dcg_score,
 )
 
-
-df = pd.read_csv("metric_test_10000.csv")
+#  df = pd.read_csv("metric_test_10000.csv")
+df = pd.read_csv("metric_test_50.csv")
 
 # step 2: calculate correctnesses of rankings
-TOP_N = 5
-AMOUNT_OF_METRICS = 5
+TOP_N = 15
+AMOUNT_OF_METRICS = 6
 NR_BATCHES = 50
 current_baseline = None
 
@@ -74,8 +62,7 @@ metrics = [
 evaluation = {}
 
 for metric in metrics:
-    evaluation[metric] = {key: 0 for key in df.iloc[0:5]["source"]}
-    evaluation[metric]["random"] = 0
+    evaluation[metric] = {key: 0 for key in df.iloc[0:AMOUNT_OF_METRICS]["source"]}
     evaluation[metric]["maximum"] = 0
 
 for i in range(0, math.ceil((len(df) / AMOUNT_OF_METRICS))):
@@ -128,3 +115,40 @@ for i in range(0, math.ceil((len(df) / AMOUNT_OF_METRICS))):
 
 # per metric a bar chart
 pprint(evaluation)
+
+sns.set_theme(style="whitegrid")
+df = pd.DataFrame(
+    data=None, index=None, columns=["eval_metric", "value", "sampling_method"]
+)
+for sampling_method, d1 in evaluation.items():
+    for eval_metric, value in d1.items():
+        df = df.append(
+            {
+                "eval_metric": eval_metric.replace("<function _calculate_", "").split(
+                    " at "
+                )[0],
+                "value": value,
+                "sampling_method": str(sampling_method)
+                .replace("<function ", "")
+                .split(" at ")[0],
+            },
+            ignore_index=True,
+        )
+df["value"] = df["value"].astype(float)
+print(df)
+
+ax = sns.catplot(
+    y="eval_metric",
+    x="value",
+    col="sampling_method",
+    data=df,
+    kind="bar",
+    legend=True,
+    sharex=False,
+)
+
+for subplot in ax.axes_dict.values():
+    subplot.set_xlim(
+        1,
+    )
+plt.show()

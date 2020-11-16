@@ -1,14 +1,9 @@
 import glob
+
 import numpy as np
-from tabulate import tabulate
-import json
-import math
-import multiprocessing
-import os
-from pathlib import Path
-import time
 import pandas as pd
-from joblib import Parallel, delayed
+from tabulate import tabulate
+
 from experiments_lib import (
     run_code_experiment,
     run_python_experiment,
@@ -111,7 +106,6 @@ if not config.SKIP_TRAINING_DATA_GENERATION:
 
 if config.ONLY_TRAINING_DATA:
     exit(1)
-
 
 for DATASET_NAME in [
     "synthetic",

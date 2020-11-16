@@ -1,4 +1,9 @@
 import numpy as np
+from experiment_setup_lib import (
+    load_and_prepare_X_and_Y,
+    standard_config,
+    classification_report_and_confusion_matrix,
+)
 from scipy.stats import randint as sp_randint
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier
@@ -9,12 +14,6 @@ from sklearn.model_selection import (
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils.class_weight import compute_sample_weight
-
-from experiment_setup_lib import (
-    load_and_prepare_X_and_Y,
-    standard_config,
-    classification_report_and_confusion_matrix,
-)
 
 config = standard_config(
     [

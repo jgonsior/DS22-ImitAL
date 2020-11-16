@@ -1,37 +1,16 @@
-import scipy
-import abc
-from collections import Counter, defaultdict
-from math import e, log
-
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-from scipy.cluster.hierarchy import dendrogram
-from sklearn.cluster import (
-    OPTICS,
-    MiniBatchKMeans,
-    cluster_optics_dbscan,
-    AgglomerativeClustering,
-)
-import copy
-import inspect
-import multiprocessing
+from collections import Counter
 from collections import defaultdict
 
 import pandas as pd
-from evolutionary_search import EvolutionaryAlgorithmSearchCV
+import scipy
 from sklearn.base import BaseEstimator
-from sklearn.model_selection import RandomizedSearchCV, ShuffleSplit
-
-from active_learning.al_cycle_wrapper import train_and_eval_dataset
-from active_learning.experiment_setup_lib import (
-    get_dataset,
-    get_param_distribution,
-    log_it,
-    standard_config,
+from sklearn.cluster import (
+    MiniBatchKMeans,
+    AgglomerativeClustering,
 )
-from active_learning.experiment_setup_lib import log_it, get_dataset, standard_config
+from sklearn.model_selection import RandomizedSearchCV
 
+from active_learning.experiment_setup_lib import get_dataset, standard_config
 
 standard_config = standard_config(
     [

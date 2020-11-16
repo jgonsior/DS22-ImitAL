@@ -1,14 +1,13 @@
-from sklearn import svm
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.tree import DecisionTreeClassifier
-
 from experiment_setup_lib import (
     train_and_evaluate,
     load_and_prepare_X_and_Y,
     standard_config,
 )
+from sklearn import svm
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.tree import DecisionTreeClassifier
 
 config = standard_config()
 

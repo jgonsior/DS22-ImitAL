@@ -1,9 +1,6 @@
 import altair as alt
 import pandas as pd
 import peewee
-from json_tricks import loads
-from tabulate import tabulate
-
 from experiment_setup_lib import (
     ExperimentResult,
     get_db,
@@ -11,6 +8,8 @@ from experiment_setup_lib import (
     get_single_al_run_stats_table_header,
     standard_config,
 )
+from json_tricks import loads
+from tabulate import tabulate
 
 alt.renderers.enable("altair_viewer")
 #  alt.renderers.enable('vegascope')
@@ -83,7 +82,6 @@ elif config.param_list_id != "-1":
 
     charts = []
     for result in results:
-
         metrics = loads(result.metrics_per_al_cycle)
 
         data = pd.DataFrame(

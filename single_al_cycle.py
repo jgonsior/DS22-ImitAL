@@ -28,7 +28,6 @@ if config.OUTPUT_DIRECTORY == "NN_BINARY":
         os.path.dirname(config.NN_BINARY) + "/evaluation_hyper_parameters.csv"
     )
 
-
 score = train_and_eval_dataset(
     hyper_parameters=vars(config),
     oracle=FakeExperimentOracle(),

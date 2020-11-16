@@ -1,6 +1,4 @@
 import pandas as pd
-import glob
-import os
 
 OUTPUT_DIRECTORY = "../datasets/taurus_10_10/"
 
@@ -12,7 +10,6 @@ print(
         "Neural Network", df["fit_time"].mean(), df["fit_time"].median()
     )
 )
-
 
 for metric in [
     "random",

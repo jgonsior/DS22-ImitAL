@@ -1,6 +1,7 @@
-import pandas as pd
 import glob
 import os
+
+import pandas as pd
 
 pathes = "../datasets/tmp_taurus/"
 #  pathes = "../datasets/nn_size_hypersearch/"
@@ -42,7 +43,7 @@ for path in glob.glob(pathes + "/TRAIN_*"):
         + " --"
         + states_to_column_mapping[
             columns_to_leave
-        ]  #  + states_to_column_mapping[columns_to_leave[:-4]]
+        ]  # + states_to_column_mapping[columns_to_leave[:-4]]
         + " --NR_HIDDEN_NEURONS "
         + NR_HIDDEN_NEURONS
     )
@@ -50,7 +51,6 @@ for path in glob.glob(pathes + "/TRAIN_*"):
     os.system(cli_arguments)
     #  exit(-1)
 exit(-2)
-
 
 for path in glob.glob(pathes + "/TRAIN_*"):
     if path.endswith(".csv"):

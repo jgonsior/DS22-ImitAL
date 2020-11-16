@@ -42,7 +42,6 @@ config = standard_config(
     standard_args=False,
 )
 
-
 cli_commands = {0: "python full_experiment.py"}
 
 arguments = []

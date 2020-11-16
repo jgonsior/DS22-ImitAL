@@ -1,7 +1,8 @@
 import math
-import pandas as pd
-import numpy as np
 import timeit
+
+import numpy as np
+import pandas as pd
 from sklearn.datasets import make_classification
 
 n_samples = 1000

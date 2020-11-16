@@ -1,11 +1,9 @@
-import pandas as pd
-import os
-import subprocess
 import multiprocessing
+import os
 from pathlib import Path
-from joblib import Parallel, delayed
-from active_learning.experiment_setup_lib import standard_config
 
+import pandas as pd
+from joblib import Parallel, delayed
 
 smallest_margin_mm_rest = 100
 smallest_margin_mm_rest_file = ""
@@ -45,7 +43,6 @@ print(smallest_margin_mm_rest_file)
 print(biggest_margin_random_rest)
 print(biggest_margin_random_rest_file)
 exit(-1)
-
 
 amount_of_lines = sum(1 for l in open(trained_ann_csv_path))
 print("Evaluation trained_nn size: {}".format(amount_of_lines))
@@ -106,7 +103,6 @@ for comparison in params["comparisons"]:
     assert os.path.exists(COMPARISON_PATH)
     amount_of_lines = sum(1 for l in open(COMPARISON_PATH))
     print("Evaluation " + comparison + "size: {}".format(amount_of_lines))
-
 
 print("#" * 80)
 print("Generating evaluation CSV")

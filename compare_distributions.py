@@ -24,7 +24,6 @@ parser.add_argument("--METRIC", default="acc_test")
 parser.add_argument("--FILTER_KEY", default=None)
 parser.add_argument("--FILTER_VALUE", default=None)
 
-
 config = parser.parse_args()
 
 if len(sys.argv[:-1]) == 0:
@@ -116,12 +115,10 @@ compare_distributions(
 
 exit(1)
 
-
 param_size = 50
 #  param_size = 2
 zero_to_one = np.linspace(0, 1, num=param_size * 2 + 1).astype(float)
 half_to_one = np.linspace(0.5, 1, num=param_size + 1).astype(float)
-
 
 param_dist = {
     #  "DATASETS_PATH": [DATASETS_PATH],
@@ -514,7 +511,6 @@ one_vs_rest_params = [
     "with_cluster_recommendation",
 ]
 
-
 hyper_test_params = [
     [
         "sampling",
@@ -536,7 +532,6 @@ hyper_test_params = [
 ]
 
 get_distributions_for_interesting(hyper_test_params)
-
 
 #  for params in hyper_test_params:
 #      find_multiple_hyper_param_combinations(params)
