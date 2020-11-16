@@ -120,8 +120,14 @@ sns.set_theme(style="whitegrid")
 df = pd.DataFrame(
     data=None, index=None, columns=["eval_metric", "value", "sampling_method"]
 )
+
+minimum_values = []
+maximum_values = []
+
 for sampling_method, d1 in evaluation.items():
     for eval_metric, value in d1.items():
+        if "future" in eval_metric:
+            continue
         df = df.append(
             {
                 "eval_metric": eval_metric.replace("<function _calculate_", "").split(
@@ -134,6 +140,8 @@ for sampling_method, d1 in evaluation.items():
             },
             ignore_index=True,
         )
+    minimum_values.append(min(list(d1.values())[1:]))
+    maximum_values.append(max(list(d1.values())[1:]))
 df["value"] = df["value"].astype(float)
 print(df)
 
@@ -146,9 +154,7 @@ ax = sns.catplot(
     legend=True,
     sharex=False,
 )
-
-for subplot in ax.axes_dict.values():
-    subplot.set_xlim(
-        1,
-    )
+print(list(zip(minimum_values, maximum_values)))
+for i, subplot in enumerate(ax.axes_dict.values()):
+    subplot.set_xlim(minimum_values[i], maximum_values[i])
 plt.show()
