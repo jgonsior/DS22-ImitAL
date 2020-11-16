@@ -16,7 +16,7 @@ from active_learning.experiment_setup_lib import init_logger
 # compare that ranking to the optimum
 # profit!!
 init_logger("console")
-NR_ITERATIONS = 10
+NR_ITERATIONS = 10000
 
 
 @jit(nopython=True)
