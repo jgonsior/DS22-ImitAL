@@ -21,7 +21,7 @@ from active_learning.sampling_strategies.learnedBaseBatchSampling import (
 # compare that ranking to the optimum
 # profit!!
 init_logger("console")
-NR_ITERATIONS = 1
+NR_ITERATIONS = 10
 
 
 @jit(nopython=True)
@@ -63,6 +63,10 @@ def _calculate_uncertainty_metric(batch_indices, data_storage, clf):
     return np.sum(-np.abs(margin[:, 0] - margin[:, 1]))
 
 
+def _calculate_randomness_metric(NR_BATCHES, data_storage, clf):
+    return np.random.random(NR_BATCHES)
+
+
 def _future_peak(unlabeled_sample_indices, data_storage, clf):
     copy_of_classifier = copy.deepcopy(clf)
 
@@ -80,8 +84,10 @@ def _future_peak(unlabeled_sample_indices, data_storage, clf):
 
 
 for NR_BATCHES in [50, 100, 250, 500, 1000]:
-    df = pd.DataFrame([], columns=["source"] + [str(i) for i in range(0, NR_BATCHES)])
     for RANDOM_SEED in range(0, NR_ITERATIONS):
+        df = pd.DataFrame(
+            [], columns=["source"] + [str(i) for i in range(0, NR_BATCHES)]
+        )
         # generate random dataset
         data_storage = DataStorage(
             RANDOM_SEED,
@@ -144,7 +150,11 @@ for NR_BATCHES in [50, 100, 250, 500, 1000]:
                 function(a, data_storage, clf) for a in possible_batches
             ]
 
-        #  print(df)
+        df.loc[len(df.index)] = [
+            "random" + str(NR_BATCHES)
+        ] + _calculate_randomness_metric(NR_BATCHES, None, None).tolist()
+
+        print(df)
         if RANDOM_SEED == 0:
             df.to_csv(
                 "metric_test_" + str(NR_BATCHES) + ".csv", index=False, header=True
