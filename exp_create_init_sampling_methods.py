@@ -10,6 +10,7 @@ from sklearn.datasets import make_classification
 from active_learning.dataStorage import DataStorage
 from active_learning.experiment_setup_lib import init_logger
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import pairwise_distances, accuracy_score
 import multiprocessing
 from active_learning.sampling_strategies.learnedBaseBatchSampling import (
@@ -20,8 +21,7 @@ from active_learning.sampling_strategies.learnedBaseBatchSampling import (
 # compare that ranking to the optimum
 # profit!!
 init_logger("console")
-NR_ITERATIONS = 100000
-NR_BATCHES = 50
+NR_ITERATIONS = 1
 
 
 @jit(nopython=True)
@@ -79,73 +79,80 @@ def _future_peak(unlabeled_sample_indices, data_storage, clf):
     return accuracy_score(Y_pred_test, Y_true)
 
 
-df = pd.DataFrame([], columns=["source"] + [str(i) for i in range(0, NR_BATCHES)])
-
-for RANDOM_SEED in range(0, NR_ITERATIONS):
-    # generate random dataset
-    data_storage = DataStorage(
-        RANDOM_SEED,
-        TEST_FRACTION=0,
-        DATASET_NAME="synthetic",
-        VARIABLE_DATASET=False,
-        NEW_SYNTHETIC_PARAMS=False,
-        AMOUNT_OF_FEATURES=100,
-        GENERATE_NOISE=True,
-        HYPERCUBE=False,
-        hyper_parameters={},
-        INITIAL_BATCH_SAMPLING_METHOD="graph_density",
-    )
-
-    # generate some pre-existent labels
-    amount_of_prelabeled = random.randint(1, 50)
-    random_labeled_samples_indices = np.random.choice(
-        data_storage.unlabeled_mask, amount_of_prelabeled, replace=False
-    )
-    data_storage.label_samples(
-        random_labeled_samples_indices,
-        data_storage.Y[random_labeled_samples_indices],
-        "I",
-    )
-
-    # sneak peak into future for n batches -> optimum ranking
-    clf = RandomForestClassifier()
-    clf.fit(
-        data_storage.X[data_storage.labeled_mask],
-        data_storage.Y[data_storage.labeled_mask],
-    )
-
-    possible_batches = [
-        np.random.choice(
-            data_storage.unlabeled_mask,
-            size=NR_BATCHES,
-            replace=False,
+for NR_BATCHES in [50, 100, 250, 500, 1000]:
+    df = pd.DataFrame([], columns=["source"] + [str(i) for i in range(0, NR_BATCHES)])
+    for RANDOM_SEED in range(0, NR_ITERATIONS):
+        # generate random dataset
+        data_storage = DataStorage(
+            RANDOM_SEED,
+            TEST_FRACTION=0,
+            DATASET_NAME="synthetic",
+            VARIABLE_DATASET=False,
+            NEW_SYNTHETIC_PARAMS=False,
+            AMOUNT_OF_FEATURES=100,
+            GENERATE_NOISE=True,
+            HYPERCUBE=False,
+            hyper_parameters={},
+            INITIAL_BATCH_SAMPLING_METHOD="graph_density",
         )
-        for x in range(0, NR_BATCHES)
-    ]
 
-    with parallel_backend("loky", n_jobs=multiprocessing.cpu_count()):
-        future_peak_accs = Parallel()(
-            delayed(_future_peak)(
-                unlabeled_sample_index,
-                data_storage,
-                clf,
+        # generate some pre-existent labels
+        amount_of_prelabeled = random.randint(1, 50)
+        random_labeled_samples_indices = np.random.choice(
+            data_storage.unlabeled_mask, amount_of_prelabeled, replace=False
+        )
+        data_storage.label_samples(
+            random_labeled_samples_indices,
+            data_storage.Y[random_labeled_samples_indices],
+            "I",
+        )
+
+        # sneak peak into future for n batches -> optimum ranking
+        clf = MLPClassifier(verbose=0)
+        clf.fit(
+            data_storage.X[data_storage.labeled_mask],
+            data_storage.Y[data_storage.labeled_mask],
+        )
+
+        possible_batches = [
+            np.random.choice(
+                data_storage.unlabeled_mask,
+                size=NR_BATCHES,
+                replace=False,
             )
-            for unlabeled_sample_index in possible_batches
-        )
-
-    df.loc[len(df.index)] = ["future"] + future_peak_accs
-    for function in [
-        _calculate_furthest_metric,
-        _calculate_uncertainty_metric,
-        _calculate_furthest_lab_metric,
-        _calculate_graph_density_metric,
-    ]:
-        df.loc[len(df.index)] = [function] + [
-            function(a, data_storage, clf) for a in possible_batches
+            for x in range(0, NR_BATCHES)
         ]
 
-    #  print(df)
-    if RANDOM_SEED == 0:
-        df.to_csv("metric_test.csv", index=False, header=True)
-    else:
-        df.to_csv("metric_test.csv", index=False, mode="a", header=False)
+        with parallel_backend("loky", n_jobs=multiprocessing.cpu_count()):
+            future_peak_accs = Parallel()(
+                delayed(_future_peak)(
+                    unlabeled_sample_index,
+                    data_storage,
+                    clf,
+                )
+                for unlabeled_sample_index in possible_batches
+            )
+
+        df.loc[len(df.index)] = ["future"] + future_peak_accs
+        for function in [
+            _calculate_furthest_metric,
+            _calculate_uncertainty_metric,
+            _calculate_furthest_lab_metric,
+            _calculate_graph_density_metric,
+        ]:
+            df.loc[len(df.index)] = [str(function) + str(NR_BATCHES)] + [
+                function(a, data_storage, clf) for a in possible_batches
+            ]
+
+        #  print(df)
+        if RANDOM_SEED == 0:
+            df.to_csv(
+                "metric_test_" + str(NR_BATCHES) + ".csv", index=False, header=True
+            )
+        else:
+            df.to_csv(
+                "metric_test_" + str(NR_BATCHES) + ".csv",
+                index=False,
+                mode="a",
+                header=False,
+            )
