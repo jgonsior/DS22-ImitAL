@@ -14,11 +14,11 @@ from sklearn.metrics import (
     dcg_score,
 )
 
-#  df = pd.read_csv("metric_test_10000.csv")
+#  df = pd.read_csv("metric_test_small.csv")
 df = pd.read_csv("metric_test_50.csv")
 
 # step 2: calculate correctnesses of rankings
-TOP_N = 50
+TOP_N = 20
 AMOUNT_OF_METRICS = 6
 NR_BATCHES = 50
 current_baseline = None
@@ -26,6 +26,8 @@ current_baseline = None
 
 def _binarize_targets(df, TOP_N=5):
     df = df.to_frame()
+    #  print(df.to_numpy())
+    #  print("thres", np.sort(np.reshape(df.values, NR_BATCHES))[-TOP_N : -(TOP_N - 1)])
     df["threshold"] = [
         np.sort(np.reshape(df.values, NR_BATCHES))[-TOP_N : -(TOP_N - 1)]
         for _ in range(0, NR_BATCHES)
@@ -40,13 +42,16 @@ def _binarize_targets(df, TOP_N=5):
     return np.reshape(df.to_numpy(), (1, NR_BATCHES))
 
 
-def get_top_n(df_series, TOP_N=TOP_N):
-    sorted_index = [int(x) for _, x in sorted(zip(df_series, df_series.index))]
-    return sorted_index[:TOP_N]
-
-
 def _jac_score(a, b):
     return len(np.intersect1d(a, b)) / len(np.union1d(a, b))
+
+
+def _jac_score_binary(a, b):
+    count_ones = 0
+    for x, y in zip(a, b):
+        if x == 1 and y == 1:
+            count_ones += 1
+    return count_ones / TOP_N
 
 
 metrics = [
@@ -57,7 +62,7 @@ metrics = [
     "ndcg_score_top_k",
     cohen_kappa_score,
     label_ranking_loss,
-    label_ranking_average_precision_score,
+    #  label_ranking_average_precision_score,
 ]
 
 evaluation = {}
@@ -65,6 +70,15 @@ evaluation = {}
 for metric in metrics:
     evaluation[metric] = {key: 0 for key in df.iloc[0:AMOUNT_OF_METRICS]["source"]}
     evaluation[metric]["maximum"] = 0
+
+
+# make uncertainty positive, add 100 to it
+for index, row in df.iterrows():
+    if index % AMOUNT_OF_METRICS == 2:
+        df.loc[index, df.columns != "source"] += 100
+
+
+print(df.head())
 
 for i in range(0, math.ceil((len(df) / AMOUNT_OF_METRICS))):
     for j in range(i * AMOUNT_OF_METRICS, (i + 1) * AMOUNT_OF_METRICS):
@@ -80,8 +94,10 @@ for i in range(0, math.ceil((len(df) / AMOUNT_OF_METRICS))):
             kwargs = {}
             if metric == jaccard_score or metric == cohen_kappa_score:
                 # top_n rankings
-                baseline = get_top_n(current_baseline.argsort(axis=0))
-                to_compare = get_top_n(df.iloc[j].drop("source"))
+                baseline = (-current_baseline).argsort(axis=0)[:TOP_N].to_numpy()
+                to_compare = (
+                    (-df.iloc[j].drop("source")).argsort(axis=0)[:TOP_N].to_numpy()
+                )
 
                 if metric == jaccard_score:
                     metric_function = _jac_score
@@ -93,8 +109,7 @@ for i in range(0, math.ceil((len(df) / AMOUNT_OF_METRICS))):
                 to_compare = _binarize_targets(df.iloc[j].drop("source"), TOP_N=TOP_N)[
                     0
                 ].tolist()
-                kwargs = {"average": "micro"}
-                metric_function = jaccard_score
+                metric_function = _jac_score_binary
             elif (
                 metric == ndcg_score
                 or metric == "ndcg_score_top_k"
@@ -117,9 +132,23 @@ for i in range(0, math.ceil((len(df) / AMOUNT_OF_METRICS))):
                 to_compare = np.reshape(
                     df.iloc[j].drop("source").to_numpy(), (1, NR_BATCHES)
                 )
+            #  print(metric)
+            #  print(df.iloc[j]["source"])
+            #  if metric == jaccard_score:
+            #      print(sorted(baseline))
+            #      print(sorted(to_compare))
+            #  else:
+            #      print(baseline)
+            #      print(to_compare)
+            #  print(metric_function(to_compare, baseline, **kwargs))
+            #  print()
             evaluation[metric][df.iloc[j]["source"]] += metric_function(
                 baseline, to_compare, **kwargs
             )
+    #      print("#" * 80)
+    #      print()
+    #      print()
+    #  exit(-1)
 
 # per metric a bar chart
 pprint(evaluation)
