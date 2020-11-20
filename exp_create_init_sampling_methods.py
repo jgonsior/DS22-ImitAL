@@ -11,12 +11,15 @@ from sklearn.neural_network import MLPClassifier
 
 from active_learning.dataStorage import DataStorage
 from active_learning.experiment_setup_lib import init_logger
+import sys
 
 # let batches get ordered by different initial_batch_sampling_methodata_storage
 # compare that ranking to the optimum
 # profit!!
 init_logger("console")
-NR_ITERATIONS = 10000
+#  NR_ITERATIONS = 10000
+
+RANGE_START = int(sys.argv[1])
 
 
 @jit(nopython=True)
@@ -71,7 +74,7 @@ def _future_peak(unlabeled_sample_indices, data_storage, clf):
 
 
 for NR_BATCHES in [50, 100, 250, 500, 1000]:
-    for RANDOM_SEED in range(0, NR_ITERATIONS):
+    for RANDOM_SEED in range(RANGE_START, RANGE_START + 100):
         df = pd.DataFrame(
             [], columns=["source"] + [str(i) for i in range(0, NR_BATCHES)]
         )
@@ -107,14 +110,17 @@ for NR_BATCHES in [50, 100, 250, 500, 1000]:
             data_storage.Y[data_storage.labeled_mask],
         )
 
-        possible_batches = [
-            np.random.choice(
-                data_storage.unlabeled_mask,
-                size=NR_BATCHES,
-                replace=False,
-            )
-            for x in range(0, NR_BATCHES)
-        ]
+        if NR_BATCHES > len(data_storage.unlabeled_mask):
+            possible_batches = data_storage.unlabeled_mask
+        else:
+            possible_batches = [
+                np.random.choice(
+                    data_storage.unlabeled_mask,
+                    size=NR_BATCHES,
+                    replace=False,
+                )
+                for x in range(0, NR_BATCHES)
+            ]
 
         with parallel_backend("loky", n_jobs=multiprocessing.cpu_count()):
             future_peak_accs = Parallel()(
