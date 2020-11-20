@@ -44,14 +44,6 @@ def _calculate_furthest_lab_metric(batch_indices, data_storage, clf):
     )
 
 
-def _calculate_graph_density_metric(batch_indices, data_storage, clf):
-    return np.sum(
-        data_storage.graph_density[
-            _find_firsts(batch_indices, data_storage.initial_unlabeled_mask)
-        ]
-    )
-
-
 def _calculate_uncertainty_metric(batch_indices, data_storage, clf):
     Y_proba = clf.predict_proba(data_storage.X[batch_indices])
     margin = np.partition(-Y_proba, 1, axis=1)
@@ -94,7 +86,7 @@ for NR_BATCHES in [50, 100, 250, 500, 1000]:
             GENERATE_NOISE=True,
             HYPERCUBE=False,
             hyper_parameters={},
-            INITIAL_BATCH_SAMPLING_METHOD="graph_density",
+            INITIAL_BATCH_SAMPLING_METHOD="furthest",
         )
 
         # generate some pre-existent labels
@@ -139,7 +131,6 @@ for NR_BATCHES in [50, 100, 250, 500, 1000]:
             _calculate_furthest_metric,
             _calculate_uncertainty_metric,
             _calculate_furthest_lab_metric,
-            _calculate_graph_density_metric,
         ]:
             df.loc[len(df.index)] = [str(function) + str(NR_BATCHES)] + [
                 function(a, data_storage, clf) for a in possible_batches

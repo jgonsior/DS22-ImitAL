@@ -25,19 +25,15 @@ LIST_OF_BATCH_SAMPLING_METHODS = [
     ("random", -1),
     ("furthest", 50),
     ("furthest_lab", 50),
-    ("graph_density2", 50),
     #  ("uncertainty", 50),
     #  ("furthest", 100),
     #  ("furthest_lab", 100),
-    #  ("graph_density2", 100),
     #  ("uncertainty", 100),
     #  ("furthest", 500),
     #  ("furthest_lab", 500),
-    #  ("graph_density2", 500),
     #  ("uncertainty", 500),
     #  ("furthest", 1000),
     #  ("furthest_lab", 1000),
-    #  ("graph_density2", 1000),
     ("uncertainty", 1000),
 ]
 
@@ -48,7 +44,6 @@ if not config.SKIP_TRAINING_DATA_GENERATION:
             initial_batch_sampling_arg,
         ) in LIST_OF_BATCH_SAMPLING_METHODS:
             if BATCH_MODE == "single" and initial_batch_sampling_method in [
-                "graph_density2",
                 "furthest_lab",
                 "uncertainty",
             ]:
