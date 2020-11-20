@@ -37,6 +37,8 @@ def get_config():
             (["--TRAIN_STATE_DISTANCES_LAB"], {"action": "store_true"}),
             (["--TRAIN_STATE_DISTANCES_UNLAB"], {"action": "store_true"}),
             (["--TRAIN_STATE_PREDICTED_CLASS"], {"action": "store_true"}),
+            (["--TRAIN_STATE_DISTANCES"], {"action": "store_true"}),
+            (["--TRAIN_STATE_UNCERTAINTIES"], {"action": "store_true"}),
             (["--TRAIN_INITIAL_BATCH_SAMPLING_METHOD"], {"default": "random"}),
             (["--TRAIN_INITIAL_BATCH_SAMPLING_ARG"], {"type": int, "default": 100}),
             (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),

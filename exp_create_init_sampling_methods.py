@@ -1,3 +1,4 @@
+from itertools import combinations
 import copy
 import multiprocessing
 import random
@@ -74,10 +75,47 @@ def _future_peak(unlabeled_sample_indices, data_storage, clf):
     return accuracy_score(Y_pred_test, Y_true)
 
 
-for NR_BATCHES in [50, 100, 250, 500, 1000]:
+def _calculate_predicted_unity(unlabeled_sample_indices, data_storage, clf):
+    Y_pred = clf.predict(data_storage.X[unlabeled_sample_indices])
+    Y_pred_sorted = sorted(Y_pred)
+    count, unique = np.unique(Y_pred_sorted, return_counts=True)
+    Y_enc = []
+    for i, (c, u) in enumerate(
+        sorted(zip(count, unique), key=lambda t: t[1], reverse=True)
+    ):
+        Y_enc += [i + 1 for _ in range(0, u)]
+
+    Y_enc = np.array(Y_enc)
+    counts, unique = np.unique(Y_enc, return_counts=True)
+    disagreement_score = sum([c * u for c, u in zip(counts, unique)])
+    #  print(Y_pred, "\t -> \t", Y_enc, "\t: ", disagreement_score)
+    return disagreement_score
+
+
+#  for a in np.array(
+#      np.meshgrid(
+#          [1, 2, 3, 4, 5, 6, 7],
+#          [1, 2, 3, 4, 5, 6, 7],
+#          [1, 2, 3, 4, 5, 6, 7],
+#          [1, 2, 3, 4, 5, 6, 7],
+#      )
+#  ).T.reshape(-1, 4)[:30]:
+#      _calculate_predicted_unity(a, None, None)
+#  a = _calculate_predicted_unity(np.array([1, 1, 1, 1]), None, None)
+#  b = _calculate_predicted_unity(np.array([7, 7, 7, 7]), None, None)
+#  assert a == b
+#  c = _calculate_predicted_unity(np.array([1, 2, 3, 4]), None, None)
+#  assert a < c
+#  d = _calculate_predicted_unity(np.array([1, 2, 2, 4]), None, None)
+#  assert d < c
+#  e = _calculate_predicted_unity(np.array([1, 2, 2, 1]), None, None)
+#  assert e < d
+#  f = _calculate_predicted_unity(np.array([1, 3, 3, 3]), None, None)
+#  assert f < e
+#  exit(-1)
+
+for NR_BATCHES in [5, 50, 100, 250, 500, 1000]:
     for RANDOM_SEED in range(RANGE_START * 100, RANGE_START * 100 + 100):
-        print(RANDOM_SEED)
-        continue
         df = pd.DataFrame(
             [], columns=["source"] + [str(i) for i in range(0, NR_BATCHES)]
         )
@@ -140,6 +178,7 @@ for NR_BATCHES in [50, 100, 250, 500, 1000]:
             _calculate_furthest_metric,
             _calculate_uncertainty_metric,
             _calculate_furthest_lab_metric,
+            _calculate_predicted_unity,
         ]:
             df.loc[len(df.index)] = [str(function) + str(NR_BATCHES)] + [
                 function(a, data_storage, clf) for a in possible_batches
@@ -149,7 +188,6 @@ for NR_BATCHES in [50, 100, 250, 500, 1000]:
             "random" + str(NR_BATCHES)
         ] + _calculate_randomness_metric(NR_BATCHES, None, None).tolist()
 
-        print(df)
         if RANDOM_SEED == 0:
             df.to_csv(
                 OUTPUT_DIR + "/metric_test_" + str(NR_BATCHES) + ".csv",
