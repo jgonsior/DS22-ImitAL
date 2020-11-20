@@ -1,9 +1,8 @@
+import timeit
+from math import log, e
+
 import numpy as np
 from scipy.stats import entropy
-from math import log, e
-import pandas as pd
-
-import timeit
 from sklearn.metrics.cluster import entropy as sk_entropy
 
 

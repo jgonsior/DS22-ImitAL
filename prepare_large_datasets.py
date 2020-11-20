@@ -1,9 +1,8 @@
-import numpy as np
-from sklearn.preprocessing import LabelEncoder
-import os
 import glob
+import os
+
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import LabelEncoder
 
 parsing_dict = {
     "dwtc.csv": [",", 0, 0, "CLASS"],

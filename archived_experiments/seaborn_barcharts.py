@@ -1,10 +1,8 @@
-import numpy as np
-import matplotlib
-
 #  matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import seaborn as sns
+import numpy as np
 import pandas as pd
+import seaborn as sns
 
 sns.set(font_scale=1, rc={"text.usetex": False}, style="ticks", font="STIXGeneral")
 sns.set_palette("tab10")
@@ -52,7 +50,6 @@ df_1500 = pd.DataFrame(
         "percentage": [55.30, 86.40, 67.43],
     }
 )
-
 
 df_comparison_weak = pd.DataFrame(
     {

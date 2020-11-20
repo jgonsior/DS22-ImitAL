@@ -1,20 +1,9 @@
-from itertools import product
-import sys
-import math
-from queue import Queue
-from itertools import chain, combinations, permutations
-import pickle
-from tabulate import tabulate
-from IPython.core.display import display, HTML
-import pandas as pd
-import seaborn as sns
-import numpy as np
-from scipy.stats import norm
-import matplotlib.pyplot as plt
-from sklearn.base import BaseEstimator
-from sklearn.model_selection import RandomizedSearchCV, ShuffleSplit
-import locale
 import argparse
+import locale
+import sys
+
+import numpy as np
+import pandas as pd
 
 locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
 
@@ -23,13 +12,11 @@ parser.add_argument("--CSV_FILE", default="tmp/hyper_parameters.csv")
 parser.add_argument("--GROUP_COLUMNS", action="append")
 parser.add_argument("--VALUE_GROUPINGS")
 
-
 config = parser.parse_args()
 
 if len(sys.argv[:-1]) == 0:
     parser.print_help()
     parser.exit()
-
 
 df = pd.read_csv(config.CSV_FILE)
 accs = df["acc_test"].multiply(100)
@@ -38,7 +25,6 @@ print(mu)
 print(df.acc_test.std())
 
 shuffled_accs = [accs.sample(frac=1) for _ in range(0, 10)]
-
 
 for CUT in [10000]:  # [1000, 10000, 20000, 50000]:
     means = []

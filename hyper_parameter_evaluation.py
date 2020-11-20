@@ -1,21 +1,12 @@
-import itertools
-import os
-import math
-from pprint import pprint
-import glob
 import argparse
+import glob
+import itertools
 import locale
-import math
-import pickle
 import sys
-from itertools import chain, combinations
-from itertools import product
-from queue import Queue
 from collections import defaultdict
-import matplotlib.pyplot as plt
+
 import numpy as np
 import pandas as pd
-import seaborn as sns
 
 locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
 
@@ -25,7 +16,6 @@ parser.add_argument("--GROUP_COLUMNS", action="append")
 parser.add_argument("--VALUE_GROUPINGS")
 parser.add_argument("--SAVE_FILE", default=None)
 parser.add_argument("--TITLE", default="")
-
 
 config = parser.parse_args()
 

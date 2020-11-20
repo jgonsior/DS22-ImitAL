@@ -1,21 +1,16 @@
 import copy
+import multiprocessing
+import random
+
+import numpy as np
+import pandas as pd
 from joblib import Parallel, delayed, parallel_backend
 from numba import jit
-import random
-import math
-import pandas as pd
-import numpy as np
-import timeit
-from sklearn.datasets import make_classification
+from sklearn.metrics import pairwise_distances, accuracy_score
+from sklearn.neural_network import MLPClassifier
+
 from active_learning.dataStorage import DataStorage
 from active_learning.experiment_setup_lib import init_logger
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.neural_network import MLPClassifier
-from sklearn.metrics import pairwise_distances, accuracy_score
-import multiprocessing
-from active_learning.sampling_strategies.learnedBaseBatchSampling import (
-    LearnedBaseBatchSampling,
-)
 
 # let batches get ordered by different initial_batch_sampling_methodata_storage
 # compare that ranking to the optimum
@@ -46,14 +41,6 @@ def _calculate_furthest_lab_metric(batch_indices, data_storage, clf):
             data_storage.X[batch_indices],
             data_storage.X[data_storage.labeled_mask],
         )
-    )
-
-
-def _calculate_graph_density_metric(batch_indices, data_storage, clf):
-    return np.sum(
-        data_storage.graph_density[
-            _find_firsts(batch_indices, data_storage.initial_unlabeled_mask)
-        ]
     )
 
 
@@ -99,7 +86,7 @@ for NR_BATCHES in [50, 100, 250, 500, 1000]:
             GENERATE_NOISE=True,
             HYPERCUBE=False,
             hyper_parameters={},
-            INITIAL_BATCH_SAMPLING_METHOD="graph_density",
+            INITIAL_BATCH_SAMPLING_METHOD="furthest",
         )
 
         # generate some pre-existent labels
@@ -144,7 +131,6 @@ for NR_BATCHES in [50, 100, 250, 500, 1000]:
             _calculate_furthest_metric,
             _calculate_uncertainty_metric,
             _calculate_furthest_lab_metric,
-            _calculate_graph_density_metric,
         ]:
             df.loc[len(df.index)] = [str(function) + str(NR_BATCHES)] + [
                 function(a, data_storage, clf) for a in possible_batches

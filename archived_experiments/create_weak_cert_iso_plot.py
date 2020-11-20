@@ -1,5 +1,5 @@
-import seaborn as sns
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 #  sns.set(style="darkgrid")
 sns.set_style("white")
@@ -12,7 +12,6 @@ virginica = iris.query("species == 'virginica'")
 # Set up the figure
 f, ax = plt.subplots(figsize=(8, 8))
 ax.set_aspect("equal")
-
 
 # Draw the two density plots
 ax = sns.kdeplot(
