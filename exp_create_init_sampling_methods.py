@@ -93,7 +93,7 @@ for NR_BATCHES in [50, 100, 250, 500, 1000]:
             RANDOM_SEED,
             TEST_FRACTION=0,
             DATASET_NAME="synthetic",
-            VARIABLE_DATASET=False,
+            VARIABLE_DATASET=True,
             NEW_SYNTHETIC_PARAMS=False,
             AMOUNT_OF_FEATURES=100,
             GENERATE_NOISE=True,
