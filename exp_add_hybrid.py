@@ -22,17 +22,23 @@ from itertools import combinations
 df = pd.read_csv("metric_test_50.csv")
 
 # step 2: calculate correctnesses of rankings
-TOP_N = 20
+TOP_N = 5
 current_baseline = None
 AMOUNT_OF_METRICS = len(df.source.unique())
 NR_BATCHES = df.shape[1] - 1
-AMOUNT_OF_HYBRID_TO_BE_ADDED = 4
+AMOUNT_OF_HYBRID_TO_BE_ADDED = 5
 
 df["source"] = df["source"].apply(
     lambda x: x.replace("<function _calculate_", "").split(" at ")[0]
 )
 
 print("Done renaming source")
+
+#  make uncertainty positive, add 100 to it
+for index, row in df.iterrows():
+    if index % AMOUNT_OF_METRICS == 2:
+        df.loc[index, df.columns != "source"] += 100
+print("Done enhancing uncertainty")
 
 new_index = []
 print(AMOUNT_OF_METRICS)
@@ -68,26 +74,12 @@ def random_padding(hybrid):
     )
 
 
-#  make uncertainty positive, add 100 to it
-#  for index, row in df.iterrows():
-#      if index % AMOUNT_OF_METRICS == 2:
-#          df.loc[index, df.columns != "source"] += 100
-
 print("Done making uncertainty positive")
 print(df[0:30])
-for i in range(
-    0, math.ceil((len(df) / (AMOUNT_OF_METRICS + AMOUNT_OF_HYBRID_TO_BE_ADDED)))
-):
-    #  print(i)
+print(df.index)
+for i in range(0, math.ceil((len(df) / (AMOUNT_OF_METRICS)))):
     real_index = i * (AMOUNT_OF_METRICS + AMOUNT_OF_HYBRID_TO_BE_ADDED)
-    #  print(real_index)
-    #  print(df.loc[real_index + 1]["source"])
-    #  print(df.loc[real_index + 2]["source"])
-    #  print(df.loc[real_index + 3]["source"])
-    #  print(df.loc[real_index + 5]["source"])
-
-    #  print(df.loc[real_index]["source"])
-    top_future = (-df.loc[real_index].drop("source")).argsort(axis=0)[:TOP_N].tolist()
+    #  top_future = (-df.loc[real_index].drop("source")).argsort(axis=0)[:TOP_N].tolist()
 
     top_furthest = (
         (-df.loc[real_index + 1].drop("source")).argsort(axis=0)[:TOP_N].tolist()
@@ -99,44 +91,41 @@ for i in range(
         (-df.loc[real_index + 3].drop("source")).argsort(axis=0)[:TOP_N].tolist()
     )
 
-    hybrid1 = list(set(top_furthest_lab[:20]))
-    df.loc[real_index + AMOUNT_OF_METRICS] = ["hybrid1"] + [
+    hybrid1 = list(set(top_furthest[:TOP_N]))
+    df.loc[real_index + AMOUNT_OF_METRICS] = ["hybrid1_furthest100"] + [
         1 if i in hybrid1 + random_padding(hybrid1) else 0 for i in range(0, NR_BATCHES)
     ]
 
-    #  hybrid2 = list(set(top_furthest[-10:] + top_uncert[-5:]))
-    hybrid2 = list(set(top_furthest[:20]))
-    df.loc[real_index + AMOUNT_OF_METRICS + 1] = ["hybrid2"] + [
+    hybrid2 = list(set(top_furthest[: int(TOP_N / 2)] + top_uncert[: int(TOP_N / 2)]))
+    df.loc[real_index + AMOUNT_OF_METRICS + 1] = ["hybrid2_furthest_50_uncert_50"] + [
         1 if i in hybrid2 + random_padding(hybrid2) else 0 for i in range(0, NR_BATCHES)
     ]
-    #  hybrid3 = list(set(top_furthest_lab[-10:] + top_uncert[-5:]))
-    hybrid3 = list(set(top_future[:20]))
-    df.loc[real_index + AMOUNT_OF_METRICS + 2] = ["hybrid3"] + [
+    hybrid3 = list(
+        set(top_furthest[: int(TOP_N * 1 / 4)] + top_uncert[: int(TOP_N * 3 / 4)])
+    )
+    df.loc[real_index + AMOUNT_OF_METRICS + 2] = ["hybrid3_furthest25_uncert_75"] + [
         1 if i in hybrid3 + random_padding(hybrid3) else 0 for i in range(0, NR_BATCHES)
     ]
-    #  hybrid4 = list(set(top_furthest_lab[-3:] + top_furthest[-3:] + top_uncert[-5:]))
-    hybrid4 = list()
-    df.loc[real_index + AMOUNT_OF_METRICS + 3] = ["hybrid4"] + [
+    hybrid5 = list(
+        set(top_furthest[: int(TOP_N * 3 / 4)] + top_uncert[: int(TOP_N * 1 / 4)])
+    )
+    df.loc[real_index + AMOUNT_OF_METRICS + 4] = ["hybrid5_furthest75_uncert_25"] + [
+        1 if i in hybrid5 + random_padding(hybrid5) else 0 for i in range(0, NR_BATCHES)
+    ]
+
+    hybrid4 = list(
+        set(
+            top_furthest_lab[: int(TOP_N / 3)]
+            + top_furthest[: int(TOP_N / 3)]
+            + top_uncert[: int(TOP_N / 3)]
+        )
+    )
+    df.loc[real_index + AMOUNT_OF_METRICS + 3] = [
+        "hybrid4_furthest33_furthestlab33_uncert33"
+    ] + [
         1 if i in hybrid4 + random_padding(hybrid4) else 0 for i in range(0, NR_BATCHES)
     ]
 
-    #  print(df.loc[real_index])
-    #  print(sorted(top_future))
-    #  print(len(hybrid3))
-    #  print(random_padding(hybrid3))
-    #  print([1 if i in top_future else 0 for i in range(0, NR_BATCHES)])
-    #  print(df.loc[real_index + AMOUNT_OF_METRICS + 2].drop("source").tolist())
-    #  print([1 if i in top_furthest else 0 for i in range(0, NR_BATCHES)])
-    #  print(df.loc[real_index + AMOUNT_OF_METRICS + 1].drop("source").tolist())
-    #  print([1 if i in top_uncert else 0 for i in range(0, NR_BATCHES)])
-    #  print(df.loc[real_index + AMOUNT_OF_METRICS + 2].drop("source").tolist())
-    #  exit(-1)
-
-    #  print("hybride:")
-    #  print(sorted(hybrid1))
-    #  print(sorted(hybrid2))
-    #  print(sorted(hybrid3))
-    #  print(sorted(hybrid4))
     #  if i > 10:
     #      break
 df.sort_index(inplace=True)

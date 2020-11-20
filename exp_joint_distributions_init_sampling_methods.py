@@ -20,30 +20,13 @@ from itertools import combinations, combinations_with_replacement, product
 #  df = pd.read_csv("metric_test_small.csv")
 #  df = pd.read_csv("metric_test_50.csv")
 df = pd.read_csv("metric_hybrid.csv")
+#  df = pd.read_csv("metric_hybrid_binary.csv")
 print("Done reading csv")
 # step 2: calculate correctnesses of rankings
 TOP_N = 20
 AMOUNT_OF_METRICS = len(df.source.unique())
 NR_BATCHES = df.shape[1] - 1
 current_baseline = None
-
-
-def _binarize_targets(df, TOP_N=5):
-    df = df.to_frame()
-    #  print(df.to_numpy())
-    #  print("thres", np.sort(np.reshape(df.values, NR_BATCHES))[-TOP_N : -(TOP_N - 1)])
-    df["threshold"] = [
-        np.sort(np.reshape(df.values, NR_BATCHES))[-TOP_N : -(TOP_N - 1)]
-        for _ in range(0, NR_BATCHES)
-    ]
-
-    for column_name in df.columns:
-        if column_name == "threshold":
-            continue
-        df[column_name].loc[df[column_name] < df.threshold] = 0
-        df[column_name].loc[df[column_name] >= df.threshold] = 1
-    del df["threshold"]
-    return np.reshape(df.to_numpy(), (1, NR_BATCHES))
 
 
 def _jac_score(a, b):
