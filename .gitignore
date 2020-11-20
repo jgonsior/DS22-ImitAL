@@ -178,4 +178,4 @@ node_modules/
 pickles/
 old_results.pickle
 training_data/
-metric_test*
+*.csv
