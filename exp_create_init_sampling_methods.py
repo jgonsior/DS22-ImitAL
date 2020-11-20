@@ -20,6 +20,7 @@ init_logger("console")
 #  NR_ITERATIONS = 10000
 
 RANGE_START = int(sys.argv[1])
+OUTPUT_DIR = sys.argv[2]
 
 
 @jit(nopython=True)
@@ -74,7 +75,9 @@ def _future_peak(unlabeled_sample_indices, data_storage, clf):
 
 
 for NR_BATCHES in [50, 100, 250, 500, 1000]:
-    for RANDOM_SEED in range(RANGE_START, RANGE_START + 100):
+    for RANDOM_SEED in range(RANGE_START * 100, RANGE_START * 100 + 100):
+        print(RANDOM_SEED)
+        continue
         df = pd.DataFrame(
             [], columns=["source"] + [str(i) for i in range(0, NR_BATCHES)]
         )
@@ -149,11 +152,13 @@ for NR_BATCHES in [50, 100, 250, 500, 1000]:
         print(df)
         if RANDOM_SEED == 0:
             df.to_csv(
-                "metric_test_" + str(NR_BATCHES) + ".csv", index=False, header=True
+                OUTPUT_DIR + "/metric_test_" + str(NR_BATCHES) + ".csv",
+                index=False,
+                header=True,
             )
         else:
             df.to_csv(
-                "metric_test_" + str(NR_BATCHES) + ".csv",
+                OUTPUT_DIR + "/metric_test_" + str(NR_BATCHES) + ".csv",
                 index=False,
                 mode="a",
                 header=False,
