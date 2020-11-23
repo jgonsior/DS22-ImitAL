@@ -301,27 +301,9 @@ for DATASET_NAME in [
 
     METRIC_TABLE_SUMMARY = config.FINAL_PICTURE + "_" + DATASET_NAME + "_" "table.txt"
 
-    def plot_all_metrics_as_a_table():
+    def plot_all_metrics_as_a_table(df):
         sources = []
-        df = pd.read_csv(
-            EVALUATION_FILE_TRAINED_NN_PATH,
-            index_col=None,
-            nrows=1 + config.TEST_NR_LEARNING_SAMPLES,
-        )
-        sources.append(df["sampling"][0])
-
-        for comparison in config.TEST_COMPARISONS:
-            df2 = pd.read_csv(
-                PARENT_OUTPUT_DIRECTORY
-                + "classics/"
-                + comparison
-                + test_base_param_string
-                + ".csv",
-                index_col=None,
-                nrows=1 + config.TEST_NR_LEARNING_SAMPLES,
-            )
-            sources.append(df2["sampling"][0])
-            df = pd.concat([df, df2])
+        source = df["sampling"].unique()
 
         metrics = [
             "acc_auc",
@@ -388,10 +370,12 @@ for DATASET_NAME in [
                 )
             )
 
+    df = pd.read_csv(comparison_path, index_col=None)
     run_code_experiment(
         "Printing dataset_metrics",
         METRIC_TABLE_SUMMARY,
         code=plot_all_metrics_as_a_table,
+        code_kwargs={"df": df},
     )
     test_base_param_string = original_test_base_param_string
     #  exit(-1)
