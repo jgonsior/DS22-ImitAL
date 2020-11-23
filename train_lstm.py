@@ -1,3 +1,4 @@
+from tensorflow import keras
 import argparse
 import os
 import random
@@ -176,6 +177,34 @@ def spearman_loss(Y_true, Y_pred):
     )
 
 
+def get_clf(
+    input_size,
+    output_size,
+    activation="relu",
+    regular_dropout_rate=0.2,
+    optimizer="Adam",
+    nr_hidden_layers=3,
+    nr_hidden_neurons=20,
+    kernel_initializer="glorot_uniform",
+    loss="MeanSquaredError",
+    epochs=1,
+    batch_size=1,
+):
+    model = keras.models.Sequential()
+    model.add(keras.layers.Input(shape=(input_size,)))
+    for _ in range(0, nr_hidden_layers):
+        model.add(
+            keras.layers.Dense(
+                nr_hidden_neurons,
+                activation=activation,
+                kernel_initializer=kernel_initializer,
+            )
+        )
+        model.add(keras.layers.Dropout(regular_dropout_rate))
+    model.add(keras.layers.Dense(output_size, activation="sigmoid"))
+    return model
+
+
 def build_nn(
     X,
     activation="relu",
@@ -328,7 +357,9 @@ if config.HYPER_SEARCH:
 
 else:
     model = KerasRegressor(
-        build_fn=build_nn,
+        model=get_clf,
+        input_size=X_train.shape[1:],
+        output_size=len(Y_train.columns),
         verbose=0,
         activation=config.ACTIVATION,
         validation_split=0.3,
