@@ -76,40 +76,28 @@ if config.RANDOM_SEED == -2:
 else:
     random_but_not_random = False
 
+
 init_logger(config.LOG_FILE)
-for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
+
+config = vars(config)
+for i in range(0, config["AMOUNT_OF_LEARN_ITERATIONS"]):
 
     if random_but_not_random:
-        config.RANDOM_SEED = random.randint(0, 2147483647)
+        config["RANDOM_SEED"] = random.randint(0, 2147483647)
         np.random.seed(config.RANDOM_SEED)
         random.seed(config.RANDOM_SEED)
-
-    hyper_parameters = vars(config)
 
     log_it("Learn iteration {}".format(i))
 
     data_storage = DataStorage(
-        RANDOM_SEED=hyper_parameters["RANDOM_SEED"],
-        hyper_parameters=hyper_parameters,
         df=None,
-        TEST_FRACTION=hyper_parameters["TEST_FRACTION"],
-        DATASET_NAME=hyper_parameters["DATASET_NAME"],
-        DATASETS_PATH=hyper_parameters["DATASETS_PATH"],
-        PLOT_EVOLUTION=hyper_parameters["PLOT_EVOLUTION"],
-        VARIABLE_DATASET=hyper_parameters["VARIABLE_DATASET"],
-        NEW_SYNTHETIC_PARAMS=hyper_parameters["NEW_SYNTHETIC_PARAMS"],
-        HYPERCUBE=hyper_parameters["HYPERCUBE"],
-        AMOUNT_OF_FEATURES=hyper_parameters["AMOUNT_OF_FEATURES"],
-        GENERATE_NOISE=hyper_parameters["GENERATE_NOISE"],
-        INITIAL_BATCH_SAMPLING_METHOD=hyper_parameters["INITIAL_BATCH_SAMPLING_METHOD"]
-        #  hyper_parameters["START_SET_SIZE"],
-        #  hyper_parameters["TEST_FRACTION"],
+        **config,
     )
 
-    if hyper_parameters["STOP_AFTER_MAXIMUM_ACCURACY_REACHED"]:
+    if config["STOP_AFTER_MAXIMUM_ACCURACY_REACHED"]:
         # calculate maximum theoretical accuracy
         tmp_clf = get_classifier(
-            hyper_parameters["CLASSIFIER"], random_state=hyper_parameters["RANDOM_SEED"]
+            config["CLASSIFIER"], random_state=config["RANDOM_SEED"]
         )
 
         tmp_clf.fit(
@@ -128,19 +116,19 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
         THEORETICALLY_BEST_ACHIEVABLE_ACCURACY = (
             accuracy_score(data_storage.Y[data_storage.test_mask], tmp_Y_pred) * 0.95
         )
-        hyper_parameters[
+        config[
             "THEORETICALLY_BEST_ACHIEVABLE_ACCURACY"
         ] = THEORETICALLY_BEST_ACHIEVABLE_ACCURACY
 
-    hyper_parameters["LEN_TRAIN_DATA"] = len(data_storage.unlabeled_mask) + len(
+    config["LEN_TRAIN_DATA"] = len(data_storage.unlabeled_mask) + len(
         data_storage.labeled_mask
     )
     cluster_strategy = DummyClusterStrategy()
-    cluster_strategy.set_data_storage(data_storage, hyper_parameters["N_JOBS"])
+    cluster_strategy.set_data_storage(data_storage, config["N_JOBS"])
     classifier = get_classifier(
-        hyper_parameters["CLASSIFIER"],
-        n_jobs=hyper_parameters["N_JOBS"],
-        random_state=hyper_parameters["RANDOM_SEED"],
+        config["CLASSIFIER"],
+        n_jobs=config["N_JOBS"],
+        random_state=config["RANDOM_SEED"],
     )
 
     weak_supervision_label_sources = []
@@ -150,43 +138,21 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
     active_learner_params = {
         "data_storage": data_storage,
         "cluster_strategy": cluster_strategy,
-        "N_JOBS": hyper_parameters["N_JOBS"],
-        "RANDOM_SEED": hyper_parameters["RANDOM_SEED"],
-        "NR_LEARNING_ITERATIONS": hyper_parameters["NR_LEARNING_ITERATIONS"],
-        "NR_QUERIES_PER_ITERATION": hyper_parameters["NR_QUERIES_PER_ITERATION"],
         "oracle": oracle,
         "clf": classifier,
         "weak_supervision_label_sources": weak_supervision_label_sources,
     }
 
-    if config.SAMPLING == "single":
-        active_learner = ImitationLearner(**active_learner_params)
-    elif config.SAMPLING == "batch":
-        active_learner = ImitationBatchLearner(**active_learner_params)
-    active_learner.set_amount_of_peaked_objects(
-        hyper_parameters["AMOUNT_OF_PEAKED_OBJECTS"],
-    )
-
-    active_learner.init_sampling_classifier(
-        DATA_PATH=hyper_parameters["OUTPUT_DIRECTORY"],
-        STATE_DISTANCES_LAB=hyper_parameters["STATE_DISTANCES_LAB"],
-        STATE_DISTANCES_UNLAB=hyper_parameters["STATE_DISTANCES_UNLAB"],
-        STATE_DIFF_PROBAS=hyper_parameters["STATE_DIFF_PROBAS"],
-        STATE_ARGTHIRD_PROBAS=hyper_parameters["STATE_ARGTHIRD_PROBAS"],
-        STATE_PREDICTED_CLASS=hyper_parameters["STATE_PREDICTED_CLASS"],
-        STATE_ARGSECOND_PROBAS=hyper_parameters["STATE_ARGSECOND_PROBAS"],
-        INITIAL_BATCH_SAMPLING_METHOD=hyper_parameters["INITIAL_BATCH_SAMPLING_METHOD"],
-        INITIAL_BATCH_SAMPLING_ARG=hyper_parameters["INITIAL_BATCH_SAMPLING_ARG"],
-    )
-    active_learner.MAX_AMOUNT_OF_WS_PEAKS = hyper_parameters["MAX_AMOUNT_OF_WS_PEAKS"]
+    if config["SAMPLING"] == "single":
+        active_learner = ImitationLearner(**active_learner_params, **config)
+    elif config["SAMPLING"] == "batch":
+        active_learner = ImitationBatchLearner(**active_learner_params, **config)
 
     start = timer()
-    trained_active_clf_list, metrics_per_al_cycle = active_learner.learn(
-        **hyper_parameters
-    )
+    trained_active_clf_list, metrics_per_al_cycle = active_learner.learn()
     end = timer()
 
-    active_learner.save_nn_training_data(hyper_parameters["OUTPUT_DIRECTORY"])
+    active_learner.save_nn_training_data(config["OUTPUT_DIRECTORY"])
 
 eval_al(
     data_storage,
@@ -194,5 +160,5 @@ eval_al(
     end - start,
     metrics_per_al_cycle,
     active_learner,
-    hyper_parameters,
+    config,
 )
