@@ -166,7 +166,10 @@ def run_python_experiment(
 ):
     def code(CLI_COMMAND):
         for k, v in CLI_ARGUMENTS.items():
-            CLI_COMMAND += " --" + k + " " + str(v)
+            if str(v) == "True":
+                CLI_COMMAND += " --" + k
+            else:
+                CLI_COMMAND += " --" + k + " " + str(v)
 
         if SAVE_ARGUMENT_JSON:
             with open(OUTPUT_FILE + "_params.json", "w") as f:
