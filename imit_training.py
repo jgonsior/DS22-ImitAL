@@ -23,37 +23,62 @@ from fake_experiment_oracle import FakeExperimentOracle
 config = get_active_config()
 
 if not os.path.isfile(config.OUTPUT_DIRECTORY + "/states.csv"):
-    columns = [
-        str(i) + "_proba_argfirst" for i in range(config.AMOUNT_OF_PEAKED_OBJECTS)
-    ]
-    if config.STATE_ARGSECOND_PROBAS:
-        columns += [
-            str(i) + "_proba_argsecond"
-            for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
+    if config.SAMPLING == "single":
+        columns = [
+            str(i) + "_proba_argfirst" for i in range(config.AMOUNT_OF_PEAKED_OBJECTS)
         ]
-    if config.STATE_DIFF_PROBAS:
-        columns += [
-            str(i) + "_proba_diff" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
-        ]
-    if config.STATE_ARGTHIRD_PROBAS:
-        columns += [
-            str(i) + "_proba_argthird"
-            for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
-        ]
-    if config.STATE_PREDICTED_CLASS:
-        columns += [
-            str(i) + "_pred_class" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
-        ]
-    if config.STATE_DISTANCES_LAB:
-        columns += [
-            str(i) + "_proba_avg_dist_lab"
-            for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
-        ]
-    if config.STATE_DISTANCES_UNLAB:
-        columns += [
-            str(i) + "_proba_avg_dist_unlab"
-            for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
-        ]
+        if config.STATE_ARGSECOND_PROBAS:
+            columns += [
+                str(i) + "_proba_argsecond"
+                for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
+            ]
+        if config.STATE_DIFF_PROBAS:
+            columns += [
+                str(i) + "_proba_diff"
+                for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
+            ]
+        if config.STATE_ARGTHIRD_PROBAS:
+            columns += [
+                str(i) + "_proba_argthird"
+                for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
+            ]
+        if config.STATE_PREDICTED_CLASS:
+            columns += [
+                str(i) + "_pred_class"
+                for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
+            ]
+        if config.STATE_DISTANCES_LAB:
+            columns += [
+                str(i) + "_proba_avg_dist_lab"
+                for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
+            ]
+        if config.STATE_DISTANCES_UNLAB:
+            columns += [
+                str(i) + "_proba_avg_dist_unlab"
+                for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
+            ]
+    else:
+        columns = []
+        if config.STATE_UNCERTAINTIES:
+            columns += [
+                str(i) + "_avg_uncert"
+                for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
+            ]
+
+        if config.STATE_DISTANCES:
+            columns += [
+                str(i) + "_avg_dist" for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
+            ]
+        if config.STATE_DISTANCES_LAB:
+            columns += [
+                str(i) + "_avg_dist_lab"
+                for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
+            ]
+        if config.STATE_PREDICTED_UNITY:
+            columns += [
+                str(i) + "_avg_pred_unity"
+                for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
+            ]
 
     states = pd.DataFrame(data=None, columns=columns)
 
