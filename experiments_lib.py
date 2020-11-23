@@ -39,6 +39,7 @@ def get_config():
             (["--TRAIN_STATE_PREDICTED_CLASS"], {"action": "store_true"}),
             (["--TRAIN_STATE_DISTANCES"], {"action": "store_true"}),
             (["--TRAIN_STATE_UNCERTAINTIES"], {"action": "store_true"}),
+            (["--TRAIN_STATE_PREDICTED_UNITY"], {"action": "store_true"}),
             (["--TRAIN_INITIAL_BATCH_SAMPLING_METHOD"], {"default": "random"}),
             (["--TRAIN_INITIAL_BATCH_SAMPLING_ARG"], {"type": int, "default": 100}),
             (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
@@ -70,6 +71,7 @@ def get_config():
             (["--COMPARE_ALL_FOLDERS"], {"action": "store_true"}),
             (["--INITIAL_BATCH_SAMPLING_METHOD"], {"default": "furthest"}),
             (["--INITIAL_BATCH_SAMPLING_ARG"], {"default": "100"}),
+            (["--BATCH_MODE"], {"action": "store_true"}),
         ],
         standard_args=False,
         return_argparse=True,
@@ -97,6 +99,7 @@ def get_config():
         "START_SET_SIZE": 1,
         "USER_QUERY_BUDGET_LIMIT": config.USER_QUERY_BUDGET_LIMIT,
         "N_JOBS": 1,
+        "BATCH_MODE": config.BATCH_MODE,
     }
 
     evaluation_arguments = {

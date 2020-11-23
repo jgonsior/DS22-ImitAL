@@ -23,7 +23,7 @@ from fake_experiment_oracle import FakeExperimentOracle
 config = get_active_config()
 
 if not os.path.isfile(config.OUTPUT_DIRECTORY + "/states.csv"):
-    if config.SAMPLING == "single":
+    if not config.BATCH_MODE:
         columns = [
             str(i) + "_proba_argfirst" for i in range(config.AMOUNT_OF_PEAKED_OBJECTS)
         ]
@@ -168,10 +168,10 @@ for i in range(0, config["AMOUNT_OF_LEARN_ITERATIONS"]):
         "weak_supervision_label_sources": weak_supervision_label_sources,
     }
 
-    if config["SAMPLING"] == "single":
-        active_learner = ImitationLearner(**active_learner_params, **config)
-    elif config["SAMPLING"] == "batch":
+    if config["BATCH_MODE"]:
         active_learner = ImitationBatchLearner(**active_learner_params, **config)
+    else:
+        active_learner = ImitationLearner(**active_learner_params, **config)
 
     start = timer()
     trained_active_clf_list, metrics_per_al_cycle = active_learner.learn()

@@ -349,8 +349,6 @@ else:
     fitted_model = model.fit(
         X=X_train,
         y=Y_train,
-        epochs=config.EPOCHS,
-        batch_size=config.BATCH_SIZE,
     )
 
     #  Y_pred = fitted_model.predict(X_test)
