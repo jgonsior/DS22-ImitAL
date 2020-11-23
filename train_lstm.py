@@ -1,3 +1,4 @@
+import json
 from tensorflow import keras
 import argparse
 import os
@@ -191,7 +192,7 @@ def get_clf(
     batch_size=1,
 ):
     model = keras.models.Sequential()
-    model.add(keras.layers.Input(shape=(input_size,)))
+    model.add(keras.layers.Input(shape=input_size))
     for _ in range(0, nr_hidden_layers):
         model.add(
             keras.layers.Dense(
@@ -311,14 +312,15 @@ if config.HYPER_SEARCH:
     }
 
     model = KerasRegressor(
-        build_fn=build_nn,
+        model=get_clf,
+        input_size=X_train.shape[1:],
+        output_size=len(Y_train.columns),
         verbose=2,
         activation=None,
         validation_split=0.3,
         loss=None,
         regular_dropout_rate=None,
         nr_hidden_layers=None,
-        nr_epochs=None,
         nr_hidden_neurons=None,
         optimizer=None,
         epochs=None,
@@ -351,8 +353,9 @@ if config.HYPER_SEARCH:
 
     with open(config.DATA_PATH + "/hyper_results.txt", "w") as handle:
         handle.write(str(fitted_model.best_score_))
-        handle.write(str(fitted_model.best_params_))
         handle.write(str(fitted_model.cv_results_))
+        handle.write("\n" * 5)
+        handle.write(json.dumps(fitted_model.best_params_))
 
 
 else:

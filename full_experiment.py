@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import numpy as np
@@ -62,6 +63,34 @@ if not config.SKIP_TRAINING_DATA_GENERATION:
 if config.ONLY_TRAINING_DATA:
     exit(1)
 
+HYPER_SEARCH_OUTPUT_FILE = (
+    config.OUTPUT_DIRECTORY + train_base_param_string + "/hyper_results.txt"
+)
+run_python_experiment(
+    "ANN hyper_search",
+    HYPER_SEARCH_OUTPUT_FILE,
+    CLI_COMMAND="python train_lstm.py",
+    CLI_ARGUMENTS={
+        "DATA_PATH": config.OUTPUT_DIRECTORY + train_base_param_string,
+        "STATE_ENCODING": "listwise",
+        "TARGET_ENCODING": "binary",
+        "SAVE_DESTINATION": config.OUTPUT_DIRECTORY
+        + train_base_param_string
+        + "/trained_ann.pickle",
+        "RANDOM_SEED": 1,
+        "HYPER_SEARCH": True,
+        "N_ITER": config.NR_ANN_HYPER_SEARCH_ITERATIONS,
+    },
+)
+
+with open(HYPER_SEARCH_OUTPUT_FILE, "r") as f:
+    lines = f.read().splitlines()
+    last_line = lines[-1]
+    lower_params = json.loads(last_line)
+    ANN_HYPER_PARAMS = {}
+    for k, v in lower_params.items():
+        ANN_HYPER_PARAMS[k.upper()] = v
+
 run_python_experiment(
     "Train ANN",
     config.OUTPUT_DIRECTORY + train_base_param_string + "/trained_ann.pickle",
@@ -73,14 +102,14 @@ run_python_experiment(
         "SAVE_DESTINATION": config.OUTPUT_DIRECTORY
         + train_base_param_string
         + "/trained_ann.pickle",
-        "REGULAR_DROPOUT_RATE": 0.1,
-        "OPTIMIZER": "Nadam",
-        "NR_HIDDEN_NEURONS": config.NR_HIDDEN_NEURONS,
-        "NR_HIDDEN_LAYERS": 2,
-        "LOSS": "MeanSquaredError",
-        "EPOCHS": 10000,
-        "BATCH_SIZE": 32,
-        "ACTIVATION": "tanh",
+        "REGULAR_DROPOUT_RATE": ANN_HYPER_PARAMS["REGULAR_DROPOUT_RATE"],
+        "OPTIMIZER": ANN_HYPER_PARAMS["OPTIMIZER"],
+        "NR_HIDDEN_NEURONS": ANN_HYPER_PARAMS["NR_HIDDEN_NEURONS"],
+        "NR_HIDDEN_LAYERS": ANN_HYPER_PARAMS["NR_HIDDEN_LAYERS"],
+        "LOSS": ANN_HYPER_PARAMS["LOSS"],
+        "EPOCHS": ANN_HYPER_PARAMS["EPOCHS"],
+        "BATCH_SIZE": ANN_HYPER_PARAMS["BATCH_SIZE"],
+        "ACTIVATION": ANN_HYPER_PARAMS["ACTIVATION"],
         "RANDOM_SEED": 1,
     },
 )
@@ -184,7 +213,9 @@ for DATASET_NAME in [
             index_col=None,
             nrows=1 + config.TEST_NR_LEARNING_SAMPLES,
         )
-        df["sampling"] = "Imitation Learned Neural Network"
+        df["sampling"] = "Imitation Learned Neural Network " + str(
+            config.BASE_PARAM_STRING
+        )
 
         if config.INCLUDE_OPTIMAL_IN_PLOT or config.INCLUDE_ONLY_OPTIMAL_IN_PLOT:
             optimal_df = pd.read_csv(
