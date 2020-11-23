@@ -114,6 +114,46 @@ run_python_experiment(
     },
 )
 
+if config.INCLUDE_OPTIMAL_IN_PLOT or config.INCLUDE_ONLY_OPTIMAL_IN_PLOT:
+    OPTIMAL_OUTPUT_FILE = PARENT_OUTPUT_DIRECTORY + train_base_param_string + "_optimal"
+    run_parallel_experiment(
+        "Optimal evaluation",
+        OUTPUT_FILE=OPTIMAL_OUTPUT_FILE + "/dataset_creation.csv",
+        CLI_COMMAND="python imit_training.py",
+        CLI_ARGUMENTS={
+            "DATASETS_PATH": "../datasets",
+            "CLASSIFIER": config.TRAIN_CLASSIFIER,
+            "OUTPUT_DIRECTORY": OPTIMAL_OUTPUT_FILE,
+            "DATASET_NAME": "synthetic",
+            "SAMPLING": "trained_nn",
+            "AMOUNT_OF_PEAKED_OBJECTS": config.TRAIN_AMOUNT_OF_PEAKED_SAMPLES,
+            "MAX_AMOUNT_OF_WS_PEAKS": 0,
+            "AMOUNT_OF_LEARN_ITERATIONS": 1,
+            "AMOUNT_OF_FEATURES": config.TRAIN_AMOUNT_OF_FEATURES,
+            "VARIABLE_DATASET": config.TRAIN_VARIABLE_DATASET,
+            "NEW_SYNTHETIC_PARAMS": config.TRAIN_NEW_SYNTHETIC_PARAMS,
+            "HYPERCUBE": config.TRAIN_HYPERCUBE,
+            "STOP_AFTER_MAXIMUM_ACCURACY_REACHED": config.TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED,
+            "GENERATE_NOISE": config.TRAIN_GENERATE_NOISE,
+            "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
+            "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
+            "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
+            "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
+            "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
+            "STATE_DIFF_PROBAS": config.TRAIN_STATE_DIFF_PROBAS,
+            "STATE_DISTANCES": config.TRAIN_STATE_DISTANCES,
+            "STATE_UNCERTAINTIES": config.TRAIN_STATE_UNCERTAINTIES,
+            "INITIAL_BATCH_SAMPLING_METHOD": config.INITIAL_BATCH_SAMPLING_METHOD,
+            "INITIAL_BATCH_SAMPLING_ARG": config.INITIAL_BATCH_SAMPLING_ARG,
+            **shared_arguments,
+        },
+        PARALLEL_OFFSET=100000,
+        PARALLEL_AMOUNT=config.TRAIN_NR_LEARNING_SAMPLES,
+        OUTPUT_FILE_LENGTH=config.TRAIN_NR_LEARNING_SAMPLES,
+        RESTART_IF_NOT_ENOUGH_SAMPLES=True,
+    )
+    OPTIMAL_OUTPUT_FILE += "/dataset_creation.csv"
+
 for DATASET_NAME in [
     #  "emnist-byclass-test",
     "synthetic",
@@ -218,11 +258,7 @@ for DATASET_NAME in [
         )
 
         if config.INCLUDE_OPTIMAL_IN_PLOT or config.INCLUDE_ONLY_OPTIMAL_IN_PLOT:
-            optimal_df = pd.read_csv(
-                PARENT_OUTPUT_DIRECTORY[:-1]
-                + config.BASE_PARAM_STRING
-                + "/dataset_creation.csv"
-            )
+            optimal_df = pd.read_csv(OPTIMAL_OUTPUT_FILE)
             optimal_df["sampling"] = "Optimal Strategy"
             df = pd.concat([df, optimal_df])
 
