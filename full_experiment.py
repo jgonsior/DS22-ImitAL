@@ -303,7 +303,7 @@ for DATASET_NAME in [
 
     def plot_all_metrics_as_a_table(df):
         sources = []
-        source = df["sampling"].unique()
+        sources = df["sampling"].unique()
 
         metrics = [
             "acc_auc",
