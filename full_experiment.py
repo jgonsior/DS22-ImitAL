@@ -223,7 +223,7 @@ for DATASET_NAME in [
             PARENT_OUTPUT_DIRECTORY
             + "classics/"
             + comparison
-            + test_base_param_string
+            #  + test_base_param_string
             + ".csv"
         )
         run_parallel_experiment(
@@ -243,7 +243,7 @@ for DATASET_NAME in [
     if config.FINAL_PICTURE == "":
         comparison_path = (
             PARENT_OUTPUT_DIRECTORY
-            + test_base_param_string
+            #  + test_base_param_string
             + "_".join(config.TEST_COMPARISONS)
             + ".csv"
         )
@@ -270,10 +270,8 @@ for DATASET_NAME in [
 
         for comparison in config.TEST_COMPARISONS:
             df2 = pd.read_csv(
-                PARENT_OUTPUT_DIRECTORY
-                + "classics/"
-                + comparison
-                + test_base_param_string
+                PARENT_OUTPUT_DIRECTORY + "classics/" + comparison
+                #  + test_base_param_string
                 + ".csv",
                 index_col=None,
                 nrows=1 + config.TEST_NR_LEARNING_SAMPLES,
