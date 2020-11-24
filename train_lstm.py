@@ -45,6 +45,7 @@ parser.add_argument("--BATCH_SIZE", type=int, default=32)
 parser.add_argument("--N_ITER", type=int, default=100)
 parser.add_argument("--ACTIVATION", type=str, default="elu")
 parser.add_argument("--HYPER_SEARCH", action="store_true")
+parser.add_argument("--NR_QUERIES_PER_ITERATION", type=int, default=5)
 parser.add_argument(
     "--STATE_ENCODING",
     type=str,
@@ -156,6 +157,27 @@ else:
 
 # train/test/val split, verschiedene encodings und hyperparameterkombis für das ANN ausprobieren
 
+
+# normalise batch stuff
+# uncertainty:  -5 bis 0
+# distance:     1 bis 24?!
+# pred_unity:   5 bis 15?!
+mini = 10000
+maxi = -10000
+
+for i in range(0, 19):
+    mini = min(states[str(i) + "_avg_pred_unity"].min(), mini)
+    maxi = max(states[str(i) + "_avg_pred_unity"].max(), maxi)
+    print(states[str(i) + "_avg_pred_unity"])
+print(mini)
+print(maxi)
+
+df2 = pd.read_csv(
+    "../datasets/short_test/furthest/dataset_creation.csv", index_col=None
+)
+print(df2["n_classes"])
+#  print(optimal_policies)
+exit(-1)
 
 X_train, X_test, Y_train, Y_test = train_test_split(
     states, optimal_policies, test_size=0.33
@@ -293,9 +315,9 @@ if config.HYPER_SEARCH:
             1300,
             1500,
         ],  # [160, 240, 480, 720, 960],
-        "epochs": [10000],  # <- early stopping :)
-        "nr_hidden_layers": [2, 4],  # 16, 32, 64, 96, 128],  # , 2],
-        "batch_size": [16, 32, 64],  # , 128],
+        "epochs": [10],  # <- early stopping :)
+        "nr_hidden_layers": [2, 3, 4, 6, 8],  # 16, 32, 64, 96, 128],  # , 2],
+        "batch_size": [16, 32, 64, 128],  # , 128],
         #  "nTs": [15000],
         #  "k2": [1000],
         #  "diff": [False],
@@ -340,7 +362,8 @@ if config.HYPER_SEARCH:
         verbose=1,
         n_iter=config.N_ITER,
     )
-
+    print(np.shape(X_train))
+    print(np.shape(Y_train))
     fitted_model = gridsearch.fit(X_train, Y_train)
     Y_pred = fitted_model.predict(X_test)
 
