@@ -161,27 +161,12 @@ else:
 # normalise batch stuff
 # uncertainty:  -5 bis 0
 # distance:     1 bis 24?!
-# pred_unity:   5 bis 15?!
-mini = 10000
-maxi = -10000
 
-for i in range(0, 19):
-    mini = min(states[str(i) + "_avg_pred_unity"].min(), mini)
-    maxi = max(states[str(i) + "_avg_pred_unity"].max(), maxi)
-    print(states[str(i) + "_avg_pred_unity"])
-print(mini)
-print(maxi)
-
-df2 = pd.read_csv(
-    "../datasets/short_test/furthest/dataset_creation.csv", index_col=None
-)
-print(df2["n_classes"])
-#  print(optimal_policies)
-exit(-1)
-
-X_train, X_test, Y_train, Y_test = train_test_split(
-    states, optimal_policies, test_size=0.33
-)
+#  X_train, X_test, Y_train, Y_test = train_test_split(
+#      states, optimal_policies, test_size=0.33
+#  )
+X = states
+Y = optimal_policies
 
 
 def tau_loss(Y_true, Y_pred):
@@ -259,7 +244,7 @@ def build_nn(
             )
         )
         model.add(Dropout(regular_dropout_rate))
-    model.add(Dense(len(Y_train.columns), activation="sigmoid"))
+    model.add(Dense(len(Y.columns), activation="sigmoid"))
 
     model.compile(
         loss=loss,
@@ -335,8 +320,8 @@ if config.HYPER_SEARCH:
 
     model = KerasRegressor(
         model=get_clf,
-        input_size=X_train.shape[1:],
-        output_size=len(Y_train.columns),
+        input_size=X.shape[1:],
+        output_size=len(Y.columns),
         verbose=2,
         activation=None,
         validation_split=0.3,
@@ -362,15 +347,15 @@ if config.HYPER_SEARCH:
         verbose=1,
         n_iter=config.N_ITER,
     )
-    print(np.shape(X_train))
-    print(np.shape(Y_train))
-    fitted_model = gridsearch.fit(X_train, Y_train)
-    Y_pred = fitted_model.predict(X_test)
-
-    print(fitted_model.best_score_)
-    print(fitted_model.best_params_)
-    print(fitted_model.cv_results_)
-
+    print(np.shape(X))
+    print(np.shape(Y))
+    fitted_model = gridsearch.fit(X, Y)
+    #  Y_pred = fitted_model.predict(X_test)
+    #
+    #  print(fitted_model.best_score_)
+    #  print(fitted_model.best_params_)
+    #  print(fitted_model.cv_results_)
+    #
     with open(config.DATA_PATH + "/best_model.pickle", "wb") as handle:
         dill.dump(fitted_model, handle)
 
@@ -384,8 +369,8 @@ if config.HYPER_SEARCH:
 else:
     model = KerasRegressor(
         model=get_clf,
-        input_size=X_train.shape[1:],
-        output_size=len(Y_train.columns),
+        input_size=X.shape[1:],
+        output_size=len(Y.columns),
         verbose=0,
         activation=config.ACTIVATION,
         validation_split=0.3,
@@ -404,8 +389,8 @@ else:
     )
 
     fitted_model = model.fit(
-        X=X_train,
-        y=Y_train,
+        X=X,
+        y=Y,
     )
 
     #  Y_pred = fitted_model.predict(X_test)
