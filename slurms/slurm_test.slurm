@@ -16,5 +16,5 @@
 export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
 TITLE="test"
 OUTFILE="/lustre/ssd/ws/s5968580-IL_TD2/slurm_out$TITLE.txt"
-MPLCONFIGDIR=/lustre/ssd/ws/s5968580-IL_TD2/cache python3 -m pipenv run python /lustre/ssd/ws/s5968580-IL_TD2/imitating-weakal/slurm/slurm_test.py
+MPLCONFIGDIR=/lustre/ssd/ws/s5968580-IL_TD2/cache python3 -m pipenv run python /lustre/ssd/ws/s5968580-IL_TD2/imitating-weakal/slurms/slurm_test.py
 exit 0
