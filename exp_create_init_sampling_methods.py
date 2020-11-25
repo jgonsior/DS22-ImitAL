@@ -114,7 +114,7 @@ def _calculate_predicted_unity(unlabeled_sample_indices, data_storage, clf):
 #  assert f < e
 #  exit(-1)
 
-for NR_BATCHES in [5, 50, 100, 250, 500, 1000]:
+for NR_BATCHES in [500, 1000, 250]:
     for RANDOM_SEED in range(RANGE_START * 100, RANGE_START * 100 + 100):
         df = pd.DataFrame(
             [], columns=["source"] + [str(i) for i in range(0, NR_BATCHES)]
