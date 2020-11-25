@@ -2,7 +2,7 @@
 
 #Submit this script with: sbatch thefilename
 
-#SBATCH --time=9:59:59   # walltime
+#SBATCH --time=23:59:59   # walltime
 #SBATCH --nodes=1  # number of processor cores (i.e. threads)
 #SBATCH --ntasks=24      # limit to one node
 #SBATCH --mem-per-cpu=1024M   # memory per CPU core
