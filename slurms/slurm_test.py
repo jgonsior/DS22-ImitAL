@@ -17,11 +17,11 @@ print(len(os.sched_getaffinity(0)))
 
 def run_parallel(i):
     print(i)
-    time.wait(random.randint(0, 1))
+    time.sleep(random.randint(0, 1) / 10)
 
 
 with Parallel(
     multiprocessing.cpu_count(),
     backend="threading",
 ) as parallel:
-    output = parallel(delayed(run_parallel)(i) for i in range(1, 10))
+    output = parallel(delayed(run_parallel)(i) for i in range(1, 100))
