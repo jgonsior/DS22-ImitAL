@@ -235,7 +235,8 @@ def run_parallel_experiment(
     def code(CLI_COMMAND, PARALLEL_AMOUNT, PARALLEL_OFFSET):
         with Parallel(
             #  n_jobs=1,
-            multiprocessing.cpu_count(),
+            len(os.sched_getaffinity(0)),
+            #  multiprocessing.cpu_count(),
             backend="threading",
         ) as parallel:
             output = parallel(
