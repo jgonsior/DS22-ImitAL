@@ -3,8 +3,8 @@
 #Submit this script with: sbatch thefilename
 
 #SBATCH --time=9:59:59   # walltime
-#SBATCH --ntasks=56      # limit to one node
 #SBATCH --nodes=1  # number of processor cores (i.e. threads)
+#SBATCH --ntasks=24      # limit to one node
 #SBATCH --mem-per-cpu=1024M   # memory per CPU core
 #SBATCH --mail-user=julius.gonsior@tu-dresden.de   # email address
 #SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE,TIME_LIMIT
