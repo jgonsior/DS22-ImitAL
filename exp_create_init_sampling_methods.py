@@ -9,7 +9,7 @@ from joblib import Parallel, delayed, parallel_backend
 from numba import jit
 from sklearn.metrics import pairwise_distances, accuracy_score
 from sklearn.neural_network import MLPClassifier
-
+import itertools
 from active_learning.dataStorage import DataStorage
 from active_learning.experiment_setup_lib import init_logger
 import sys
@@ -76,7 +76,8 @@ def _future_peak(unlabeled_sample_indices, data_storage, clf):
 
 
 def _calculate_predicted_unity(unlabeled_sample_indices, data_storage, clf):
-    Y_pred = clf.predict(data_storage.X[unlabeled_sample_indices])
+    #  Y_pred = clf.predict(data_storage.X[unlabeled_sample_indices])
+    Y_pred = unlabeled_sample_indices
     Y_pred_sorted = sorted(Y_pred)
     count, unique = np.unique(Y_pred_sorted, return_counts=True)
     Y_enc = []
@@ -92,15 +93,42 @@ def _calculate_predicted_unity(unlabeled_sample_indices, data_storage, clf):
     return disagreement_score
 
 
-#  for a in np.array(
-#      np.meshgrid(
-#          [1, 2, 3, 4, 5, 6, 7],
-#          [1, 2, 3, 4, 5, 6, 7],
-#          [1, 2, 3, 4, 5, 6, 7],
-#          [1, 2, 3, 4, 5, 6, 7],
-#      )
-#  ).T.reshape(-1, 4)[:30]:
-#      _calculate_predicted_unity(a, None, None)
+#  print(get_normalized_unity_encoding_mapping(20, 11))
+#  exit(-1)
+
+#  BATCH_SIZE = 7
+#  for N_CLASSES in range(2, 20):
+#      if N_CLASSES >= BATCH_SIZE:
+#          N_CLASSES = BATCH_SIZE
+#      possible_lengths = set()
+#
+#      for possible_partition in partitions(BATCH_SIZE):
+#          if len(possible_partition) <= N_CLASSES:
+#              possible_lengths.add(
+#                  sum(
+#                      [
+#                          c * u
+#                          for c, u in zip(
+#                              sorted(possible_partition, reverse=True),
+#                              range(1, len(possible_partition) + 1),
+#                          )
+#                      ]
+#                  )
+#              )
+#
+#      print(N_CLASSES, ": \t", sorted(possible_lengths))
+#  exit(-1)
+#
+#  N_CLASSES = 10
+#  for BATCH_SIZE in range(2, 7):
+#  BATCH_SIZE = 7
+#  for N_CLASSES in range(2, 20):
+#      if N_CLASSES >= BATCH_SIZE:
+#          N_CLASSES = BATCH_SIZE
+#      lengths = set()
+#      for a in np.array(list(itertools.product(range(0, N_CLASSES), repeat=BATCH_SIZE))):
+#          lengths.add(_calculate_predicted_unity(a, None, None))
+#      print(N_CLASSES, ": \t", lengths)
 #  a = _calculate_predicted_unity(np.array([1, 1, 1, 1]), None, None)
 #  b = _calculate_predicted_unity(np.array([7, 7, 7, 7]), None, None)
 #  assert a == b
@@ -116,6 +144,8 @@ def _calculate_predicted_unity(unlabeled_sample_indices, data_storage, clf):
 
 for NR_BATCHES in [500, 1000, 250]:
     for RANDOM_SEED in range(RANGE_START * 100, RANGE_START * 100 + 100):
+        #  for NR_BATCHES in [50, 100, 250, 500, 1000]:
+        #      for RANDOM_SEED in range(RANGE_START * 10000, RANGE_START * 10000 + 10000):
         df = pd.DataFrame(
             [], columns=["source"] + [str(i) for i in range(0, NR_BATCHES)]
         )

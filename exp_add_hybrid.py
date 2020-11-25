@@ -1,3 +1,4 @@
+import sys
 import random
 from collections import defaultdict
 import math
@@ -18,8 +19,9 @@ from sklearn.metrics import (
 
 from itertools import combinations
 
-#  df = pd.read_csv("metric_test_small.csv")
-df = pd.read_csv("metric_test_50.csv")
+INPUT_CSV = sys.argv[1]
+#  df = pd.read_csv("metric_test_50.csv")
+df = pd.read_csv(INPUT_CSV)
 
 # step 2: calculate correctnesses of rankings
 TOP_N = 5
@@ -90,6 +92,9 @@ for i in range(0, math.ceil((len(df) / (AMOUNT_OF_METRICS)))):
     top_furthest_lab = (
         (-df.loc[real_index + 3].drop("source")).argsort(axis=0)[:TOP_N].tolist()
     )
+    top_predicted_unity = (
+        (-df.loc[real_index + 4].drop("source")).argsort(axis=0)[:TOP_N].tolist()
+    )
 
     hybrid1 = list(set(top_furthest[:TOP_N]))
     df.loc[real_index + AMOUNT_OF_METRICS] = ["hybrid1_furthest100"] + [
@@ -115,13 +120,13 @@ for i in range(0, math.ceil((len(df) / (AMOUNT_OF_METRICS)))):
 
     hybrid4 = list(
         set(
-            top_furthest_lab[: int(TOP_N / 3)]
-            + top_furthest[: int(TOP_N / 3)]
-            + top_uncert[: int(TOP_N / 3)]
+            top_furthest_lab[-math.floor(TOP_N / 3) :]
+            + top_predicted_unity[-math.ceil(TOP_N / 3) :]
+            + top_uncert[-math.floor(TOP_N / 3) :]
         )
     )
     df.loc[real_index + AMOUNT_OF_METRICS + 3] = [
-        "hybrid4_furthest33_furthestlab33_uncert33"
+        "hybrid4_furthest33_unity33_uncert33"
     ] + [
         1 if i in hybrid4 + random_padding(hybrid4) else 0 for i in range(0, NR_BATCHES)
     ]
@@ -130,4 +135,4 @@ for i in range(0, math.ceil((len(df) / (AMOUNT_OF_METRICS)))):
     #      break
 df.sort_index(inplace=True)
 print(df[0:50])
-df.to_csv("metric_hybrid.csv", index=False)
+df.to_csv(INPUT_CSV[:-4] + "_hybrid.csv", index=False)

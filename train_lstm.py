@@ -1,3 +1,5 @@
+import json
+from tensorflow import keras
 import argparse
 import os
 import random
@@ -43,6 +45,7 @@ parser.add_argument("--BATCH_SIZE", type=int, default=32)
 parser.add_argument("--N_ITER", type=int, default=100)
 parser.add_argument("--ACTIVATION", type=str, default="elu")
 parser.add_argument("--HYPER_SEARCH", action="store_true")
+parser.add_argument("--NR_QUERIES_PER_ITERATION", type=int, default=5)
 parser.add_argument(
     "--STATE_ENCODING",
     type=str,
@@ -155,9 +158,15 @@ else:
 # train/test/val split, verschiedene encodings und hyperparameterkombis für das ANN ausprobieren
 
 
-X_train, X_test, Y_train, Y_test = train_test_split(
-    states, optimal_policies, test_size=0.33
-)
+# normalise batch stuff
+# uncertainty:  -5 bis 0
+# distance:     1 bis 24?!
+
+#  X_train, X_test, Y_train, Y_test = train_test_split(
+#      states, optimal_policies, test_size=0.33
+#  )
+X = states
+Y = optimal_policies
 
 
 def tau_loss(Y_true, Y_pred):
@@ -174,6 +183,34 @@ def spearman_loss(Y_true, Y_pred):
         [tf.cast(Y_pred, tf.float32), tf.cast(Y_true, tf.float32)],
         Tout=tf.float32,
     )
+
+
+def get_clf(
+    input_size,
+    output_size,
+    activation="relu",
+    regular_dropout_rate=0.2,
+    optimizer="Adam",
+    nr_hidden_layers=3,
+    nr_hidden_neurons=20,
+    kernel_initializer="glorot_uniform",
+    loss="MeanSquaredError",
+    epochs=1,
+    batch_size=1,
+):
+    model = keras.models.Sequential()
+    model.add(keras.layers.Input(shape=input_size))
+    for _ in range(0, nr_hidden_layers):
+        model.add(
+            keras.layers.Dense(
+                nr_hidden_neurons,
+                activation=activation,
+                kernel_initializer=kernel_initializer,
+            )
+        )
+        model.add(keras.layers.Dropout(regular_dropout_rate))
+    model.add(keras.layers.Dense(output_size, activation="sigmoid"))
+    return model
 
 
 def build_nn(
@@ -207,7 +244,7 @@ def build_nn(
             )
         )
         model.add(Dropout(regular_dropout_rate))
-    model.add(Dense(len(Y_train.columns), activation="sigmoid"))
+    model.add(Dense(len(Y.columns), activation="sigmoid"))
 
     model.compile(
         loss=loss,
@@ -264,8 +301,8 @@ if config.HYPER_SEARCH:
             1500,
         ],  # [160, 240, 480, 720, 960],
         "epochs": [10000],  # <- early stopping :)
-        "nr_hidden_layers": [2, 4],  # 16, 32, 64, 96, 128],  # , 2],
-        "batch_size": [16, 32, 64],  # , 128],
+        "nr_hidden_layers": [2, 3, 4, 6, 8],  # 16, 32, 64, 96, 128],  # , 2],
+        "batch_size": [16, 32, 64, 128],
         #  "nTs": [15000],
         #  "k2": [1000],
         #  "diff": [False],
@@ -282,14 +319,15 @@ if config.HYPER_SEARCH:
     }
 
     model = KerasRegressor(
-        build_fn=build_nn,
+        model=get_clf,
+        input_size=X.shape[1:],
+        output_size=len(Y.columns),
         verbose=2,
         activation=None,
         validation_split=0.3,
         loss=None,
         regular_dropout_rate=None,
         nr_hidden_layers=None,
-        nr_epochs=None,
         nr_hidden_neurons=None,
         optimizer=None,
         epochs=None,
@@ -309,26 +347,30 @@ if config.HYPER_SEARCH:
         verbose=1,
         n_iter=config.N_ITER,
     )
-
-    fitted_model = gridsearch.fit(X_train, Y_train)
-    Y_pred = fitted_model.predict(X_test)
-
-    print(fitted_model.best_score_)
-    print(fitted_model.best_params_)
-    print(fitted_model.cv_results_)
-
+    print(np.shape(X))
+    print(np.shape(Y))
+    fitted_model = gridsearch.fit(X, Y)
+    #  Y_pred = fitted_model.predict(X_test)
+    #
+    #  print(fitted_model.best_score_)
+    #  print(fitted_model.best_params_)
+    #  print(fitted_model.cv_results_)
+    #
     with open(config.DATA_PATH + "/best_model.pickle", "wb") as handle:
         dill.dump(fitted_model, handle)
 
     with open(config.DATA_PATH + "/hyper_results.txt", "w") as handle:
         handle.write(str(fitted_model.best_score_))
-        handle.write(str(fitted_model.best_params_))
         handle.write(str(fitted_model.cv_results_))
+        handle.write("\n" * 5)
+        handle.write(json.dumps(fitted_model.best_params_))
 
 
 else:
     model = KerasRegressor(
-        build_fn=build_nn,
+        model=get_clf,
+        input_size=X.shape[1:],
+        output_size=len(Y.columns),
         verbose=0,
         activation=config.ACTIVATION,
         validation_split=0.3,
@@ -347,10 +389,8 @@ else:
     )
 
     fitted_model = model.fit(
-        X=X_train,
-        y=Y_train,
-        epochs=config.EPOCHS,
-        batch_size=config.BATCH_SIZE,
+        X=X,
+        y=Y,
     )
 
     #  Y_pred = fitted_model.predict(X_test)

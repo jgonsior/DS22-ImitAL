@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import numpy as np
@@ -44,6 +45,7 @@ if not config.SKIP_TRAINING_DATA_GENERATION:
             "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
             "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
             "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
+            "STATE_PREDICTED_UNITY": config.TRAIN_STATE_PREDICTED_UNITY,
             "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
             "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
             "STATE_DIFF_PROBAS": config.TRAIN_STATE_DIFF_PROBAS,
@@ -62,6 +64,34 @@ if not config.SKIP_TRAINING_DATA_GENERATION:
 if config.ONLY_TRAINING_DATA:
     exit(1)
 
+HYPER_SEARCH_OUTPUT_FILE = (
+    config.OUTPUT_DIRECTORY + train_base_param_string + "/hyper_results.txt"
+)
+run_python_experiment(
+    "ANN hyper_search",
+    HYPER_SEARCH_OUTPUT_FILE,
+    CLI_COMMAND="python train_lstm.py",
+    CLI_ARGUMENTS={
+        "DATA_PATH": config.OUTPUT_DIRECTORY + train_base_param_string,
+        "STATE_ENCODING": "listwise",
+        "TARGET_ENCODING": "binary",
+        "SAVE_DESTINATION": config.OUTPUT_DIRECTORY
+        + train_base_param_string
+        + "/trained_ann.pickle",
+        "RANDOM_SEED": 1,
+        "HYPER_SEARCH": True,
+        "N_ITER": config.NR_ANN_HYPER_SEARCH_ITERATIONS,
+    },
+)
+
+with open(HYPER_SEARCH_OUTPUT_FILE, "r") as f:
+    lines = f.read().splitlines()
+    last_line = lines[-1]
+    lower_params = json.loads(last_line)
+    ANN_HYPER_PARAMS = {}
+    for k, v in lower_params.items():
+        ANN_HYPER_PARAMS[k.upper()] = v
+
 run_python_experiment(
     "Train ANN",
     config.OUTPUT_DIRECTORY + train_base_param_string + "/trained_ann.pickle",
@@ -73,17 +103,58 @@ run_python_experiment(
         "SAVE_DESTINATION": config.OUTPUT_DIRECTORY
         + train_base_param_string
         + "/trained_ann.pickle",
-        "REGULAR_DROPOUT_RATE": 0.1,
-        "OPTIMIZER": "Nadam",
-        "NR_HIDDEN_NEURONS": config.NR_HIDDEN_NEURONS,
-        "NR_HIDDEN_LAYERS": 2,
-        "LOSS": "MeanSquaredError",
-        "EPOCHS": 10000,
-        "BATCH_SIZE": 32,
-        "ACTIVATION": "tanh",
+        "REGULAR_DROPOUT_RATE": ANN_HYPER_PARAMS["REGULAR_DROPOUT_RATE"],
+        "OPTIMIZER": ANN_HYPER_PARAMS["OPTIMIZER"],
+        "NR_HIDDEN_NEURONS": ANN_HYPER_PARAMS["NR_HIDDEN_NEURONS"],
+        "NR_HIDDEN_LAYERS": ANN_HYPER_PARAMS["NR_HIDDEN_LAYERS"],
+        "LOSS": ANN_HYPER_PARAMS["LOSS"],
+        "EPOCHS": ANN_HYPER_PARAMS["EPOCHS"],
+        "BATCH_SIZE": ANN_HYPER_PARAMS["BATCH_SIZE"],
+        "ACTIVATION": ANN_HYPER_PARAMS["ACTIVATION"],
         "RANDOM_SEED": 1,
     },
 )
+
+if config.INCLUDE_OPTIMAL_IN_PLOT or config.INCLUDE_ONLY_OPTIMAL_IN_PLOT:
+    OPTIMAL_OUTPUT_FILE = PARENT_OUTPUT_DIRECTORY + train_base_param_string + "_optimal"
+    run_parallel_experiment(
+        "Optimal evaluation",
+        OUTPUT_FILE=OPTIMAL_OUTPUT_FILE + "/dataset_creation.csv",
+        CLI_COMMAND="python imit_training.py",
+        CLI_ARGUMENTS={
+            "DATASETS_PATH": "../datasets",
+            "CLASSIFIER": config.TRAIN_CLASSIFIER,
+            "OUTPUT_DIRECTORY": OPTIMAL_OUTPUT_FILE,
+            "DATASET_NAME": "synthetic",
+            "SAMPLING": "trained_nn",
+            "AMOUNT_OF_PEAKED_OBJECTS": config.TRAIN_AMOUNT_OF_PEAKED_SAMPLES,
+            "MAX_AMOUNT_OF_WS_PEAKS": 0,
+            "AMOUNT_OF_LEARN_ITERATIONS": 1,
+            "AMOUNT_OF_FEATURES": config.TRAIN_AMOUNT_OF_FEATURES,
+            "VARIABLE_DATASET": config.TRAIN_VARIABLE_DATASET,
+            "NEW_SYNTHETIC_PARAMS": config.TRAIN_NEW_SYNTHETIC_PARAMS,
+            "HYPERCUBE": config.TRAIN_HYPERCUBE,
+            "STOP_AFTER_MAXIMUM_ACCURACY_REACHED": config.TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED,
+            "GENERATE_NOISE": config.TRAIN_GENERATE_NOISE,
+            "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
+            "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
+            "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
+            "STATE_PREDICTED_UNITY": config.TRAIN_STATE_PREDICTED_UNITY,
+            "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
+            "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
+            "STATE_DIFF_PROBAS": config.TRAIN_STATE_DIFF_PROBAS,
+            "STATE_DISTANCES": config.TRAIN_STATE_DISTANCES,
+            "STATE_UNCERTAINTIES": config.TRAIN_STATE_UNCERTAINTIES,
+            "INITIAL_BATCH_SAMPLING_METHOD": config.INITIAL_BATCH_SAMPLING_METHOD,
+            "INITIAL_BATCH_SAMPLING_ARG": config.INITIAL_BATCH_SAMPLING_ARG,
+            **shared_arguments,
+        },
+        PARALLEL_OFFSET=100000,
+        PARALLEL_AMOUNT=config.TRAIN_NR_LEARNING_SAMPLES,
+        OUTPUT_FILE_LENGTH=config.TRAIN_NR_LEARNING_SAMPLES,
+        RESTART_IF_NOT_ENOUGH_SAMPLES=True,
+    )
+    OPTIMAL_OUTPUT_FILE += "/dataset_creation.csv"
 
 for DATASET_NAME in [
     #  "emnist-byclass-test",
@@ -126,6 +197,7 @@ for DATASET_NAME in [
             "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
             "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
             "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
+            "STATE_PREDICTED_UNITY": config.TRAIN_STATE_PREDICTED_UNITY,
             "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
             "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
             "STATE_DIFF_PROBAS": config.TRAIN_STATE_DIFF_PROBAS,
@@ -151,7 +223,7 @@ for DATASET_NAME in [
             PARENT_OUTPUT_DIRECTORY
             + "classics/"
             + comparison
-            + test_base_param_string
+            #  + test_base_param_string
             + ".csv"
         )
         run_parallel_experiment(
@@ -171,7 +243,7 @@ for DATASET_NAME in [
     if config.FINAL_PICTURE == "":
         comparison_path = (
             PARENT_OUTPUT_DIRECTORY
-            + test_base_param_string
+            #  + test_base_param_string
             + "_".join(config.TEST_COMPARISONS)
             + ".csv"
         )
@@ -184,14 +256,12 @@ for DATASET_NAME in [
             index_col=None,
             nrows=1 + config.TEST_NR_LEARNING_SAMPLES,
         )
-        df["sampling"] = "Imitation Learned Neural Network"
+        df["sampling"] = "Imitation Learned Neural Network " + str(
+            config.BASE_PARAM_STRING
+        )
 
         if config.INCLUDE_OPTIMAL_IN_PLOT or config.INCLUDE_ONLY_OPTIMAL_IN_PLOT:
-            optimal_df = pd.read_csv(
-                PARENT_OUTPUT_DIRECTORY[:-1]
-                + config.BASE_PARAM_STRING
-                + "/dataset_creation.csv"
-            )
+            optimal_df = pd.read_csv(OPTIMAL_OUTPUT_FILE)
             optimal_df["sampling"] = "Optimal Strategy"
             df = pd.concat([df, optimal_df])
 
@@ -200,10 +270,8 @@ for DATASET_NAME in [
 
         for comparison in config.TEST_COMPARISONS:
             df2 = pd.read_csv(
-                PARENT_OUTPUT_DIRECTORY
-                + "classics/"
-                + comparison
-                + test_base_param_string
+                PARENT_OUTPUT_DIRECTORY + "classics/" + comparison
+                #  + test_base_param_string
                 + ".csv",
                 index_col=None,
                 nrows=1 + config.TEST_NR_LEARNING_SAMPLES,
@@ -234,27 +302,9 @@ for DATASET_NAME in [
 
     METRIC_TABLE_SUMMARY = config.FINAL_PICTURE + "_" + DATASET_NAME + "_" "table.txt"
 
-    def plot_all_metrics_as_a_table():
+    def plot_all_metrics_as_a_table(df):
         sources = []
-        df = pd.read_csv(
-            EVALUATION_FILE_TRAINED_NN_PATH,
-            index_col=None,
-            nrows=1 + config.TEST_NR_LEARNING_SAMPLES,
-        )
-        sources.append(df["sampling"][0])
-
-        for comparison in config.TEST_COMPARISONS:
-            df2 = pd.read_csv(
-                PARENT_OUTPUT_DIRECTORY
-                + "classics/"
-                + comparison
-                + test_base_param_string
-                + ".csv",
-                index_col=None,
-                nrows=1 + config.TEST_NR_LEARNING_SAMPLES,
-            )
-            sources.append(df2["sampling"][0])
-            df = pd.concat([df, df2])
+        sources = df["sampling"].unique()
 
         metrics = [
             "acc_auc",
@@ -321,10 +371,12 @@ for DATASET_NAME in [
                 )
             )
 
+    df = pd.read_csv(comparison_path, index_col=None)
     run_code_experiment(
         "Printing dataset_metrics",
         METRIC_TABLE_SUMMARY,
         code=plot_all_metrics_as_a_table,
+        code_kwargs={"df": df},
     )
     test_base_param_string = original_test_base_param_string
     #  exit(-1)

@@ -28,7 +28,7 @@ def get_config():
             (["--TRAIN_NEW_SYNTHETIC_PARAMS"], {"action": "store_false"}),
             (
                 ["--TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED"],
-                {"action": "store_false"},
+                {"action": "store_true"},
             ),
             (["--TRAIN_GENERATE_NOISE"], {"action": "store_true"}),
             (["--TRAIN_STATE_DIFF_PROBAS"], {"action": "store_true"}),
@@ -39,6 +39,7 @@ def get_config():
             (["--TRAIN_STATE_PREDICTED_CLASS"], {"action": "store_true"}),
             (["--TRAIN_STATE_DISTANCES"], {"action": "store_true"}),
             (["--TRAIN_STATE_UNCERTAINTIES"], {"action": "store_true"}),
+            (["--TRAIN_STATE_PREDICTED_UNITY"], {"action": "store_true"}),
             (["--TRAIN_INITIAL_BATCH_SAMPLING_METHOD"], {"default": "random"}),
             (["--TRAIN_INITIAL_BATCH_SAMPLING_ARG"], {"type": int, "default": 100}),
             (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
@@ -66,10 +67,11 @@ def get_config():
             (["--PLOT_METRIC"], {"default": "acc_auc"}),
             (["--INCLUDE_OPTIMAL_IN_PLOT"], {"action": "store_true"}),
             (["--INCLUDE_ONLY_OPTIMAL_IN_PLOT"], {"action": "store_true"}),
-            (["--NR_HIDDEN_NEURONS"], {"type": int, "default": 300}),
             (["--COMPARE_ALL_FOLDERS"], {"action": "store_true"}),
             (["--INITIAL_BATCH_SAMPLING_METHOD"], {"default": "furthest"}),
-            (["--INITIAL_BATCH_SAMPLING_ARG"], {"default": "100"}),
+            (["--INITIAL_BATCH_SAMPLING_ARG"], {"default": 100}),
+            (["--BATCH_MODE"], {"action": "store_true"}),
+            (["--NR_ANN_HYPER_SEARCH_ITERATIONS"], {"default": 50}),
         ],
         standard_args=False,
         return_argparse=True,
@@ -97,6 +99,7 @@ def get_config():
         "START_SET_SIZE": 1,
         "USER_QUERY_BUDGET_LIMIT": config.USER_QUERY_BUDGET_LIMIT,
         "N_JOBS": 1,
+        "BATCH_MODE": config.BATCH_MODE,
     }
 
     evaluation_arguments = {
@@ -163,7 +166,10 @@ def run_python_experiment(
 ):
     def code(CLI_COMMAND):
         for k, v in CLI_ARGUMENTS.items():
-            CLI_COMMAND += " --" + k + " " + str(v)
+            if str(v) == "True":
+                CLI_COMMAND += " --" + k
+            else:
+                CLI_COMMAND += " --" + k + " " + str(v)
 
         if SAVE_ARGUMENT_JSON:
             with open(OUTPUT_FILE + "_params.json", "w") as f:
