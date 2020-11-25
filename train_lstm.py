@@ -300,9 +300,9 @@ if config.HYPER_SEARCH:
             1300,
             1500,
         ],  # [160, 240, 480, 720, 960],
-        "epochs": [10],  # <- early stopping :)
+        "epochs": [10000],  # <- early stopping :)
         "nr_hidden_layers": [2, 3, 4, 6, 8],  # 16, 32, 64, 96, 128],  # , 2],
-        "batch_size": [16, 32, 64, 128],  # , 128],
+        "batch_size": [16, 32, 64, 128],
         #  "nTs": [15000],
         #  "k2": [1000],
         #  "diff": [False],

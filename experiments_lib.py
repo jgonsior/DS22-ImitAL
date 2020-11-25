@@ -28,7 +28,7 @@ def get_config():
             (["--TRAIN_NEW_SYNTHETIC_PARAMS"], {"action": "store_false"}),
             (
                 ["--TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED"],
-                {"action": "store_false"},
+                {"action": "store_true"},
             ),
             (["--TRAIN_GENERATE_NOISE"], {"action": "store_true"}),
             (["--TRAIN_STATE_DIFF_PROBAS"], {"action": "store_true"}),
