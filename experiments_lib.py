@@ -239,9 +239,9 @@ def run_parallel_experiment(
     def code(CLI_COMMAND, PARALLEL_AMOUNT, PARALLEL_OFFSET):
         with Parallel(
             #  n_jobs=1,
-            #  len(os.sched_getaffinity(0)),
-            multiprocessing.cpu_count(),
-            backend="threading",
+            len(os.sched_getaffinity(0)),
+            #  multiprocessing.cpu_count(),
+            backend="loky",
         ) as parallel:
             output = parallel(
                 delayed(run_parallel)(CLI_COMMAND, k + PARALLEL_OFFSET) for k in ids
