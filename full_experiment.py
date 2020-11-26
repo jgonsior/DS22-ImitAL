@@ -1,3 +1,4 @@
+import os
 import json
 from pathlib import Path
 
@@ -71,22 +72,25 @@ if config.ONLY_TRAINING_DATA:
 HYPER_SEARCH_OUTPUT_FILE = (
     config.OUTPUT_DIRECTORY + train_base_param_string + "/hyper_results.txt"
 )
-run_python_experiment(
-    "ANN hyper_search",
-    HYPER_SEARCH_OUTPUT_FILE,
-    CLI_COMMAND="python train_lstm.py",
-    CLI_ARGUMENTS={
-        "DATA_PATH": config.OUTPUT_DIRECTORY + train_base_param_string,
-        "STATE_ENCODING": "listwise",
-        "TARGET_ENCODING": "binary",
-        "SAVE_DESTINATION": config.OUTPUT_DIRECTORY
-        + train_base_param_string
-        + "/trained_ann.pickle",
-        "RANDOM_SEED": 1,
-        "HYPER_SEARCH": True,
-        "N_ITER": config.NR_ANN_HYPER_SEARCH_ITERATIONS,
-    },
-)
+assert os.path.exists(HYPER_SEARCH_OUTPUT_FILE)
+
+# nice code, but needs to much memory for taurus
+# run_python_experiment(
+#      "ANN hyper_search",
+#      HYPER_SEARCH_OUTPUT_FILE,
+#      CLI_COMMAND="python train_lstm.py",
+#      CLI_ARGUMENTS={
+#          "DATA_PATH": config.OUTPUT_DIRECTORY + train_base_param_string,
+#          "STATE_ENCODING": "listwise",
+#          "TARGET_ENCODING": "binary",
+#          "SAVE_DESTINATION": config.OUTPUT_DIRECTORY
+#          + train_base_param_string
+#          + "/trained_ann.pickle",
+#          "RANDOM_SEED": 1,
+#          "HYPER_SEARCH": True,
+#          "N_ITER": config.NR_ANN_HYPER_SEARCH_ITERATIONS,
+#      },
+#  )
 
 with open(HYPER_SEARCH_OUTPUT_FILE, "r") as f:
     lines = f.read().splitlines()
