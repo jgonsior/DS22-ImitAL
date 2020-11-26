@@ -68,102 +68,102 @@ if not config.SKIP_TRAINING_DATA_GENERATION:
 if config.ONLY_TRAINING_DATA:
     exit(1)
 
-#  HYPER_SEARCH_OUTPUT_FILE = (
-#      config.OUTPUT_DIRECTORY + train_base_param_string + "/hyper_results.txt"
-#  )
-#  run_python_experiment(
-#      "ANN hyper_search",
-#      HYPER_SEARCH_OUTPUT_FILE,
-#      CLI_COMMAND="python train_lstm.py",
-#      CLI_ARGUMENTS={
-#          "DATA_PATH": config.OUTPUT_DIRECTORY + train_base_param_string,
-#          "STATE_ENCODING": "listwise",
-#          "TARGET_ENCODING": "binary",
-#          "SAVE_DESTINATION": config.OUTPUT_DIRECTORY
-#          + train_base_param_string
-#          + "/trained_ann.pickle",
-#          "RANDOM_SEED": 1,
-#          "HYPER_SEARCH": True,
-#          "N_ITER": config.NR_ANN_HYPER_SEARCH_ITERATIONS,
-#      },
-#  )
-#
-#  with open(HYPER_SEARCH_OUTPUT_FILE, "r") as f:
-#      lines = f.read().splitlines()
-#      last_line = lines[-1]
-#      lower_params = json.loads(last_line)
-#      ANN_HYPER_PARAMS = {}
-#      for k, v in lower_params.items():
-#          ANN_HYPER_PARAMS[k.upper()] = v
-#
-#  run_python_experiment(
-#      "Train ANN",
-#      config.OUTPUT_DIRECTORY + train_base_param_string + "/trained_ann.pickle",
-#      CLI_COMMAND="python train_lstm.py",
-#      CLI_ARGUMENTS={
-#          "DATA_PATH": config.OUTPUT_DIRECTORY + train_base_param_string,
-#          "STATE_ENCODING": "listwise",
-#          "TARGET_ENCODING": "binary",
-#          "SAVE_DESTINATION": config.OUTPUT_DIRECTORY
-#          + train_base_param_string
-#          + "/trained_ann.pickle",
-#          "REGULAR_DROPOUT_RATE": ANN_HYPER_PARAMS["REGULAR_DROPOUT_RATE"],
-#          "OPTIMIZER": ANN_HYPER_PARAMS["OPTIMIZER"],
-#          "NR_HIDDEN_NEURONS": ANN_HYPER_PARAMS["NR_HIDDEN_NEURONS"],
-#          "NR_HIDDEN_LAYERS": ANN_HYPER_PARAMS["NR_HIDDEN_LAYERS"],
-#          "LOSS": ANN_HYPER_PARAMS["LOSS"],
-#          "EPOCHS": ANN_HYPER_PARAMS["EPOCHS"],
-#          "BATCH_SIZE": ANN_HYPER_PARAMS["BATCH_SIZE"],
-#          "ACTIVATION": ANN_HYPER_PARAMS["ACTIVATION"],
-#          "RANDOM_SEED": 1,
-#      },
-#  )
-#
-#  if config.INCLUDE_OPTIMAL_IN_PLOT or config.INCLUDE_ONLY_OPTIMAL_IN_PLOT:
-#      OPTIMAL_OUTPUT_FILE = PARENT_OUTPUT_DIRECTORY + train_base_param_string + "_optimal"
-#      run_parallel_experiment(
-#          "Optimal evaluation",
-#          OUTPUT_FILE=OPTIMAL_OUTPUT_FILE + "/dataset_creation.csv",
-#          CLI_COMMAND="python imit_training.py",
-#          CLI_ARGUMENTS={
-#              "DATASETS_PATH": "../datasets",
-#              "CLASSIFIER": config.TRAIN_CLASSIFIER,
-#              "OUTPUT_DIRECTORY": OPTIMAL_OUTPUT_FILE,
-#              "DATASET_NAME": "synthetic",
-#              "SAMPLING": "trained_nn",
-#              "AMOUNT_OF_PEAKED_OBJECTS": config.TRAIN_AMOUNT_OF_PEAKED_SAMPLES,
-#              "MAX_AMOUNT_OF_WS_PEAKS": 0,
-#              "AMOUNT_OF_LEARN_ITERATIONS": 1,
-#              "AMOUNT_OF_FEATURES": config.TRAIN_AMOUNT_OF_FEATURES,
-#              "VARIABLE_DATASET": config.TRAIN_VARIABLE_DATASET,
-#              "NEW_SYNTHETIC_PARAMS": config.TRAIN_NEW_SYNTHETIC_PARAMS,
-#              "HYPERCUBE": config.TRAIN_HYPERCUBE,
-#              "STOP_AFTER_MAXIMUM_ACCURACY_REACHED": config.TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED,
-#              "GENERATE_NOISE": config.TRAIN_GENERATE_NOISE,
-#              "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
-#              "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
-#              "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
-#              "STATE_PREDICTED_UNITY": config.TRAIN_STATE_PREDICTED_UNITY,
-#              "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
-#              "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
-#              "STATE_DIFF_PROBAS": config.TRAIN_STATE_DIFF_PROBAS,
-#              "STATE_DISTANCES": config.TRAIN_STATE_DISTANCES,
-#              "STATE_UNCERTAINTIES": config.TRAIN_STATE_UNCERTAINTIES,
-#              "INITIAL_BATCH_SAMPLING_METHOD": config.INITIAL_BATCH_SAMPLING_METHOD,
-#              "INITIAL_BATCH_SAMPLING_ARG": config.INITIAL_BATCH_SAMPLING_ARG,
-#              "INITIAL_BATCH_SAMPLING_HYBRID_UNCERT": config.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT,
-#              "INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST": config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST,
-#              "INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB": config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB,
-#              "INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY": config.INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY,
-#              **shared_arguments,
-#          },
-#          PARALLEL_OFFSET=100000,
-#          PARALLEL_AMOUNT=config.TRAIN_NR_LEARNING_SAMPLES,
-#          OUTPUT_FILE_LENGTH=config.TRAIN_NR_LEARNING_SAMPLES,
-#          RESTART_IF_NOT_ENOUGH_SAMPLES=True,
-#      )
-#      OPTIMAL_OUTPUT_FILE += "/dataset_creation.csv"
-#
+HYPER_SEARCH_OUTPUT_FILE = (
+    config.OUTPUT_DIRECTORY + train_base_param_string + "/hyper_results.txt"
+)
+run_python_experiment(
+    "ANN hyper_search",
+    HYPER_SEARCH_OUTPUT_FILE,
+    CLI_COMMAND="python train_lstm.py",
+    CLI_ARGUMENTS={
+        "DATA_PATH": config.OUTPUT_DIRECTORY + train_base_param_string,
+        "STATE_ENCODING": "listwise",
+        "TARGET_ENCODING": "binary",
+        "SAVE_DESTINATION": config.OUTPUT_DIRECTORY
+        + train_base_param_string
+        + "/trained_ann.pickle",
+        "RANDOM_SEED": 1,
+        "HYPER_SEARCH": True,
+        "N_ITER": config.NR_ANN_HYPER_SEARCH_ITERATIONS,
+    },
+)
+
+with open(HYPER_SEARCH_OUTPUT_FILE, "r") as f:
+    lines = f.read().splitlines()
+    last_line = lines[-1]
+    lower_params = json.loads(last_line)
+    ANN_HYPER_PARAMS = {}
+    for k, v in lower_params.items():
+        ANN_HYPER_PARAMS[k.upper()] = v
+
+run_python_experiment(
+    "Train ANN",
+    config.OUTPUT_DIRECTORY + train_base_param_string + "/trained_ann.pickle",
+    CLI_COMMAND="python train_lstm.py",
+    CLI_ARGUMENTS={
+        "DATA_PATH": config.OUTPUT_DIRECTORY + train_base_param_string,
+        "STATE_ENCODING": "listwise",
+        "TARGET_ENCODING": "binary",
+        "SAVE_DESTINATION": config.OUTPUT_DIRECTORY
+        + train_base_param_string
+        + "/trained_ann.pickle",
+        "REGULAR_DROPOUT_RATE": ANN_HYPER_PARAMS["REGULAR_DROPOUT_RATE"],
+        "OPTIMIZER": ANN_HYPER_PARAMS["OPTIMIZER"],
+        "NR_HIDDEN_NEURONS": ANN_HYPER_PARAMS["NR_HIDDEN_NEURONS"],
+        "NR_HIDDEN_LAYERS": ANN_HYPER_PARAMS["NR_HIDDEN_LAYERS"],
+        "LOSS": ANN_HYPER_PARAMS["LOSS"],
+        "EPOCHS": ANN_HYPER_PARAMS["EPOCHS"],
+        "BATCH_SIZE": ANN_HYPER_PARAMS["BATCH_SIZE"],
+        "ACTIVATION": ANN_HYPER_PARAMS["ACTIVATION"],
+        "RANDOM_SEED": 1,
+    },
+)
+
+if config.INCLUDE_OPTIMAL_IN_PLOT or config.INCLUDE_ONLY_OPTIMAL_IN_PLOT:
+    OPTIMAL_OUTPUT_FILE = PARENT_OUTPUT_DIRECTORY + train_base_param_string + "_optimal"
+    run_parallel_experiment(
+        "Optimal evaluation",
+        OUTPUT_FILE=OPTIMAL_OUTPUT_FILE + "/dataset_creation.csv",
+        CLI_COMMAND="python imit_training.py",
+        CLI_ARGUMENTS={
+            "DATASETS_PATH": "../datasets",
+            "CLASSIFIER": config.TRAIN_CLASSIFIER,
+            "OUTPUT_DIRECTORY": OPTIMAL_OUTPUT_FILE,
+            "DATASET_NAME": "synthetic",
+            "SAMPLING": "trained_nn",
+            "AMOUNT_OF_PEAKED_OBJECTS": config.TRAIN_AMOUNT_OF_PEAKED_SAMPLES,
+            "MAX_AMOUNT_OF_WS_PEAKS": 0,
+            "AMOUNT_OF_LEARN_ITERATIONS": 1,
+            "AMOUNT_OF_FEATURES": config.TRAIN_AMOUNT_OF_FEATURES,
+            "VARIABLE_DATASET": config.TRAIN_VARIABLE_DATASET,
+            "NEW_SYNTHETIC_PARAMS": config.TRAIN_NEW_SYNTHETIC_PARAMS,
+            "HYPERCUBE": config.TRAIN_HYPERCUBE,
+            "STOP_AFTER_MAXIMUM_ACCURACY_REACHED": config.TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED,
+            "GENERATE_NOISE": config.TRAIN_GENERATE_NOISE,
+            "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
+            "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
+            "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
+            "STATE_PREDICTED_UNITY": config.TRAIN_STATE_PREDICTED_UNITY,
+            "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
+            "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
+            "STATE_DIFF_PROBAS": config.TRAIN_STATE_DIFF_PROBAS,
+            "STATE_DISTANCES": config.TRAIN_STATE_DISTANCES,
+            "STATE_UNCERTAINTIES": config.TRAIN_STATE_UNCERTAINTIES,
+            "INITIAL_BATCH_SAMPLING_METHOD": config.INITIAL_BATCH_SAMPLING_METHOD,
+            "INITIAL_BATCH_SAMPLING_ARG": config.INITIAL_BATCH_SAMPLING_ARG,
+            "INITIAL_BATCH_SAMPLING_HYBRID_UNCERT": config.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT,
+            "INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST": config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST,
+            "INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB": config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB,
+            "INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY": config.INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY,
+            **shared_arguments,
+        },
+        PARALLEL_OFFSET=100000,
+        PARALLEL_AMOUNT=config.TRAIN_NR_LEARNING_SAMPLES,
+        OUTPUT_FILE_LENGTH=config.TRAIN_NR_LEARNING_SAMPLES,
+        RESTART_IF_NOT_ENOUGH_SAMPLES=True,
+    )
+    OPTIMAL_OUTPUT_FILE += "/dataset_creation.csv"
+
 for DATASET_NAME in [
     #  "emnist-byclass-test",
     "synthetic",
@@ -192,44 +192,44 @@ for DATASET_NAME in [
     original_test_base_param_string = test_base_param_string
     test_base_param_string += "_" + DATASET_NAME
 
-    #  run_parallel_experiment(
-    #      "Creating ann-evaluation data",
-    #      OUTPUT_FILE=EVALUATION_FILE_TRAINED_NN_PATH,
-    #      CLI_COMMAND="python single_al_cycle.py",
-    #      CLI_ARGUMENTS={
-    #          "NN_BINARY": config.OUTPUT_DIRECTORY
-    #          + train_base_param_string
-    #          + "/trained_ann.pickle",
-    #          "OUTPUT_DIRECTORY": EVALUATION_FILE_TRAINED_NN_PATH,
-    #          "SAMPLING": "trained_nn",
-    #          "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
-    #          "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
-    #          "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
-    #          "STATE_PREDICTED_UNITY": config.TRAIN_STATE_PREDICTED_UNITY,
-    #          "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
-    #          "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
-    #          "STATE_DIFF_PROBAS": config.TRAIN_STATE_DIFF_PROBAS,
-    #          "STATE_DISTANCES": config.TRAIN_STATE_DISTANCES,
-    #          "STATE_UNCERTAINTIES": config.TRAIN_STATE_UNCERTAINTIES,
-    #          "INITIAL_BATCH_SAMPLING_METHOD": config.INITIAL_BATCH_SAMPLING_METHOD,
-    #          "INITIAL_BATCH_SAMPLING_ARG": config.INITIAL_BATCH_SAMPLING_ARG,
-    #          "INITIAL_BATCH_SAMPLING_HYBRID_UNCERT": config.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT,
-    #          "INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST": config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST,
-    #          "INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB": config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB,
-    #          "INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY": config.INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY,
-    #          **evaluation_arguments,
-    #      },
-    #      PARALLEL_OFFSET=100000,
-    #      PARALLEL_AMOUNT=config.TEST_NR_LEARNING_SAMPLES,
-    #      OUTPUT_FILE_LENGTH=config.TEST_NR_LEARNING_SAMPLES,
-    #  )
-    #
-    #  # rename sampling column
-    #  p = Path(EVALUATION_FILE_TRAINED_NN_PATH)
-    #  text = p.read_text()
-    #  text = text.replace("trained_nn", config.OUTPUT_DIRECTORY)
-    #  p.write_text(text)
-    #
+    run_parallel_experiment(
+        "Creating ann-evaluation data",
+        OUTPUT_FILE=EVALUATION_FILE_TRAINED_NN_PATH,
+        CLI_COMMAND="python single_al_cycle.py",
+        CLI_ARGUMENTS={
+            "NN_BINARY": config.OUTPUT_DIRECTORY
+            + train_base_param_string
+            + "/trained_ann.pickle",
+            "OUTPUT_DIRECTORY": EVALUATION_FILE_TRAINED_NN_PATH,
+            "SAMPLING": "trained_nn",
+            "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
+            "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
+            "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
+            "STATE_PREDICTED_UNITY": config.TRAIN_STATE_PREDICTED_UNITY,
+            "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
+            "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
+            "STATE_DIFF_PROBAS": config.TRAIN_STATE_DIFF_PROBAS,
+            "STATE_DISTANCES": config.TRAIN_STATE_DISTANCES,
+            "STATE_UNCERTAINTIES": config.TRAIN_STATE_UNCERTAINTIES,
+            "INITIAL_BATCH_SAMPLING_METHOD": config.INITIAL_BATCH_SAMPLING_METHOD,
+            "INITIAL_BATCH_SAMPLING_ARG": config.INITIAL_BATCH_SAMPLING_ARG,
+            "INITIAL_BATCH_SAMPLING_HYBRID_UNCERT": config.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT,
+            "INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST": config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST,
+            "INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB": config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB,
+            "INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY": config.INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY,
+            **evaluation_arguments,
+        },
+        PARALLEL_OFFSET=100000,
+        PARALLEL_AMOUNT=config.TEST_NR_LEARNING_SAMPLES,
+        OUTPUT_FILE_LENGTH=config.TEST_NR_LEARNING_SAMPLES,
+    )
+
+    # rename sampling column
+    p = Path(EVALUATION_FILE_TRAINED_NN_PATH)
+    text = p.read_text()
+    text = text.replace("trained_nn", config.OUTPUT_DIRECTORY)
+    p.write_text(text)
+
     for comparison in config.TEST_COMPARISONS:
         COMPARISON_PATH = (
             PARENT_OUTPUT_DIRECTORY
