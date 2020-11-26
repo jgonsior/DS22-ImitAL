@@ -3,11 +3,14 @@
 #Submit this script with: sbatch thefilename
 
 #SBATCH --time=00:12:05   # walltime
-#SBATCH --ntasks=80      # limit to one node
-#SBATCH --cpus-per-task=1  # number of processor cores (i.e. threads)
-#SBATCH --mem-per-cpu=2024M   # memory per CPU core
+#SBATCH --ntasks=1      # limit to one node
+#SBATCH -n 1
+#SBATCH --tasks-per-node 1
+#SBATCH --cpus-per-task=128  # number of processor cores (i.e. threads)
+#SBATCH --mem-per-cpu=1024M   # memory per CPU core
 #SBATCH --mail-user=julius.gonsior@tu-dresden.de   # email address
 #SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE,TIME_LIMIT
+#SBATCH -p romeo
 #SBATCH -A p_ml_il
 #SBATCH --output /lustre/ssd/ws/s5968580-IL_TD2/slurm_lstm_hyper_output_log.txt
 #SBATCH --error /lustre/ssd/ws/s5968580-IL_TD2/slurm_lstm_hyper_error_log.txt
