@@ -1,3 +1,5 @@
+import os
+from joblib import parallel_backend
 import json
 from tensorflow import keras
 import argparse
@@ -25,9 +27,7 @@ from tensorflow.keras.callbacks import (
 parser = argparse.ArgumentParser()
 parser.add_argument("--DATA_PATH", default="../datasets/")
 parser.add_argument(
-    "--CLASSIFIER",
-    default="RF",
-    help="Supported types: RF, DTree, NB, SVM, Linear",
+    "--CLASSIFIER", default="RF", help="Supported types: RF, DTree, NB, SVM, Linear",
 )
 parser.add_argument("--N_JOBS", type=int, default=-1)
 parser.add_argument(
@@ -227,13 +227,7 @@ def build_nn(
 ):
     model = Sequential()
 
-    model.add(
-        Dense(
-            units=X.shape[1],
-            input_shape=X.shape[1:],
-            activation=activation,
-        )
-    )
+    model.add(Dense(units=X.shape[1], input_shape=X.shape[1:], activation=activation,))
 
     for _ in range(0, nr_hidden_layers):
         model.add(
@@ -347,8 +341,14 @@ if config.HYPER_SEARCH:
         verbose=1,
         n_iter=config.N_ITER,
     )
+    X = X.to_numpy()
+    Y = Y.to_numpy()
+    print(X)
+    print(Y)
     print(np.shape(X))
     print(np.shape(Y))
+
+    #  with parallel_backend("threading", n_jobs=len(os.sched_getaffinity(0))):
     fitted_model = gridsearch.fit(X, Y)
     #  Y_pred = fitted_model.predict(X_test)
     #
@@ -388,10 +388,7 @@ else:
         #  random_state=config.RANDOM_SEED,
     )
 
-    fitted_model = model.fit(
-        X=X,
-        y=Y,
-    )
+    fitted_model = model.fit(X=X, y=Y,)
 
     #  Y_pred = fitted_model.predict(X_test)
 
