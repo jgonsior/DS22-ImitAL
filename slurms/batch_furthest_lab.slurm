@@ -4,8 +4,11 @@
 
 #SBATCH --time=23:59:59   # walltime
 #SBATCH --nodes=1  # number of processor cores (i.e. threads)
-#SBATCH --ntasks=24      # limit to one node
-#SBATCH --mem-per-cpu=8024M   # memory per CPU core
+#SBATCH --ntasks=1      # limit to one node
+#SBATCH --tasks-per-node=1
+#SBATCH --cpus-per-task=128 # equals 256 threads
+#SBATCH --mem-per-cpu=1024M   # memory per CPU core
+#SBATCH -p romeo
 #SBATCH --mail-user=julius.gonsior@tu-dresden.de   # email address
 #SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE,TIME_LIMIT
 #SBATCH -A p_ml_il

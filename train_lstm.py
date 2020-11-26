@@ -341,12 +341,12 @@ if config.HYPER_SEARCH:
         verbose=1,
         n_iter=config.N_ITER,
     )
-    X = X.to_numpy()
-    Y = Y.to_numpy()
-    print(X)
-    print(Y)
-    print(np.shape(X))
-    print(np.shape(Y))
+    #  X = X.to_numpy()
+    #  Y = Y.to_numpy()
+    #  print(X)
+    #  print(Y)
+    #  print(np.shape(X))
+    #  print(np.shape(Y))
 
     #  with parallel_backend("threading", n_jobs=len(os.sched_getaffinity(0))):
     fitted_model = gridsearch.fit(X, Y)
