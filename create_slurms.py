@@ -88,8 +88,8 @@ classics = Template(
 #SBATCH --mail-user=julius.gonsior@tu-dresden.de   # email address
 #SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE,TIME_LIMIT
 #SBATCH -A p_ml_il
-#SBATCH --output ${WS_DIR}/slurm_out_classic.txt
-#SBATCH --error ${WS_DIR}/slurm_error_classic.txt
+#SBATCH --output ${WS_DIR}/slurm_classic_out.txt
+#SBATCH --error ${WS_DIR}/slurm_classic_error.txt
 
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
 export OMP_NUM_THREADS=$$SLURM_CPUS_ON_NODE
@@ -110,13 +110,13 @@ plots = Template(
 #SBATCH --mail-user=julius.gonsior@tu-dresden.de   # email address
 #SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE,TIME_LIMIT
 #SBATCH -A p_ml_il
-#SBATCH --output ${WS_DIR}/slurm_${TITLE}out_plots.txt
-#SBATCH --error ${WS_DIR}/slurm_${TITLE}error_plots.txt
+#SBATCH --output ${WS_DIR}/slurm_${TITLE}_plots_out.txt
+#SBATCH --error ${WS_DIR}/slurm_${TITLE}_plots_error.txt
 
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
 export OMP_NUM_THREADS=$$SLURM_CPUS_ON_NODE
 export JOBLIB_TEMP_FOLDER=${WS_DIR}/tmp
-MPLCONFIGDIR=${WS_DIR}/cache python3 -m pipenv run python ${WS_DIR}/imitating-weakal/full_experiment.py --OUTPUT_DIRECTORY ${WS_DIR}/single_vs_batch/ --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES $TEST_NR_LEARNING_SAMPLES --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --SKIP_TRAINING_DATA_GENERATION --SKIP_ANN_EVAL --FINAL_PICTURE ${WS_DIR}/single_vs_batch/plots_batch_${TITLE} --PLOT_METRIC acc_auc
+MPLCONFIGDIR=${WS_DIR}/cache python3 -m pipenv run python ${WS_DIR}/imitating-weakal/full_experiment.py --OUTPUT_DIRECTORY ${WS_DIR}/single_vs_batch/ --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES $TEST_NR_LEARNING_SAMPLES --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --BASE_PARAM_STRING batch_$TITLE --SKIP_TRAINING_DATA_GENERATION --SKIP_ANN_EVAL --FINAL_PICTURE ${WS_DIR}/single_vs_batch/plots_batch_${TITLE} --PLOT_METRIC acc_auc
 exit 0
 """
 )
