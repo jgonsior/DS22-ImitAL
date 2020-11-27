@@ -88,12 +88,6 @@ if config.HYPER_SEARCH:
             "N_ITER": config.NR_ANN_HYPER_SEARCH_ITERATIONS,
         },
     )
-
-if not config.SKIP_ANN_EVAL:
-    HYPER_SEARCH_OUTPUT_FILE = (
-        config.OUTPUT_DIRECTORY + train_base_param_string + "/hyper_results.txt"
-    )
-    print(HYPER_SEARCH_OUTPUT_FILE)
     assert os.path.exists(HYPER_SEARCH_OUTPUT_FILE)
 
     with open(HYPER_SEARCH_OUTPUT_FILE, "r") as f:
@@ -104,6 +98,19 @@ if not config.SKIP_ANN_EVAL:
         for k, v in lower_params.items():
             ANN_HYPER_PARAMS[k.upper()] = v
 
+
+if not config.SKIP_ANN_EVAL:
+    if not config.HYPER_SEARCH:
+        ANN_HYPER_PARAMS = {
+            "REGULAR_DROPOUT_RATE": 0.3,
+            "OPTIMIZER": "Adam",
+            "NR_HIDDEN_NEURONS": 900,
+            "NR_HIDDEN_LAYERS": 4,
+            "LOSS": "MeanSquaredError",
+            "EPOCHS": 10000,
+            "BATCH_SIZE": 32,
+            "ACTIVATION": "tanh",
+        }
     run_python_experiment(
         "Train ANN",
         config.OUTPUT_DIRECTORY + train_base_param_string + "/trained_ann.pickle",
