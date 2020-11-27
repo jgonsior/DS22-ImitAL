@@ -9,8 +9,8 @@
 #SBATCH --mail-user=julius.gonsior@tu-dresden.de   # email address
 #SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE,TIME_LIMIT
 #SBATCH -A p_ml_il
-#SBATCH --output /lustre/ssd/ws/s5968580-IL_TD2/slurm_out_classic.txt
-#SBATCH --error /lustre/ssd/ws/s5968580-IL_TD2/slurm_error_classic.txt
+#SBATCH --output /lustre/ssd/ws/s5968580-IL_TD2/slurm_classic_out.txt
+#SBATCH --error /lustre/ssd/ws/s5968580-IL_TD2/slurm_classic_error.txt
 
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
 export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
