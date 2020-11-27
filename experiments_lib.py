@@ -259,7 +259,8 @@ def run_parallel_experiment(
         ) as parallel:
             output = parallel(delayed(run_parallel)(CLI_COMMAND, k) for k in ids)
 
-    OUTPUT_FILE_LENGTH = len(df) + len(ids)
+    if Path(OUTPUT_FILE).is_file():
+        OUTPUT_FILE_LENGTH = len(df) + len(ids)
 
     run_code_experiment(
         EXPERIMENT_TITLE,
