@@ -16,7 +16,9 @@ parser.add_argument("--TEST_NR_LEARNING_SAMPLES", default=1000, type=int)
 parser.add_argument("--TRAIN_NR_LEARNING_SAMPLES", default=1000, type=int)
 parser.add_argument("--ITERATIONS_PER_BATCH", default=10, type=int)
 parser.add_argument("--OUT_DIR", default="slurms2")
-parser.add_argument("--WS_DIR", default="/lustre/ssd/ws/s5968580-IL_TD2")
+parser.add_argument(
+    "--WS_DIR", default="/lustre/ssd/ws/s5968580-IL_TD2/imitating-weakal"
+)
 
 
 config = parser.parse_args()
