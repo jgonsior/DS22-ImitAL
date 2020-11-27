@@ -70,6 +70,9 @@ if config.ONLY_TRAINING_DATA:
     exit(1)
 
 if config.HYPER_SEARCH:
+    HYPER_SEARCH_OUTPUT_FILE = (
+        config.OUTPUT_DIRECTORY + train_base_param_string + "/hyper_results.txt"
+    )
     run_python_experiment(
         "ANN hyper_search",
         HYPER_SEARCH_OUTPUT_FILE,
@@ -91,6 +94,7 @@ if not config.SKIP_ANN_EVAL:
     HYPER_SEARCH_OUTPUT_FILE = (
         config.OUTPUT_DIRECTORY + train_base_param_string + "/hyper_results.txt"
     )
+    print(HYPER_SEARCH_OUTPUT_FILE)
     assert os.path.exists(HYPER_SEARCH_OUTPUT_FILE)
 
     with open(HYPER_SEARCH_OUTPUT_FILE, "r") as f:
@@ -123,6 +127,7 @@ if not config.SKIP_ANN_EVAL:
             "RANDOM_SEED": 1,
         },
     )
+
 
 if config.INCLUDE_OPTIMAL_IN_PLOT or config.INCLUDE_ONLY_OPTIMAL_IN_PLOT:
     OPTIMAL_OUTPUT_FILE = PARENT_OUTPUT_DIRECTORY + train_base_param_string + "_optimal"
@@ -162,7 +167,7 @@ if config.INCLUDE_OPTIMAL_IN_PLOT or config.INCLUDE_ONLY_OPTIMAL_IN_PLOT:
             "INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY": config.INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY,
             **shared_arguments,
         },
-        PARALLEL_OFFSET=100000,
+        PARALLEL_OFFSET=config.TEST_PARALLEL_OFFSET,
         PARALLEL_AMOUNT=config.TRAIN_NR_LEARNING_SAMPLES,
         OUTPUT_FILE_LENGTH=config.TRAIN_NR_LEARNING_SAMPLES,
         RESTART_IF_NOT_ENOUGH_SAMPLES=True,
@@ -224,7 +229,7 @@ for DATASET_NAME in [
                 "INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY": config.INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY,
                 **evaluation_arguments,
             },
-            PARALLEL_OFFSET=100000,
+            PARALLEL_OFFSET=config.TEST_PARALLEL_OFFSET,
             PARALLEL_AMOUNT=config.TEST_NR_LEARNING_SAMPLES,
             OUTPUT_FILE_LENGTH=config.TEST_NR_LEARNING_SAMPLES,
         )
@@ -235,7 +240,9 @@ for DATASET_NAME in [
         text = text.replace("trained_nn", config.OUTPUT_DIRECTORY)
         p.write_text(text)
 
-    for comparison in config.TEST_COMPARISONS:
+    if config.STOP_AFTER_ANN_EVAL:
+        exit(0)
+
         COMPARISON_PATH = (
             PARENT_OUTPUT_DIRECTORY
             + "classics/"
@@ -252,7 +259,7 @@ for DATASET_NAME in [
                 "SAMPLING": comparison,
                 **evaluation_arguments,
             },
-            PARALLEL_OFFSET=100000,
+            PARALLEL_OFFSET=config.TEST_PARALLEL_OFFSET,
             PARALLEL_AMOUNT=config.TEST_NR_LEARNING_SAMPLES,
             OUTPUT_FILE_LENGTH=config.TEST_NR_LEARNING_SAMPLES,
         )

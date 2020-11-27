@@ -1,3 +1,4 @@
+import pandas as pd
 import json
 import math
 import multiprocessing
@@ -65,6 +66,7 @@ def get_config():
             (["--SKIP_TRAINING_DATA_GENERATION"], {"action": "store_true"}),
             (["--SKIP_ANN_EVAL"], {"action": "store_true"}),
             (["--SKIP_PLOTS"], {"action": "store_true"}),
+            (["--STOP_AFTER_ANN_EVAL"], {"action": "store_true"}),
             (["--HYPER_SEARCH"], {"action": "store_true"}),
             (["--ONLY_TRAINING_DATA"], {"action": "store_true"}),
             (["--PLOT_METRIC"], {"default": "acc_auc"}),
@@ -79,6 +81,7 @@ def get_config():
             (["--INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST"], {"default": 0.2}),
             (["--INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB"], {"default": 0.2}),
             (["--INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY"], {"default": 0.2}),
+            (["--TEST_PARALLEL_OFFSET"], {"default": 100000}),
         ],
         standard_args=False,
         return_argparse=True,
@@ -229,15 +232,22 @@ def run_parallel_experiment(
         os.system(CLI_COMMAND)
 
     # if file exists already and isn't empty we don't need to recreate all samples
-    if Path(OUTPUT_FILE).is_file():
-        existing_length = sum(1 for l in open(OUTPUT_FILE)) - 1
-        PARALLEL_AMOUNT -= existing_length
-        PARALLEL_OFFSET = existing_length
+    #  if Path(OUTPUT_FILE).is_file():
+    #      existing_length = sum(1 for l in open(OUTPUT_FILE)) - 1
+    #      PARALLEL_AMOUNT -= existing_length
+    #      PARALLEL_OFFSET = existing_length
 
     if RANDOM_IDS:
         ids = RANDOM_IDS
     else:
-        ids = range(1, PARALLEL_AMOUNT + 1)
+        possible_ids = range(
+            int(PARALLEL_OFFSET), int(PARALLEL_OFFSET) + int(PARALLEL_AMOUNT)
+        )
+        if Path(OUTPUT_FILE).is_file():
+            df = pd.read_csv(OUTPUT_FILE, index_col=None, usecols=["random_seed"])
+            ids = [i for i in possible_ids if i not in df["random_seed"]]
+        else:
+            ids = possible_ids
 
     def code(CLI_COMMAND, PARALLEL_AMOUNT, PARALLEL_OFFSET):
         with Parallel(
@@ -246,9 +256,9 @@ def run_parallel_experiment(
             #  multiprocessing.cpu_count(),
             backend="loky",
         ) as parallel:
-            output = parallel(
-                delayed(run_parallel)(CLI_COMMAND, k + PARALLEL_OFFSET) for k in ids
-            )
+            output = parallel(delayed(run_parallel)(CLI_COMMAND, k) for k in ids)
+
+    OUTPUT_FILE_LENGTH = len(df) + len(ids)
 
     run_code_experiment(
         EXPERIMENT_TITLE,
