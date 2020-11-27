@@ -74,54 +74,55 @@ HYPER_SEARCH_OUTPUT_FILE = (
 )
 assert os.path.exists(HYPER_SEARCH_OUTPUT_FILE)
 
-# nice code, but needs to much memory for taurus
-# run_python_experiment(
-#      "ANN hyper_search",
-#      HYPER_SEARCH_OUTPUT_FILE,
-#      CLI_COMMAND="python train_lstm.py",
-#      CLI_ARGUMENTS={
-#          "DATA_PATH": config.OUTPUT_DIRECTORY + train_base_param_string,
-#          "STATE_ENCODING": "listwise",
-#          "TARGET_ENCODING": "binary",
-#          "SAVE_DESTINATION": config.OUTPUT_DIRECTORY
-#          + train_base_param_string
-#          + "/trained_ann.pickle",
-#          "RANDOM_SEED": 1,
-#          "HYPER_SEARCH": True,
-#          "N_ITER": config.NR_ANN_HYPER_SEARCH_ITERATIONS,
-#      },
-#  )
+if config.HYPER_SEARCH:
+    run_python_experiment(
+        "ANN hyper_search",
+        HYPER_SEARCH_OUTPUT_FILE,
+        CLI_COMMAND="python train_lstm.py",
+        CLI_ARGUMENTS={
+            "DATA_PATH": config.OUTPUT_DIRECTORY + train_base_param_string,
+            "STATE_ENCODING": "listwise",
+            "TARGET_ENCODING": "binary",
+            "SAVE_DESTINATION": config.OUTPUT_DIRECTORY
+            + train_base_param_string
+            + "/trained_ann.pickle",
+            "RANDOM_SEED": 1,
+            "HYPER_SEARCH": True,
+            "N_ITER": config.NR_ANN_HYPER_SEARCH_ITERATIONS,
+        },
+    )
 
-with open(HYPER_SEARCH_OUTPUT_FILE, "r") as f:
-    lines = f.read().splitlines()
-    last_line = lines[-1]
-    lower_params = json.loads(last_line)
-    ANN_HYPER_PARAMS = {}
-    for k, v in lower_params.items():
-        ANN_HYPER_PARAMS[k.upper()] = v
+if not config.SKIP_ANN_EVAL:
+    with open(HYPER_SEARCH_OUTPUT_FILE, "r") as f:
+        lines = f.read().splitlines()
+        last_line = lines[-1]
+        lower_params = json.loads(last_line)
+        ANN_HYPER_PARAMS = {}
+        for k, v in lower_params.items():
+            ANN_HYPER_PARAMS[k.upper()] = v
 
-run_python_experiment(
-    "Train ANN",
-    config.OUTPUT_DIRECTORY + train_base_param_string + "/trained_ann.pickle",
-    CLI_COMMAND="python train_lstm.py",
-    CLI_ARGUMENTS={
-        "DATA_PATH": config.OUTPUT_DIRECTORY + train_base_param_string,
-        "STATE_ENCODING": "listwise",
-        "TARGET_ENCODING": "binary",
-        "SAVE_DESTINATION": config.OUTPUT_DIRECTORY
-        + train_base_param_string
-        + "/trained_ann.pickle",
-        "REGULAR_DROPOUT_RATE": ANN_HYPER_PARAMS["REGULAR_DROPOUT_RATE"],
-        "OPTIMIZER": ANN_HYPER_PARAMS["OPTIMIZER"],
-        "NR_HIDDEN_NEURONS": ANN_HYPER_PARAMS["NR_HIDDEN_NEURONS"],
-        "NR_HIDDEN_LAYERS": ANN_HYPER_PARAMS["NR_HIDDEN_LAYERS"],
-        "LOSS": ANN_HYPER_PARAMS["LOSS"],
-        "EPOCHS": ANN_HYPER_PARAMS["EPOCHS"],
-        "BATCH_SIZE": ANN_HYPER_PARAMS["BATCH_SIZE"],
-        "ACTIVATION": ANN_HYPER_PARAMS["ACTIVATION"],
-        "RANDOM_SEED": 1,
-    },
-)
+    run_python_experiment(
+        "Train ANN",
+        config.OUTPUT_DIRECTORY + train_base_param_string + "/trained_ann.pickle",
+        CLI_COMMAND="python train_lstm.py",
+        CLI_ARGUMENTS={
+            "DATA_PATH": config.OUTPUT_DIRECTORY + train_base_param_string,
+            "STATE_ENCODING": "listwise",
+            "TARGET_ENCODING": "binary",
+            "SAVE_DESTINATION": config.OUTPUT_DIRECTORY
+            + train_base_param_string
+            + "/trained_ann.pickle",
+            "REGULAR_DROPOUT_RATE": ANN_HYPER_PARAMS["REGULAR_DROPOUT_RATE"],
+            "OPTIMIZER": ANN_HYPER_PARAMS["OPTIMIZER"],
+            "NR_HIDDEN_NEURONS": ANN_HYPER_PARAMS["NR_HIDDEN_NEURONS"],
+            "NR_HIDDEN_LAYERS": ANN_HYPER_PARAMS["NR_HIDDEN_LAYERS"],
+            "LOSS": ANN_HYPER_PARAMS["LOSS"],
+            "EPOCHS": ANN_HYPER_PARAMS["EPOCHS"],
+            "BATCH_SIZE": ANN_HYPER_PARAMS["BATCH_SIZE"],
+            "ACTIVATION": ANN_HYPER_PARAMS["ACTIVATION"],
+            "RANDOM_SEED": 1,
+        },
+    )
 
 if config.INCLUDE_OPTIMAL_IN_PLOT or config.INCLUDE_ONLY_OPTIMAL_IN_PLOT:
     OPTIMAL_OUTPUT_FILE = PARENT_OUTPUT_DIRECTORY + train_base_param_string + "_optimal"
@@ -195,44 +196,44 @@ for DATASET_NAME in [
 
     original_test_base_param_string = test_base_param_string
     test_base_param_string += "_" + DATASET_NAME
+    if not config.SKIP_ANN_EVAL:
+        run_parallel_experiment(
+            "Creating ann-evaluation data",
+            OUTPUT_FILE=EVALUATION_FILE_TRAINED_NN_PATH,
+            CLI_COMMAND="python single_al_cycle.py",
+            CLI_ARGUMENTS={
+                "NN_BINARY": config.OUTPUT_DIRECTORY
+                + train_base_param_string
+                + "/trained_ann.pickle",
+                "OUTPUT_DIRECTORY": EVALUATION_FILE_TRAINED_NN_PATH,
+                "SAMPLING": "trained_nn",
+                "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
+                "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
+                "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
+                "STATE_PREDICTED_UNITY": config.TRAIN_STATE_PREDICTED_UNITY,
+                "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
+                "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
+                "STATE_DIFF_PROBAS": config.TRAIN_STATE_DIFF_PROBAS,
+                "STATE_DISTANCES": config.TRAIN_STATE_DISTANCES,
+                "STATE_UNCERTAINTIES": config.TRAIN_STATE_UNCERTAINTIES,
+                "INITIAL_BATCH_SAMPLING_METHOD": config.INITIAL_BATCH_SAMPLING_METHOD,
+                "INITIAL_BATCH_SAMPLING_ARG": config.INITIAL_BATCH_SAMPLING_ARG,
+                "INITIAL_BATCH_SAMPLING_HYBRID_UNCERT": config.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT,
+                "INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST": config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST,
+                "INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB": config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB,
+                "INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY": config.INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY,
+                **evaluation_arguments,
+            },
+            PARALLEL_OFFSET=100000,
+            PARALLEL_AMOUNT=config.TEST_NR_LEARNING_SAMPLES,
+            OUTPUT_FILE_LENGTH=config.TEST_NR_LEARNING_SAMPLES,
+        )
 
-    run_parallel_experiment(
-        "Creating ann-evaluation data",
-        OUTPUT_FILE=EVALUATION_FILE_TRAINED_NN_PATH,
-        CLI_COMMAND="python single_al_cycle.py",
-        CLI_ARGUMENTS={
-            "NN_BINARY": config.OUTPUT_DIRECTORY
-            + train_base_param_string
-            + "/trained_ann.pickle",
-            "OUTPUT_DIRECTORY": EVALUATION_FILE_TRAINED_NN_PATH,
-            "SAMPLING": "trained_nn",
-            "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
-            "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
-            "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
-            "STATE_PREDICTED_UNITY": config.TRAIN_STATE_PREDICTED_UNITY,
-            "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
-            "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
-            "STATE_DIFF_PROBAS": config.TRAIN_STATE_DIFF_PROBAS,
-            "STATE_DISTANCES": config.TRAIN_STATE_DISTANCES,
-            "STATE_UNCERTAINTIES": config.TRAIN_STATE_UNCERTAINTIES,
-            "INITIAL_BATCH_SAMPLING_METHOD": config.INITIAL_BATCH_SAMPLING_METHOD,
-            "INITIAL_BATCH_SAMPLING_ARG": config.INITIAL_BATCH_SAMPLING_ARG,
-            "INITIAL_BATCH_SAMPLING_HYBRID_UNCERT": config.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT,
-            "INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST": config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST,
-            "INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB": config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB,
-            "INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY": config.INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY,
-            **evaluation_arguments,
-        },
-        PARALLEL_OFFSET=100000,
-        PARALLEL_AMOUNT=config.TEST_NR_LEARNING_SAMPLES,
-        OUTPUT_FILE_LENGTH=config.TEST_NR_LEARNING_SAMPLES,
-    )
-
-    # rename sampling column
-    p = Path(EVALUATION_FILE_TRAINED_NN_PATH)
-    text = p.read_text()
-    text = text.replace("trained_nn", config.OUTPUT_DIRECTORY)
-    p.write_text(text)
+        # rename sampling column
+        p = Path(EVALUATION_FILE_TRAINED_NN_PATH)
+        text = p.read_text()
+        text = text.replace("trained_nn", config.OUTPUT_DIRECTORY)
+        p.write_text(text)
 
     for comparison in config.TEST_COMPARISONS:
         COMPARISON_PATH = (
@@ -256,143 +257,150 @@ for DATASET_NAME in [
             OUTPUT_FILE_LENGTH=config.TEST_NR_LEARNING_SAMPLES,
         )
 
-    if config.FINAL_PICTURE == "":
-        comparison_path = (
-            PARENT_OUTPUT_DIRECTORY
-            #  + test_base_param_string
-            + "_".join(config.TEST_COMPARISONS)
-            + ".csv"
-        )
-    else:
-        comparison_path = config.FINAL_PICTURE + "_" + DATASET_NAME
-
-    def concatenate_evaluation_csvs():
-        df = pd.read_csv(
-            EVALUATION_FILE_TRAINED_NN_PATH,
-            index_col=None,
-            nrows=1 + config.TEST_NR_LEARNING_SAMPLES,
-        )
-        df["sampling"] = "Imitation Learned Neural Network " + str(
-            config.BASE_PARAM_STRING
-        )
-
-        if config.INCLUDE_OPTIMAL_IN_PLOT or config.INCLUDE_ONLY_OPTIMAL_IN_PLOT:
-            optimal_df = pd.read_csv(OPTIMAL_OUTPUT_FILE)
-            optimal_df["sampling"] = "Optimal Strategy"
-            df = pd.concat([df, optimal_df])
-
-        if config.INCLUDE_ONLY_OPTIMAL_IN_PLOT:
-            df = optimal_df
-
-        for comparison in config.TEST_COMPARISONS:
-            df2 = pd.read_csv(
-                PARENT_OUTPUT_DIRECTORY + "classics/" + comparison
+    if not config.SKIP_PLOTS:
+        if config.FINAL_PICTURE == "":
+            comparison_path = (
+                PARENT_OUTPUT_DIRECTORY
                 #  + test_base_param_string
-                + ".csv",
+                + "_".join(config.TEST_COMPARISONS)
+                + ".csv"
+            )
+        else:
+            comparison_path = config.FINAL_PICTURE + "_" + DATASET_NAME
+
+        def concatenate_evaluation_csvs():
+            df = pd.read_csv(
+                EVALUATION_FILE_TRAINED_NN_PATH,
                 index_col=None,
                 nrows=1 + config.TEST_NR_LEARNING_SAMPLES,
             )
-            df = pd.concat([df, df2])
-
-        #  print(df)
-        df.to_csv(comparison_path, index=False)
-
-    run_code_experiment(
-        "Generating evaluation CSVs", comparison_path, code=concatenate_evaluation_csvs
-    )
-
-    run_python_experiment(
-        "Evaluation plots",
-        comparison_path + ".png",
-        CLI_COMMAND="python compare_distributions.py",
-        CLI_ARGUMENTS={
-            "CSV_FILE": comparison_path,
-            "GROUP_COLUMNS": "sampling",
-            "SAVE_FILE": comparison_path,
-            "TITLE": comparison_path,
-            "METRIC": config.PLOT_METRIC,
-        },
-    )
-
-    # print evaluation table using all metrics at once
-
-    METRIC_TABLE_SUMMARY = config.FINAL_PICTURE + "_" + DATASET_NAME + "_" "table.txt"
-
-    def plot_all_metrics_as_a_table(df):
-        sources = []
-        sources = df["sampling"].unique()
-
-        metrics = [
-            "acc_auc",
-            "acc_test",
-            "acc_train",
-            "roc_auc_macro_oracle",
-            "roc_auc_weighted_oracle",
-        ]
-
-        table = pd.DataFrame(columns=["Source", *metrics])
-        for source in sources:
-            metric_values = {"Source": source}
-            for metric in metrics:
-                metric_values[metric] = df.loc[df["sampling"] == source][metric].mean()
-                #  metric_values[metric] = df.loc[df["sampling"] == source][
-                #      metric
-                #  ].median()
-                metric_values[metric + "_diff_to_mm"] = np.NaN
-            table = table.append(metric_values, ignore_index=True)
-
-        # add to table +- columns for each metric
-        for source in sources:
-            for metric in metrics:
-                max_value = table.loc[table["Source"] == "uncertainty_max_margin"][
-                    metric
-                ].max()
-                table.loc[table["Source"] == source, metric + "_diff_to_mm"] = (
-                    table.loc[table["Source"] == source][metric] - max_value
-                )
-
-        print(
-            tabulate(
-                table,
-                headers="keys",
-                showindex=False,
-                floatfmt=".2%",
-                tablefmt="fancy_grid",
+            df["sampling"] = "Imitation Learned Neural Network " + str(
+                config.BASE_PARAM_STRING
             )
+
+            if config.INCLUDE_OPTIMAL_IN_PLOT or config.INCLUDE_ONLY_OPTIMAL_IN_PLOT:
+                optimal_df = pd.read_csv(OPTIMAL_OUTPUT_FILE)
+                optimal_df["sampling"] = "Optimal Strategy"
+                df = pd.concat([df, optimal_df])
+
+            if config.INCLUDE_ONLY_OPTIMAL_IN_PLOT:
+                df = optimal_df
+
+            for comparison in config.TEST_COMPARISONS:
+                df2 = pd.read_csv(
+                    PARENT_OUTPUT_DIRECTORY + "classics/" + comparison
+                    #  + test_base_param_string
+                    + ".csv",
+                    index_col=None,
+                    nrows=1 + config.TEST_NR_LEARNING_SAMPLES,
+                )
+                df = pd.concat([df, df2])
+
+            #  print(df)
+            df.to_csv(comparison_path, index=False)
+
+        run_code_experiment(
+            "Generating evaluation CSVs",
+            comparison_path,
+            code=concatenate_evaluation_csvs,
         )
-        with open(METRIC_TABLE_SUMMARY, "w") as f:
-            f.write(
-                "\n"
-                + DATASET_NAME
-                + "\n\n\n"
-                + tabulate(
-                    table,
-                    headers="keys",
-                    showindex=False,
-                    floatfmt=".2%",
-                    tablefmt="fancy_grid",
-                )
-            )
-        with open(config.FINAL_PICTURE + "_table.txt", "a") as f:
-            f.write(
-                "\n"
-                + DATASET_NAME
-                + "\n\n\n"
-                + tabulate(
-                    table,
-                    headers="keys",
-                    showindex=False,
-                    floatfmt=".2%",
-                    tablefmt="fancy_grid",
-                )
-            )
 
-    df = pd.read_csv(comparison_path, index_col=None)
-    run_code_experiment(
-        "Printing dataset_metrics",
-        METRIC_TABLE_SUMMARY,
-        code=plot_all_metrics_as_a_table,
-        code_kwargs={"df": df},
-    )
-    test_base_param_string = original_test_base_param_string
-    #  exit(-1)
+        run_python_experiment(
+            "Evaluation plots",
+            comparison_path + ".png",
+            CLI_COMMAND="python compare_distributions.py",
+            CLI_ARGUMENTS={
+                "CSV_FILE": comparison_path,
+                "GROUP_COLUMNS": "sampling",
+                "SAVE_FILE": comparison_path,
+                "TITLE": comparison_path,
+                "METRIC": config.PLOT_METRIC,
+            },
+        )
+
+        # print evaluation table using all metrics at once
+
+        METRIC_TABLE_SUMMARY = (
+            config.FINAL_PICTURE + "_" + DATASET_NAME + "_" "table.txt"
+        )
+
+        def plot_all_metrics_as_a_table(df):
+            sources = []
+            sources = df["sampling"].unique()
+
+            metrics = [
+                "acc_auc",
+                "acc_test",
+                "acc_train",
+                "roc_auc_macro_oracle",
+                "roc_auc_weighted_oracle",
+            ]
+
+            table = pd.DataFrame(columns=["Source", *metrics])
+            for source in sources:
+                metric_values = {"Source": source}
+                for metric in metrics:
+                    metric_values[metric] = df.loc[df["sampling"] == source][
+                        metric
+                    ].mean()
+                    #  metric_values[metric] = df.loc[df["sampling"] == source][
+                    #      metric
+                    #  ].median()
+                    metric_values[metric + "_diff_to_mm"] = np.NaN
+                table = table.append(metric_values, ignore_index=True)
+
+            # add to table +- columns for each metric
+            for source in sources:
+                for metric in metrics:
+                    max_value = table.loc[table["Source"] == "uncertainty_max_margin"][
+                        metric
+                    ].max()
+                    table.loc[table["Source"] == source, metric + "_diff_to_mm"] = (
+                        table.loc[table["Source"] == source][metric] - max_value
+                    )
+
+            print(
+                tabulate(
+                    table,
+                    headers="keys",
+                    showindex=False,
+                    floatfmt=".2%",
+                    tablefmt="fancy_grid",
+                )
+            )
+            with open(METRIC_TABLE_SUMMARY, "w") as f:
+                f.write(
+                    "\n"
+                    + DATASET_NAME
+                    + "\n\n\n"
+                    + tabulate(
+                        table,
+                        headers="keys",
+                        showindex=False,
+                        floatfmt=".2%",
+                        tablefmt="fancy_grid",
+                    )
+                )
+            with open(config.FINAL_PICTURE + "_table.txt", "a") as f:
+                f.write(
+                    "\n"
+                    + DATASET_NAME
+                    + "\n\n\n"
+                    + tabulate(
+                        table,
+                        headers="keys",
+                        showindex=False,
+                        floatfmt=".2%",
+                        tablefmt="fancy_grid",
+                    )
+                )
+
+        df = pd.read_csv(comparison_path, index_col=None)
+        run_code_experiment(
+            "Printing dataset_metrics",
+            METRIC_TABLE_SUMMARY,
+            code=plot_all_metrics_as_a_table,
+            code_kwargs={"df": df},
+        )
+        test_base_param_string = original_test_base_param_string
+        #  exit(-1)
