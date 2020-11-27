@@ -68,9 +68,6 @@ if not config.SKIP_TRAINING_DATA_GENERATION:
         RESTART_IF_NOT_ENOUGH_SAMPLES=False,
     )
 
-if config.ONLY_TRAINING_DATA:
-    exit(1)
-
 if config.HYPER_SEARCH:
     HYPER_SEARCH_OUTPUT_FILE = (
         config.OUTPUT_DIRECTORY + train_base_param_string + "/hyper_results.txt"
@@ -130,6 +127,9 @@ if not config.SKIP_ANN_EVAL:
         },
     )
 
+
+if config.ONLY_TRAINING_DATA:
+    exit(1)
 
 if config.INCLUDE_OPTIMAL_IN_PLOT or config.INCLUDE_ONLY_OPTIMAL_IN_PLOT:
     OPTIMAL_OUTPUT_FILE = PARENT_OUTPUT_DIRECTORY + train_base_param_string + "_optimal"
@@ -245,6 +245,7 @@ for DATASET_NAME in [
     if config.STOP_AFTER_ANN_EVAL:
         exit(0)
 
+    for comparison in config.TEST_COMPARISONS:
         COMPARISON_PATH = (
             PARENT_OUTPUT_DIRECTORY
             + "classics/"
