@@ -16,9 +16,7 @@ parser.add_argument("--TEST_NR_LEARNING_SAMPLES", default=1000, type=int)
 parser.add_argument("--TRAIN_NR_LEARNING_SAMPLES", default=1000, type=int)
 parser.add_argument("--ITERATIONS_PER_BATCH", default=10, type=int)
 parser.add_argument("--OUT_DIR", default="slurms2")
-parser.add_argument(
-    "--WS_DIR", default="/lustre/ssd/ws/s5968580-IL_TD2/imitating-weakal"
-)
+parser.add_argument("--WS_DIR", default="/lustre/ssd/ws/s5968580-IL_TD2")
 
 
 config = parser.parse_args()
@@ -126,10 +124,10 @@ exit 0
 
 submit_jobs = Template(
     """#!/bin/bash
-create_ann_training_data_id=$$(sbatch ${WS_DIR}/${OUT_DIR}/create_ann_training_data.slurm)
-create_ann_eval_id=$$(sbatch --dependency=afterok:$$create_ann_training_data_id ${WS_DIR}/${OUT_DIR}/create_ann_eval_data.slurm)
-classics_id=$$(sbatch ${WS_DIR}/${OUT_DIR}/classics.slurm)
-plots_id=$$(sbatch --dependency=afterok:$$create_ann_eval_data,afterok:$$create_ann_eval_id,afterok:$$classics_id ${WS_DIR}/${OUT_DIR}/plots.slurm)
+create_ann_training_data_id=$$(sbatch ${WS_DIR}/imitating-weakal/${OUT_DIR}/create_ann_training_data.slurm)
+create_ann_eval_id=$$(sbatch --dependency=afterok:$$create_ann_training_data_id ${WS_DIR}/imitating-weakal//${OUT_DIR}/create_ann_eval_data.slurm)
+classics_id=$$(sbatch ${WS_DIR}/imitating-weakal//${OUT_DIR}/classics.slurm)
+plots_id=$$(sbatch --dependency=afterok:$$create_ann_eval_data:$$create_ann_eval_id:$$classics_id ${WS_DIR}/imitating-weakal//${OUT_DIR}/plots.slurm)
 exit 0
 """
 )
