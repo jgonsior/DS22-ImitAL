@@ -69,11 +69,6 @@ if not config.SKIP_TRAINING_DATA_GENERATION:
 if config.ONLY_TRAINING_DATA:
     exit(1)
 
-HYPER_SEARCH_OUTPUT_FILE = (
-    config.OUTPUT_DIRECTORY + train_base_param_string + "/hyper_results.txt"
-)
-assert os.path.exists(HYPER_SEARCH_OUTPUT_FILE)
-
 if config.HYPER_SEARCH:
     run_python_experiment(
         "ANN hyper_search",
@@ -93,6 +88,11 @@ if config.HYPER_SEARCH:
     )
 
 if not config.SKIP_ANN_EVAL:
+    HYPER_SEARCH_OUTPUT_FILE = (
+        config.OUTPUT_DIRECTORY + train_base_param_string + "/hyper_results.txt"
+    )
+    assert os.path.exists(HYPER_SEARCH_OUTPUT_FILE)
+
     with open(HYPER_SEARCH_OUTPUT_FILE, "r") as f:
         lines = f.read().splitlines()
         last_line = lines[-1]
