@@ -245,7 +245,8 @@ def run_parallel_experiment(
         )
         if Path(OUTPUT_FILE).is_file():
             df = pd.read_csv(OUTPUT_FILE, index_col=None, usecols=["random_seed"])
-            ids = [i for i in possible_ids if i not in df["random_seed"]]
+            rs = df["random_seed"].to_numpy()
+            ids = [i for i in possible_ids if i not in rs]
         else:
             ids = possible_ids
 
