@@ -26,7 +26,9 @@ if not config.SKIP_TRAINING_DATA_GENERATION:
     OUTPUT_FILE = PARENT_OUTPUT_DIRECTORY + train_base_param_string
     run_parallel_experiment(
         "Creating dataset",
-        OUTPUT_FILE=PARENT_OUTPUT_DIRECTORY + train_base_param_string + "/states.csv",
+        OUTPUT_FILE=PARENT_OUTPUT_DIRECTORY
+        + train_base_param_string
+        + "/dataset_creation.csv",
         CLI_COMMAND="python imit_training.py",
         CLI_ARGUMENTS={
             "DATASETS_PATH": "../datasets",
