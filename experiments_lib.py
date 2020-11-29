@@ -231,12 +231,6 @@ def run_parallel_experiment(
         print(CLI_COMMAND)
         os.system(CLI_COMMAND)
 
-    # if file exists already and isn't empty we don't need to recreate all samples
-    #  if Path(OUTPUT_FILE).is_file():
-    #      existing_length = sum(1 for l in open(OUTPUT_FILE)) - 1
-    #      PARALLEL_AMOUNT -= existing_length
-    #      PARALLEL_OFFSET = existing_length
-
     if RANDOM_IDS:
         ids = RANDOM_IDS
     else:
@@ -274,68 +268,3 @@ def run_parallel_experiment(
         OUTPUT_FILE_LENGTH=OUTPUT_FILE_LENGTH,
     )
     return
-    if RESTART_IF_NOT_ENOUGH_SAMPLES:
-        error_stop_counter = 3
-
-        while (
-            error_stop_counter > 0
-            and (sum(1 for l in open(OUTPUT_FILE)) or not Path(OUTPUT_FILE).is_file())
-            <= OUTPUT_FILE_LENGTH
-        ):
-            if Path(OUTPUT_FILE).is_file():
-                amount_of_existing_states = sum(1 for l in open(OUTPUT_FILE))
-            else:
-                amount_of_existing_states = 0
-
-            amount_of_missing_training_samples = (
-                TRAIN_NR_LEARNING_SAMPLES - amount_of_existing_states
-            )
-
-            amount_of_processes = amount_of_missing_training_samples / (
-                USER_QUERY_BUDGET_LIMIT / NR_QUERIES_PER_ITERATION
-            )
-
-            amount_of_processes = math.ceil(amount_of_processes)
-
-            print("running ", amount_of_processes, "processes")
-            run_code_experiment(
-                EXPERIMENT_TITLE,
-                OUTPUT_FILE,
-                code=code,
-                code_kwargs={
-                    "CLI_COMMAND": CLI_COMMAND,
-                    "PARALLEL_AMOUNT": amount_of_processes,
-                    "PARALLEL_OFFSET": PARALLEL_OFFSET,
-                },
-                OUTPUT_FILE_LENGTH=OUTPUT_FILE_LENGTH,
-            )
-
-            new_amount_of_existing_states = sum(1 for l in open(OUTPUT_FILE))
-            if new_amount_of_existing_states == amount_of_existing_states:
-                error_stop_counter -= 1
-
-        if sum(1 for l in open(OUTPUT_FILE)) > OUTPUT_FILE_LENGTH + 1:
-            print(OUTPUT_FILE)
-            print(os.path.dirname(OUTPUT_FILE))
-            # black magic to trim file using python
-            with open(OUTPUT_FILE, "r+") as f:
-                with open(os.path.dirname(OUTPUT_FILE) + "/opt_pol.csv", "r+") as f2:
-                    lines = f.readlines()
-                    lines2 = f2.readlines()
-                    f.seek(0)
-                    f2.seek(0)
-
-                    counter = 0
-                    for l in lines:
-                        counter += 1
-                        if counter <= OUTPUT_FILE_LENGTH + 1:
-                            f.write(l)
-                    f.truncate()
-
-                    counter = 0
-                    for l in lines2:
-                        counter += 1
-                        if counter <= OUTPUT_FILE_LENGTH + 1:
-                            f2.write(l)
-
-                    f2.truncate()
