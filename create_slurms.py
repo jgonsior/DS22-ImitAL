@@ -45,7 +45,7 @@ create_ann_training_data = Template(
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
 export OMP_NUM_THREADS=$$SLURM_CPUS_ON_NODE
 export JOBLIB_TEMP_FOLDER=${WS_DIR}/tmp
-MPLCONFIGDIR=${WS_DIR}/cache python3 -m pipenv run python ${WS_DIR}/imitating-weakal/full_experiment.py --TRAIN_STATE_DISTANCES --TRAIN_STATE_UNCERTAINTIES --TRAIN_STATE_PREDICTED_UNITY ${BATCH_MODE} --INITIAL_BATCH_SAMPLING_METHOD $TITLE --BASE_PARAM_STRING batch_$TITLE --INITIAL_BATCH_SAMPLING_ARG 200 --OUTPUT_DIRECTORY ${WS_DIR}/single_vs_batch/ --USER_QUERY_BUDGET_LIMIT 50 --TRAIN_NR_LEARNING_SAMPLES $TRAIN_NR_LEARNING_SAMPLES --ONLY_TRAINING_DATA 
+MPLCONFIGDIR=${WS_DIR}/cache python3 -m pipenv run python ${WS_DIR}/imitating-weakal/full_experiment.py --TRAIN_STATE_DISTANCES --TRAIN_STATE_UNCERTAINTIES --TRAIN_STATE_PREDICTED_UNITY ${BATCH_MODE} --INITIAL_BATCH_SAMPLING_METHOD $INITIAL_BATCH_SAMPLING_METHOD --BASE_PARAM_STRING batch_$TITLE --INITIAL_BATCH_SAMPLING_ARG 200 --OUTPUT_DIRECTORY ${WS_DIR}/single_vs_batch/ --USER_QUERY_BUDGET_LIMIT 50 --TRAIN_NR_LEARNING_SAMPLES $TRAIN_NR_LEARNING_SAMPLES --ONLY_TRAINING_DATA 
 exit 0
 """
 )
@@ -69,7 +69,7 @@ create_ann_eval_data = Template(
 export OMP_NUM_THREADS=$$SLURM_CPUS_ON_NODE
 i=$$(( 100000 + $$SLURM_ARRAY_TASK_ID * $ITERATIONS_PER_BATCH ))
 
-MPLCONFIGDIR=${WS_DIR}/cache python3 -m pipenv run python ${WS_DIR}/imitating-weakal/full_experiment.py --TRAIN_STATE_DISTANCES --TRAIN_STATE_UNCERTAINTIES --TRAIN_STATE_PREDICTED_UNITY ${BATCH_MODE} --INITIAL_BATCH_SAMPLING_METHOD $TITLE --BASE_PARAM_STRING batch_$TITLE --INITIAL_BATCH_SAMPLING_ARG 200 --OUTPUT_DIRECTORY ${WS_DIR}/single_vs_batch/ --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES $ITERATIONS_PER_BATCH --SKIP_TRAINING_DATA_GENERATION --STOP_AFTER_ANN_EVAL --TEST_PARALLEL_OFFSET $$i
+MPLCONFIGDIR=${WS_DIR}/cache python3 -m pipenv run python ${WS_DIR}/imitating-weakal/full_experiment.py --TRAIN_STATE_DISTANCES --TRAIN_STATE_UNCERTAINTIES --TRAIN_STATE_PREDICTED_UNITY ${BATCH_MODE} --INITIAL_BATCH_SAMPLING_METHOD $INITIAL_BATCH_SAMPLING_METHOD --BASE_PARAM_STRING batch_$TITLE --INITIAL_BATCH_SAMPLING_ARG 200 --OUTPUT_DIRECTORY ${WS_DIR}/single_vs_batch/ --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES $ITERATIONS_PER_BATCH --SKIP_TRAINING_DATA_GENERATION --STOP_AFTER_ANN_EVAL --TEST_PARALLEL_OFFSET $$i
 
 exit 0
     """
@@ -137,10 +137,9 @@ if not os.path.exists(config.OUT_DIR):
 
 if config.TITLE == "single":
     BATCH_MODE = ""
-    -> initial_batch_sampling_method zu furthest!!
-    warum wird das ann_eval file auf einmal leer gemacht am Ende??!
-    hängt das mit dem truncate code zusammen?
+    INITIAL_BATCH_SAMPLING_METHOD = "furthest"
 else:
+    INITIAL_BATCH_SAMPLING_METHOD = config.TITLE
     BATCH_MODE = "--BATCH_MODE"
 
 with open(config.OUT_DIR + "/create_ann_training_data.slurm", "w") as f:
@@ -148,6 +147,7 @@ with open(config.OUT_DIR + "/create_ann_training_data.slurm", "w") as f:
         create_ann_training_data.substitute(
             WS_DIR=config.WS_DIR,
             TITLE=config.TITLE,
+            INITIAL_BATCH_SAMPLING_METHOD=INITIAL_BATCH_SAMPLING_METHOD,
             TRAIN_NR_LEARNING_SAMPLES=config.TRAIN_NR_LEARNING_SAMPLES,
             BATCH_MODE=BATCH_MODE,
         )
@@ -160,6 +160,7 @@ with open(config.OUT_DIR + "/create_ann_eval_data.slurm", "w") as f:
         create_ann_eval_data.substitute(
             WS_DIR=config.WS_DIR,
             TITLE=config.TITLE,
+            INITIAL_BATCH_SAMPLING_METHOD=INITIAL_BATCH_SAMPLING_METHOD,
             START=START,
             END=END,
             ITERATIONS_PER_BATCH=config.ITERATIONS_PER_BATCH,
