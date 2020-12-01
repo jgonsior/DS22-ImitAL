@@ -244,6 +244,16 @@ for DATASET_NAME in [
         )
 
         # rename sampling column
+        # Read in the file
+        with open(EVALUATION_FILE_TRAINED_NN_PATH, "r") as file:
+            filedata = file.read()
+
+        # Replace the target string
+        filedata = filedata.replace("trained_nn", config.OUTPUT_DIRECTORY)
+
+        # Write the file out again
+        with open(EVALUATION_FILE_TRAINED_NN_PATH, "w") as file:
+            file.write(filedata)
         #  p = Path(EVALUATION_FILE_TRAINED_NN_PATH)
         #  text = p.read_text()
         #  text = text.replace("trained_nn", config.OUTPUT_DIRECTORY)
