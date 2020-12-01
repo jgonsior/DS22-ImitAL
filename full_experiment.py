@@ -244,10 +244,10 @@ for DATASET_NAME in [
         )
 
         # rename sampling column
-        p = Path(EVALUATION_FILE_TRAINED_NN_PATH)
-        text = p.read_text()
-        text = text.replace("trained_nn", config.OUTPUT_DIRECTORY)
-        p.write_text(text)
+        #  p = Path(EVALUATION_FILE_TRAINED_NN_PATH)
+        #  text = p.read_text()
+        #  text = text.replace("trained_nn", config.OUTPUT_DIRECTORY)
+        #  p.write_text(text)
 
     if config.STOP_AFTER_ANN_EVAL:
         exit(0)
