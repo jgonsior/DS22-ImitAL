@@ -3,8 +3,7 @@
 #SBATCH --ntasks=1      # limit to one node
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1  # number of processor cores (i.e. threads)
-#SBATCH --mem-per-cpu=1972M   # memory per CPU core
-#SBATCH -p romeo
+#SBATCH --mem-per-cpu=2583M   # memory per CPU core
 #SBATCH --mail-user=julius.gonsior@tu-dresden.de   # email address
 #SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE,TIME_LIMIT
 #SBATCH -A p_ml_il
