@@ -105,19 +105,20 @@ classics = Template(
 #SBATCH --nodes=1  # number of processor cores (i.e. threads)
 #SBATCH --ntasks=1      # limit to one node
 #SBATCH --tasks-per-node=1
-#SBATCH --cpus-per-task=128 # equals 256 threads
-#SBATCH --mem-per-cpu=1972M   # memory per CPU core
-#SBATCH -p romeo
+#SBATCH --cpus-per-task=1 # equals 256 threads
+#SBATCH --mem-per-cpu=2583M   # memory per CPU core
 #SBATCH --mail-user=julius.gonsior@tu-dresden.de   # email address
 #SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE,TIME_LIMIT
 #SBATCH -A p_ml_il
 #SBATCH --output ${WS_DIR}/slurm_classic_out.txt
 #SBATCH --error ${WS_DIR}/slurm_classic_error.txt
+#SBATCH --array $START-$END
 
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
 export OMP_NUM_THREADS=$$SLURM_CPUS_ON_NODE
-export JOBLIB_TEMP_FOLDER=${WS_DIR}/tmp
-MPLCONFIGDIR=${WS_DIR}/cache python3 -m pipenv run python ${WS_DIR}/imitating-weakal/full_experiment.py --OUTPUT_DIRECTORY ${WS_DIR}/single_vs_batch/ --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES $TEST_NR_LEARNING_SAMPLES --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --SKIP_TRAINING_DATA_GENERATION --SKIP_ANN_EVAL --SKIP_PLOTS
+i=$$(( $$SLURM_ARRAY_TASK_ID * $ITERATIONS_PER_BATCH ))
+
+MPLCONFIGDIR=${WS_DIR}/cache python3 -m pipenv run python ${WS_DIR}/imitating-weakal/full_experiment.py --OUTPUT_DIRECTORY ${WS_DIR}/single_vs_batch/ --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES $ITERATIONS_PER_BATCH --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --SKIP_TRAINING_DATA_GENERATION --SKIP_ANN_EVAL --SKIP_PLOTS --TEST_PARALLEL_OFFSET $$i
 exit 0
 """
 )
@@ -205,11 +206,15 @@ with open(config.OUT_DIR + "/create_ann_eval_data.slurm", "w") as f:
         )
     )
 with open(config.OUT_DIR + "/classics.slurm", "w") as f:
+    START = 0
+    END = int(config.TEST_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
     f.write(
         classics.substitute(
             WS_DIR=config.WS_DIR,
             TITLE=config.TITLE,
-            TEST_NR_LEARNING_SAMPLES=config.TEST_NR_LEARNING_SAMPLES,
+            START=START,
+            END=END,
+            ITERATIONS_PER_BATCH=config.ITERATIONS_PER_BATCH,
         )
     )
 
