@@ -116,7 +116,7 @@ classics = Template(
 
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
 export OMP_NUM_THREADS=$$SLURM_CPUS_ON_NODE
-i=$$(( $$SLURM_ARRAY_TASK_ID * $ITERATIONS_PER_BATCH ))
+i=$$(( 100000 + $$SLURM_ARRAY_TASK_ID * $ITERATIONS_PER_BATCH ))
 
 MPLCONFIGDIR=${WS_DIR}/cache python3 -m pipenv run python ${WS_DIR}/imitating-weakal/full_experiment.py --OUTPUT_DIRECTORY ${WS_DIR}/single_vs_batch/ --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES $ITERATIONS_PER_BATCH --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --SKIP_TRAINING_DATA_GENERATION --SKIP_ANN_EVAL --SKIP_PLOTS --TEST_PARALLEL_OFFSET $$i
 exit 0
