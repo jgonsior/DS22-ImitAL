@@ -15,12 +15,12 @@ from .experiments_lib import (
 
 (
     config,
-    shared_arguments,
+    _,
+    _,
+    _,
     PARENT_OUTPUT_DIRECTORY,
     train_base_param_string,
-    test_base_param_string,
-    evaluation_arguments,
-    suffix,
+    _,
 ) = get_config()
 
 if not config.HYPER_SEARCHED:
@@ -36,7 +36,7 @@ if not config.HYPER_SEARCHED:
     }
 run_python_experiment(
     "Train ANN",
-    config.OUTPUT_DIRECTORY + train_base_param_string + "/trained_ann.pickle",
+    PARENT_OUTPUT_DIRECTORY + train_base_param_string + "/trained_ann.pickle",
     CLI_COMMAND="python train_lstm.py",
     CLI_ARGUMENTS={
         "DATA_PATH": config.OUTPUT_DIRECTORY + train_base_param_string,

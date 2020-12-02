@@ -16,11 +16,12 @@ from .experiments_lib import (
 (
     config,
     shared_arguments,
+    evaluation_arguments,
+    _,
     PARENT_OUTPUT_DIRECTORY,
-    train_base_param_string,
+    _,
     test_base_param_string,
     evaluation_arguments,
-    suffix,
 ) = get_config()
 
 
@@ -40,17 +41,12 @@ for DATASET_NAME in [
     #  "PLANNING",
     #  "australian",
 ]:
+    original_test_base_param_string = test_base_param_string
+    test_base_param_string += "_" + DATASET_NAME
     if DATASET_NAME != "synthetic":
         #  config.TEST_NR_LEARNING_SAMPLES = 100
         evaluation_arguments["USER_QUERY_BUDGET_LIMIT"] = 20
     evaluation_arguments["DATASET_NAME"] = DATASET_NAME
-
-    EVALUATION_FILE_TRAINED_NN_PATH = (
-        config.OUTPUT_DIRECTORY + config.BASE_PARAM_STRING + "_" + DATASET_NAME + ".csv"
-    )
-
-    original_test_base_param_string = test_base_param_string
-    test_base_param_string += "_" + DATASET_NAME
 
     for comparison in config.TEST_COMPARISONS:
         COMPARISON_PATH = (
@@ -73,3 +69,4 @@ for DATASET_NAME in [
             PARALLEL_AMOUNT=config.TEST_NR_LEARNING_SAMPLES,
             OUTPUT_FILE_LENGTH=config.TEST_NR_LEARNING_SAMPLES,
         )
+    test_base_param_string = original_test_base_param_string

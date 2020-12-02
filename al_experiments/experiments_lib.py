@@ -63,12 +63,7 @@ def get_config():
                 },
             ),
             (["--FINAL_PICTURE"], {"default": ""}),
-            (["--SKIP_TRAINING_DATA_GENERATION"], {"action": "store_true"}),
-            (["--SKIP_ANN_EVAL"], {"action": "store_true"}),
-            (["--SKIP_PLOTS"], {"action": "store_true"}),
-            (["--STOP_AFTER_ANN_EVAL"], {"action": "store_true"}),
-            (["--HYPER_SEARCH"], {"action": "store_true"}),
-            (["--ONLY_TRAINING_DATA"], {"action": "store_true"}),
+            (["--HYPER_SEARCHED"], {"action": "store_true"}),
             (["--PLOT_METRIC"], {"default": "acc_auc"}),
             (["--INCLUDE_OPTIMAL_IN_PLOT"], {"action": "store_true"}),
             (["--INCLUDE_ONLY_OPTIMAL_IN_PLOT"], {"action": "store_true"}),
@@ -83,7 +78,6 @@ def get_config():
             (["--INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY"], {"default": 0.2}),
             (["--TEST_PARALLEL_OFFSET"], {"default": 100000}),
             (["--TRAIN_PARALLEL_OFFSET"], {"default": 0}),
-            (["--OUTPUT_FILES_SUFFIX"], {"defaul": ""}),
         ],
         standard_args=False,
         return_argparse=True,
@@ -125,14 +119,32 @@ def get_config():
         **shared_arguments,
     }
 
+    ann_arguments = {
+        "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
+        "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
+        "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
+        "STATE_PREDICTED_UNITY": config.TRAIN_STATE_PREDICTED_UNITY,
+        "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
+        "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
+        "STATE_DIFF_PROBAS": config.TRAIN_STATE_DIFF_PROBAS,
+        "STATE_DISTANCES": config.TRAIN_STATE_DISTANCES,
+        "STATE_UNCERTAINTIES": config.TRAIN_STATE_UNCERTAINTIES,
+        "INITIAL_BATCH_SAMPLING_METHOD": config.INITIAL_BATCH_SAMPLING_METHOD,
+        "INITIAL_BATCH_SAMPLING_ARG": config.INITIAL_BATCH_SAMPLING_ARG,
+        "INITIAL_BATCH_SAMPLING_HYBRID_UNCERT": config.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT,
+        "INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST": config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST,
+        "INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB": config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB,
+        "INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY": config.INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY,
+    }
+
     return (
         config,
         shared_arguments,
+        evaluation_arguments,
+        ann_arguments,
         PARENT_OUTPUT_DIRECTORY,
         train_base_param_string,
         test_base_param_string,
-        evaluation_arguments,
-        config.OUTPUT_FILES_SUFFIX,
     )
 
 
