@@ -1,5 +1,5 @@
 import stat
-from string import Template
+from jinja2 import Template
 import argparse
 import datetime
 import os
@@ -29,27 +29,36 @@ if len(sys.argv[:-1]) == 0:
 
 config.OUT_DIR = config.OUT_DIR + "/" + config.TITLE
 
-ann_training_data = Template(
-    """#!/bin/bash
+slurm_common = Template(
+    """
+#!/bin/bash
 #SBATCH --time=23:59:59   # walltime
 #SBATCH --nodes=1  # number of processor cores (i.e. threads)
 #SBATCH --ntasks=1      # limit to one node
 #SBATCH --tasks-per-node=1
-#SBATCH --cpus-per-task=1 # equals 256 threads
+#SBATCH --cpus-per-task={{ THREADS }} # equals 256 threads
 #SBATCH --mem-per-cpu=2583M   # memory per CPU core
 #SBATCH --mail-user=julius.gonsior@tu-dresden.de   # email address
 #SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE,TIME_LIMIT
 #SBATCH -A p_ml_il
-#SBATCH --output ${WS_DIR}/slurm_${TITLE}_ann_training_data_out.txt
-#SBATCH --error ${WS_DIR}/slurm_${TITLE}_ann_training_data_error.txt
-#SBATCH --array $START-$END
+#SBATCH --output {{WS_DIR}}/slurm_{{TITLE}}_{{PYTHON_FILE}}_out.txt
+#SBATCH --error {{WS_DIR}}/slurm_{{TITLE}}_{{PYTHON_FILE}}_error.txt
+
+{% if array %}
+#SBATCH --array {{START}}-{{END}}
+{% endif %}
 
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
-export OMP_NUM_THREADS=$$SLURM_CPUS_ON_NODE
-i=$$(( $$SLURM_ARRAY_TASK_ID * $ITERATIONS_PER_BATCH ))
+export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
 
-MPLCONFIGDIR=${WS_DIR}/cache python3 -m pipenv run python ${WS_DIR}/imitating-weakal/al_experiments/ann_training_data.py --TRAIN_STATE_DISTANCES --TRAIN_STATE_UNCERTAINTIES --TRAIN_STATE_PREDICTED_UNITY ${BATCH_MODE} --INITIAL_BATCH_SAMPLING_METHOD $INITIAL_BATCH_SAMPLING_METHOD --BASE_PARAM_STRING batch_$TITLE --INITIAL_BATCH_SAMPLING_ARG 200 --OUTPUT_DIRECTORY ${WS_DIR}/single_vs_batch/ --USER_QUERY_BUDGET_LIMIT 50 --TRAIN_NR_LEARNING_SAMPLES $ITERATIONS_PER_BATCH --ONLY_TRAINING_DATA --TRAIN_PARALLEL_OFFSET $$i
+{% if array %}
+i=$(( $SLURM_ARRAY_TASK_ID * {{ITERATIONS_PER_BATCH}} ))
+{% endif %}
+
+MPLCONFIGDIR={{WS_DIR}}/cache python3 -m pipenv run python {{WS_DIR}}/imitating-weakal/al_experiments/
+{{PYTHON_FILE}}.py {{ CLI_ARGS }}
 exit 0
+
 """
 )
 
@@ -64,13 +73,13 @@ hyper_search = Template(
 #SBATCH --mail-user=julius.gonsior@tu-dresden.de   # email address
 #SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE,TIME_LIMIT
 #SBATCH -A p_ml_il
-#SBATCH --output ${WS_DIR}/slurm_${TITLE}_hyper_search_out.txt
-#SBATCH --error ${WS_DIR}/slurm_${TITLE}_hyper_search_error.txt
+#SBATCH --output {{WS_DIR}}/slurm_{{TITLE}}_hyper_search_out.txt
+#SBATCH --error {{WS_DIR}}/slurm_{{TITLE}}_hyper_search_error.txt
 
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
-export OMP_NUM_THREADS=$$SLURM_CPUS_ON_NODE
+export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
 
-MPLCONFIGDIR=${WS_DIR}/cache python3 -m pipenv run python ${WS_DIR}/imitating-weakal/train_lstm.py --DATA_PATH ${WS_DIR}/single_vs_batch/batch_${TITLE} --STATE_ENCODING listwise --TARGET_ENCODING binary --HYPER_SEARCH --N_ITER 300 
+MPLCONFIGDIR={{WS_DIR}}/cache python3 -m pipenv run python {{WS_DIR}}/imitating-weakal/train_lstm.py --DATA_PATH {{WS_DIR}}/single_vs_batch/batch_{{TITLE}} --STATE_ENCODING listwise --TARGET_ENCODING binary --HYPER_SEARCH --N_ITER 300 
 exit 0
 """
 )
@@ -87,13 +96,13 @@ train_ann = Template(
 #SBATCH --mail-user=julius.gonsior@tu-dresden.de   # email address
 #SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE,TIME_LIMIT
 #SBATCH -A p_ml_il
-#SBATCH --output ${WS_DIR}/slurm_${TITLE}_train_ann_out.txt
-#SBATCH --error ${WS_DIR}/slurm_${TITLE}_train_ann_error.txt
+#SBATCH --output {{WS_DIR}}/slurm_{{TITLE}}_train_ann_out.txt
+#SBATCH --error {{WS_DIR}}/slurm_{{TITLE}}_train_ann_error.txt
 
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
-export OMP_NUM_THREADS=$$SLURM_CPUS_ON_NODE
-export JOBLIB_TEMP_FOLDER=${WS_DIR}/tmp
-MPLCONFIGDIR=${WS_DIR}/cache python3 -m pipenv run python ${WS_DIR}/imitating-weakal/al_experiments/train_ann.py --OUTPUT_DIRECTORY ${WS_DIR}/single_vs_batch/ --BASE_PARAM_STRING batch_$TITLE --SKIP_TRAINING_DATA_GENERATION --ONLY_TRAINING_DATA --INITIAL_BATCH_SAMPLING_METHOD $INITIAL_BATCH_SAMPLING_METHOD --INITIAL_BATCH_SAMPLING_ARG 200
+export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
+export JOBLIB_TEMP_FOLDER={{WS_DIR}}/tmp
+MPLCONFIGDIR={{WS_DIR}}/cache python3 -m pipenv run python {{WS_DIR}}/imitating-weakal/al_experiments/train_ann.py --OUTPUT_DIRECTORY {{WS_DIR}}/single_vs_batch/ --BASE_PARAM_STRING batch_{{TITLE}} --SKIP_TRAINING_DATA_GENERATION --ONLY_TRAINING_DATA --INITIAL_BATCH_SAMPLING_METHOD {{INITIAL_BATCH_SAMPLING_METHOD}} --INITIAL_BATCH_SAMPLING_ARG 200
 exit 0
 """
 )
@@ -109,15 +118,15 @@ ann_eval_data = Template(
 #SBATCH --mail-user=julius.gonsior@tu-dresden.de   # email address
 #SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE,TIME_LIMIT
 #SBATCH -A p_ml_il
-#SBATCH --output ${WS_DIR}/slurm_${TITLE}_ann_eval_out.txt
-#SBATCH --error ${WS_DIR}/slurm_${TITLE}_ann_eval_error.txt
-#SBATCH --array $START-$END
+#SBATCH --output {{WS_DIR}}/slurm_{{TITLE}}_ann_eval_out.txt
+#SBATCH --error {{WS_DIR}}/slurm_{{TITLE}}_ann_eval_error.txt
+#SBATCH --array {{START}}-{{END}}
 
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
-export OMP_NUM_THREADS=$$SLURM_CPUS_ON_NODE
-i=$$(( 100000 + $$SLURM_ARRAY_TASK_ID * $ITERATIONS_PER_BATCH ))
+export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
+i=$(( 100000 + $SLURM_ARRAY_TASK_ID * {{ITERATIONS_PER_BATCH}} ))
 
-MPLCONFIGDIR=${WS_DIR}/cache python3 -m pipenv run python ${WS_DIR}/imitating-weakal/al_experiments/ann_eval_data.py --TRAIN_STATE_DISTANCES --TRAIN_STATE_UNCERTAINTIES --TRAIN_STATE_PREDICTED_UNITY ${BATCH_MODE} --INITIAL_BATCH_SAMPLING_METHOD $INITIAL_BATCH_SAMPLING_METHOD --BASE_PARAM_STRING batch_$TITLE --INITIAL_BATCH_SAMPLING_ARG 200 --OUTPUT_DIRECTORY ${WS_DIR}/single_vs_batch/ --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES $ITERATIONS_PER_BATCH --SKIP_TRAINING_DATA_GENERATION --STOP_AFTER_ANN_EVAL --TEST_PARALLEL_OFFSET $$i
+MPLCONFIGDIR={{WS_DIR}}/cache python3 -m pipenv run python {{WS_DIR}}/imitating-weakal/al_experiments/ann_eval_data.py --TRAIN_STATE_DISTANCES --TRAIN_STATE_UNCERTAINTIES --TRAIN_STATE_PREDICTED_UNITY {{BATCH_MODE}} --INITIAL_BATCH_SAMPLING_METHOD {{INITIAL_BATCH_SAMPLING_METHOD}} --BASE_PARAM_STRING batch_{{TITLE}} --INITIAL_BATCH_SAMPLING_ARG 200 --OUTPUT_DIRECTORY {{WS_DIR}}/single_vs_batch/ --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES {{ITERATIONS_PER_BATCH}} --SKIP_TRAINING_DATA_GENERATION --STOP_AFTER_ANN_EVAL --TEST_PARALLEL_OFFSET $i
 
 exit 0
     """
@@ -135,15 +144,15 @@ classics = Template(
 #SBATCH --mail-user=julius.gonsior@tu-dresden.de   # email address
 #SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE,TIME_LIMIT
 #SBATCH -A p_ml_il
-#SBATCH --output ${WS_DIR}/slurm_classic_out.txt
-#SBATCH --error ${WS_DIR}/slurm_classic_error.txt
-#SBATCH --array $START-$END
+#SBATCH --output {{WS_DIR}}/slurm_classic_out.txt
+#SBATCH --error {{WS_DIR}}/slurm_classic_error.txt
+#SBATCH --array {{START}}-{{END}}
 
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
-export OMP_NUM_THREADS=$$SLURM_CPUS_ON_NODE
-i=$$(( 100000 + $$SLURM_ARRAY_TASK_ID * $ITERATIONS_PER_BATCH ))
+export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
+i=$(( 100000 + $SLURM_ARRAY_TASK_ID * {{ITERATIONS_PER_BATCH}} ))
 
-MPLCONFIGDIR=${WS_DIR}/cache python3 -m pipenv run python ${WS_DIR}/imitating-weakal/al_experiments/classics.py --OUTPUT_DIRECTORY ${WS_DIR}/single_vs_batch/ --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES $ITERATIONS_PER_BATCH --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --SKIP_TRAINING_DATA_GENERATION --SKIP_ANN_EVAL --SKIP_PLOTS --TEST_PARALLEL_OFFSET $$i
+MPLCONFIGDIR={{WS_DIR}}/cache python3 -m pipenv run python {{WS_DIR}}/imitating-weakal/al_experiments/classics.py --OUTPUT_DIRECTORY {{WS_DIR}}/single_vs_batch/ --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES {{ITERATIONS_PER_BATCH}} --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --SKIP_TRAINING_DATA_GENERATION --SKIP_ANN_EVAL --SKIP_PLOTS --TEST_PARALLEL_OFFSET $i
 exit 0
 """
 )
@@ -159,13 +168,13 @@ plots = Template(
 #SBATCH --mail-user=julius.gonsior@tu-dresden.de   # email address
 #SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE,TIME_LIMIT
 #SBATCH -A p_ml_il
-#SBATCH --output ${WS_DIR}/slurm_${TITLE}_plots_out.txt
-#SBATCH --error ${WS_DIR}/slurm_${TITLE}_plots_error.txt
+#SBATCH --output {{WS_DIR}}/slurm_{{TITLE}}_plots_out.txt
+#SBATCH --error {{WS_DIR}}/slurm_{{TITLE}}_plots_error.txt
 
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
-export OMP_NUM_THREADS=$$SLURM_CPUS_ON_NODE
-export JOBLIB_TEMP_FOLDER=${WS_DIR}/tmp
-MPLCONFIGDIR=${WS_DIR}/cache python3 -m pipenv run python ${WS_DIR}/imitating-weakal/al_experiments/plots.py --OUTPUT_DIRECTORY ${WS_DIR}/single_vs_batch/ --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES $TEST_NR_LEARNING_SAMPLES --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --BASE_PARAM_STRING batch_$TITLE --SKIP_TRAINING_DATA_GENERATION --SKIP_ANN_EVAL --FINAL_PICTURE ${WS_DIR}/single_vs_batch/plots_batch_${TITLE}/ --PLOT_METRIC acc_auc
+export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
+export JOBLIB_TEMP_FOLDER={{WS_DIR}}/tmp
+MPLCONFIGDIR={{WS_DIR}}/cache python3 -m pipenv run python {{WS_DIR}}/imitating-weakal/al_experiments/plots.py --OUTPUT_DIRECTORY {{WS_DIR}}/single_vs_batch/ --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES {{TEST_NR_LEARNING_SAMPLES}} --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --BASE_PARAM_STRING batch_{{TITLE}} --SKIP_TRAINING_DATA_GENERATION --SKIP_ANN_EVAL --FINAL_PICTURE {{WS_DIR}}/single_vs_batch/plots_batch_{{TITLE}}/ --PLOT_METRIC acc_auc
 exit 0
 """
 )
@@ -173,11 +182,11 @@ exit 0
 
 submit_jobs = Template(
     """#!/bin/bash
-ann_training_data_id=$$(sbatch --parsable ${WS_DIR}/imitating-weakal/${OUT_DIR}/ann_training_data.slurm)
-train_ann_id=$$(sbatch --parsable --dependency=afterok:$$ann_training_data_id ${WS_DIR}/imitating-weakal/${OUT_DIR}/train_ann.slurm)
-create_ann_eval_id=$$(sbatch --parsable --dependency=afterok:$$ann_training_data_id:$$train_ann_id ${WS_DIR}/imitating-weakal//${OUT_DIR}/ann_eval_data.slurm)
-classics_id=$$(sbatch --parsable ${WS_DIR}/imitating-weakal//${OUT_DIR}/classics.slurm)
-plots_id=$$(sbatch --parsable --dependency=afterok:$$ann_training_data_id:$$create_ann_eval_id:$$classics_id ${WS_DIR}/imitating-weakal//${OUT_DIR}/plots.slurm)
+ann_training_data_id=$(sbatch --parsable {{WS_DIR}}/imitating-weakal/{{OUT_DIR}}/ann_training_data.slurm)
+train_ann_id=$(sbatch --parsable --dependency=afterok:$ann_training_data_id {{WS_DIR}}/imitating-weakal/{{OUT_DIR}}/train_ann.slurm)
+create_ann_eval_id=$(sbatch --parsable --dependency=afterok:$ann_training_data_id:$train_ann_id {{WS_DIR}}/imitating-weakal//{{OUT_DIR}}/ann_eval_data.slurm)
+classics_id=$(sbatch --parsable {{WS_DIR}}/imitating-weakal//{{OUT_DIR}}/classics.slurm)
+plots_id=$(sbatch --parsable --dependency=afterok:$ann_training_data_id:$create_ann_eval_id:$classics_id {{WS_DIR}}/imitating-weakal//{{OUT_DIR}}/plots.slurm)
 exit 0
 """
 )
@@ -196,20 +205,26 @@ with open(config.OUT_DIR + "/ann_training_data.slurm", "w") as f:
     START = 0
     END = int(config.TRAIN_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
     f.write(
-        ann_training_data.substitute(
+        slurm_common.render(
             WS_DIR=config.WS_DIR,
             TITLE=config.TITLE,
-            INITIAL_BATCH_SAMPLING_METHOD=INITIAL_BATCH_SAMPLING_METHOD,
+            PYTHON_FILE="ann_training_data",
+            array=True,
             START=START,
             END=END,
-            ITERATIONS_PER_BATCH=config.ITERATIONS_PER_BATCH,
-            BATCH_MODE=BATCH_MODE,
+            CLI_ARGS="--TRAIN_STATE_DISTANCES --TRAIN_STATE_UNCERTAINTIES --TRAIN_STATE_PREDICTED_UNITY "
+            + str(config.BATCH_MODE)
+            + " --INITIAL_BATCH_SAMPLING_METHOD "
+            + str(config.INITIAL_BATCH_SAMPLING_METHOD)
+            + "--BASE_PARAM_STRING batch_{{TITLE}} --INITIAL_BATCH_SAMPLING_ARG 200 --OUTPUT_DIRECTORY {{WS_DIR}}/single_vs_batch/ --USER_QUERY_BUDGET_LIMIT 50 --TRAIN_NR_LEARNING_SAMPLES "
+            + str(config.ITERATIONS_PER_BATCH)
+            + " --ONLY_TRAINING_DATA --TRAIN_PARALLEL_OFFSET $i",
         )
     )
 
 with open(config.OUT_DIR + "/hyper_search.slurm", "w") as f:
     f.write(
-        hyper_search.substitute(
+        hyper_search.render(
             WS_DIR=config.WS_DIR,
             TITLE=config.TITLE,
         )
@@ -218,7 +233,7 @@ with open(config.OUT_DIR + "/hyper_search.slurm", "w") as f:
 
 with open(config.OUT_DIR + "/train_ann.slurm", "w") as f:
     f.write(
-        train_ann.substitute(
+        train_ann.render(
             WS_DIR=config.WS_DIR,
             TITLE=config.TITLE,
             INITIAL_BATCH_SAMPLING_METHOD=INITIAL_BATCH_SAMPLING_METHOD,
@@ -229,7 +244,7 @@ with open(config.OUT_DIR + "/ann_eval_data.slurm", "w") as f:
     START = 0
     END = int(config.TEST_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
     f.write(
-        ann_eval_data.substitute(
+        ann_eval_data.render(
             WS_DIR=config.WS_DIR,
             TITLE=config.TITLE,
             INITIAL_BATCH_SAMPLING_METHOD=INITIAL_BATCH_SAMPLING_METHOD,
@@ -243,7 +258,7 @@ with open(config.OUT_DIR + "/classics.slurm", "w") as f:
     START = 0
     END = int(config.TEST_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
     f.write(
-        classics.substitute(
+        classics.render(
             WS_DIR=config.WS_DIR,
             TITLE=config.TITLE,
             START=START,
@@ -254,7 +269,7 @@ with open(config.OUT_DIR + "/classics.slurm", "w") as f:
 
 with open(config.OUT_DIR + "/plots.slurm", "w") as f:
     f.write(
-        plots.substitute(
+        plots.render(
             WS_DIR=config.WS_DIR,
             TITLE=config.TITLE,
             TEST_NR_LEARNING_SAMPLES=config.TEST_NR_LEARNING_SAMPLES,
@@ -263,12 +278,12 @@ with open(config.OUT_DIR + "/plots.slurm", "w") as f:
 
 with open(config.OUT_DIR + "/submit_jobs.sh", "w") as f:
     f.write(
-        submit_jobs.substitute(
+        submit_jobs.render(
             WS_DIR=config.WS_DIR,
             OUT_DIR=config.OUT_DIR,
             TITLE=config.TITLE,
-            WITH_HYPER_SEARCH=config.WITH_HYPER_SEARCH,
-            WITH_CLASSICS=config.WITH_CLASSICS,
+            #  WITH_HYPER_SEARCH=config.WITH_HYPER_SEARCH,
+            #  WITH_CLASSICS=config.WITH_CLASSICS,
         )
     )
 st = os.stat(config.OUT_DIR + "/submit_jobs.sh")

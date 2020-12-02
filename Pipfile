@@ -33,6 +33,7 @@ dill = "*"
 ipykernel = "*"
 handcalcs = "*"
 numba = "*"
+jinja2 = "*"
 
 [requires]
 python_version = "3"
