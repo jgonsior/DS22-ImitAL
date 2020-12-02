@@ -82,6 +82,7 @@ def get_config():
             (["--INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB"], {"default": 0.2}),
             (["--INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY"], {"default": 0.2}),
             (["--TEST_PARALLEL_OFFSET"], {"default": 100000}),
+            (["--TRAIN_PARALLEL_OFFSET"], {"default": 0}),
         ],
         standard_args=False,
         return_argparse=True,

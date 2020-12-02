@@ -33,19 +33,20 @@ create_ann_training_data = Template(
 #SBATCH --nodes=1  # number of processor cores (i.e. threads)
 #SBATCH --ntasks=1      # limit to one node
 #SBATCH --tasks-per-node=1
-#SBATCH --cpus-per-task=128 # equals 256 threads
-#SBATCH --mem-per-cpu=1972M   # memory per CPU core
-#SBATCH -p romeo
+#SBATCH --cpus-per-task=1 # equals 256 threads
+#SBATCH --mem-per-cpu=2583M   # memory per CPU core
 #SBATCH --mail-user=julius.gonsior@tu-dresden.de   # email address
 #SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE,TIME_LIMIT
 #SBATCH -A p_ml_il
 #SBATCH --output ${WS_DIR}/slurm_${TITLE}_create_ann_training_data_out.txt
 #SBATCH --error ${WS_DIR}/slurm_${TITLE}_create_ann_training_data_error.txt
+#SBATCH --array $START-$END
 
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
 export OMP_NUM_THREADS=$$SLURM_CPUS_ON_NODE
-export JOBLIB_TEMP_FOLDER=${WS_DIR}/tmp
-MPLCONFIGDIR=${WS_DIR}/cache python3 -m pipenv run python ${WS_DIR}/imitating-weakal/full_experiment.py --TRAIN_STATE_DISTANCES --TRAIN_STATE_UNCERTAINTIES --TRAIN_STATE_PREDICTED_UNITY ${BATCH_MODE} --INITIAL_BATCH_SAMPLING_METHOD $INITIAL_BATCH_SAMPLING_METHOD --BASE_PARAM_STRING batch_$TITLE --INITIAL_BATCH_SAMPLING_ARG 200 --OUTPUT_DIRECTORY ${WS_DIR}/single_vs_batch/ --USER_QUERY_BUDGET_LIMIT 50 --TRAIN_NR_LEARNING_SAMPLES $TRAIN_NR_LEARNING_SAMPLES --ONLY_TRAINING_DATA 
+i=$$(( $$SLURM_ARRAY_TASK_ID * $ITERATIONS_PER_BATCH ))
+
+MPLCONFIGDIR=${WS_DIR}/cache python3 -m pipenv run python ${WS_DIR}/imitating-weakal/full_experiment.py --TRAIN_STATE_DISTANCES --TRAIN_STATE_UNCERTAINTIES --TRAIN_STATE_PREDICTED_UNITY ${BATCH_MODE} --INITIAL_BATCH_SAMPLING_METHOD $INITIAL_BATCH_SAMPLING_METHOD --BASE_PARAM_STRING batch_$TITLE --INITIAL_BATCH_SAMPLING_ARG 200 --OUTPUT_DIRECTORY ${WS_DIR}/single_vs_batch/ --USER_QUERY_BUDGET_LIMIT 50 --TRAIN_NR_LEARNING_SAMPLES $ITERATIONS_PER_BATCH --ONLY_TRAINING_DATA --TRAIN_PARALLEL_OFFSET $$i
 exit 0
 """
 )
@@ -166,12 +167,16 @@ else:
     BATCH_MODE = "--BATCH_MODE"
 
 with open(config.OUT_DIR + "/create_ann_training_data.slurm", "w") as f:
+    START = 0
+    END = int(config.TRAIN_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
     f.write(
         create_ann_training_data.substitute(
             WS_DIR=config.WS_DIR,
             TITLE=config.TITLE,
             INITIAL_BATCH_SAMPLING_METHOD=INITIAL_BATCH_SAMPLING_METHOD,
-            TRAIN_NR_LEARNING_SAMPLES=config.TRAIN_NR_LEARNING_SAMPLES,
+            START=START,
+            END=END,
+            ITERATIONS_PER_BATCH=config.ITERATIONS_PER_BATCH,
             BATCH_MODE=BATCH_MODE,
         )
     )
