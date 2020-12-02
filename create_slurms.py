@@ -1,3 +1,4 @@
+import glob
 import stat
 from jinja2 import Template
 import argparse
@@ -32,36 +33,33 @@ config.OUT_DIR = config.OUT_DIR + "/" + config.TITLE
 
 if config.SLURM:
     slurm_common = Template(
-        """#!/bin/bash
-    {% if array %}
-    {% set THREADS = 1 %}
-    {% set MEMORY = 2583 %}
-    {% endif %}
-    #SBATCH --time=23:59:59   # walltime
-    #SBATCH --nodes=1  
-    #SBATCH --ntasks=1      
-    #SBATCH --tasks-per-node=1
-    #SBATCH --cpus-per-task={{ THREADS }} 
-    #SBATCH --mem-per-cpu={{ MEMORY }}M   # memory per CPU core
-    #SBATCH --mail-user=julius.gonsior@tu-dresden.de   
-    #SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE,TIME_LIMIT
-    #SBATCH -A p_ml_il
-    #SBATCH --output {{WS_DIR}}/slurm_{{TITLE}}_{{PYTHON_FILE | replace("../","")}}_out.txt
-    #SBATCH --error {{WS_DIR}}/slurm_{{TITLE}}_{{PYTHON_FILE | replace("../", "")}}_error.txt
-    {% if array %}    #SBATCH --array {{START}}-{{END}}    {% endif %}
+        """#!/bin/bash{% if array %}{% set THREADS = 1 %}{% set MEMORY = 2583 %}{% endif %}
+#SBATCH --time=23:59:59   # walltime
+#SBATCH --nodes=1  
+#SBATCH --ntasks=1      
+#SBATCH --tasks-per-node=1
+#SBATCH --cpus-per-task={{ THREADS }} 
+#SBATCH --mem-per-cpu={{ MEMORY }}M   # memory per CPU core
+#SBATCH --mail-user=julius.gonsior@tu-dresden.de   
+#SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE,TIME_LIMIT
+#SBATCH -A p_ml_il
+#SBATCH --output {{WS_DIR}}/slurm_{{TITLE}}_{{PYTHON_FILE}}_out.txt
+#SBATCH --error {{WS_DIR}}/slurm_{{TITLE}}_{{PYTHON_FILE}}_error.txt
+{% if array %}#SBATCH --array {{START}}-{{END}}{% endif %}
 
-    # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
-    export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
+# Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
+export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
 
-    {% if array %}i=$(( {{OFFSET}} + $SLURM_ARRAY_TASK_ID * {{ITERATIONS_PER_BATCH}} )){% endif %}
+{% if array %}i=$(( {{OFFSET}} + $SLURM_ARRAY_TASK_ID * {{ITERATIONS_PER_BATCH}} )){% endif %}
 
-    MPLCONFIGDIR={{WS_DIR}}/cache python3 -m pipenv run python {{WS_DIR}}/imitating-weakal/al_experiments/{{PYTHON_FILE}}.py {{ CLI_ARGS }}
-    exit 0
-
+MPLCONFIGDIR={{WS_DIR}}/cache python3 -m pipenv run python {{WS_DIR}}/imitating-weakal/{{PYTHON_FILE}}.py {{ CLI_ARGS }}
+exit 0
     """
     )
 else:
-    slurm_common = Template("al_experiments/{{PYTHON_FILE}}.py {{ CLI_ARGS }}")
+    config.OUT_DIR = "fake_slurms"
+    os.makedirs(config.OUT_DIR, exist_ok=True)
+    slurm_common = Template("{{PYTHON_FILE}}.py {{ CLI_ARGS }}")
 
 
 submit_jobs = Template(
@@ -103,7 +101,7 @@ with open(config.OUT_DIR + "/ann_training_data.slurm", "w") as f:
             + str(BATCH_MODE)
             + " --INITIAL_BATCH_SAMPLING_METHOD "
             + str(INITIAL_BATCH_SAMPLING_METHOD)
-            + "--BASE_PARAM_STRING batch_"
+            + " --BASE_PARAM_STRING batch_"
             + config.TITLE
             + " --INITIAL_BATCH_SAMPLING_ARG 200 --OUTPUT_DIRECTORY "
             + config.WS_DIR
@@ -118,13 +116,13 @@ with open(config.OUT_DIR + "/hyper_search.slurm", "w") as f:
         slurm_common.render(
             WS_DIR=config.WS_DIR,
             TITLE=config.TITLE,
-            PYTHON_FILE="../hyper_search",
+            PYTHON_FILE="hyper_search",
             array=False,
             THREADS=24,
             MEMORY=5250,
             CLI_ARGS="--DATA_PATH "
             + config.WS_DIR
-            + " /single_vs_batch/batch_"
+            + "/single_vs_batch/batch_"
             + config.TITLE
             + " --STATE_ENCODING listwise --TARGET_ENCODING binary --HYPER_SEARCH --N_ITER 300",
         )
@@ -159,7 +157,7 @@ with open(config.OUT_DIR + "/ann_eval_data.slurm", "w") as f:
         slurm_common.render(
             WS_DIR=config.WS_DIR,
             TITLE=config.TITLE,
-            PYTHON_FILE="ann_training_data",
+            PYTHON_FILE="ann_eval_data",
             array=True,
             START=START,
             END=END,
@@ -213,7 +211,7 @@ with open(config.OUT_DIR + "/plots.slurm", "w") as f:
             + config.WS_DIR
             + "/single_vs_batch/ --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES "
             + str(config.TEST_NR_LEARNING_SAMPLES)
-            + "--TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --BASE_PARAM_STRING batch_"
+            + " --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --BASE_PARAM_STRING batch_"
             + config.TITLE
             + " --FINAL_PICTURE "
             + config.WS_DIR
@@ -223,15 +221,27 @@ with open(config.OUT_DIR + "/plots.slurm", "w") as f:
         )
     )
 
-with open(config.OUT_DIR + "/submit_jobs.sh", "w") as f:
-    f.write(
-        submit_jobs.render(
-            WS_DIR=config.WS_DIR,
-            OUT_DIR=config.OUT_DIR,
-            TITLE=config.TITLE,
-            WITH_HYPER_SEARCH=config.WITH_HYPER_SEARCH,
-            WITH_CLASSICS=config.WITH_CLASSICS,
+if config.SLURM:
+    with open(config.OUT_DIR + "/submit_jobs.sh", "w") as f:
+        f.write(
+            submit_jobs.render(
+                WS_DIR=config.WS_DIR,
+                OUT_DIR=config.OUT_DIR,
+                TITLE=config.TITLE,
+                WITH_HYPER_SEARCH=config.WITH_HYPER_SEARCH,
+                WITH_CLASSICS=config.WITH_CLASSICS,
+            )
         )
-    )
+else:
+    # open all fake slurms and concat them into a single bash file
+    submit_content = "#!/bin/bash\n"
+    for csv_file in list(glob.glob(config.OUT_DIR + "/*.slurm")):
+        with open(csv_file, "r") as f:
+            content = f.read()
+            content = content.replace("$i", "0")
+            submit_content += "python " + content + "\n"
+        os.remove(csv_file)
+    with open(config.OUT_DIR + "/submit_jobs.sh", "w") as f:
+        f.write(submit_content)
 st = os.stat(config.OUT_DIR + "/submit_jobs.sh")
 os.chmod(config.OUT_DIR + "/submit_jobs.sh", st.st_mode | stat.S_IEXEC)
