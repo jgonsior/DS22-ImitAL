@@ -147,8 +147,8 @@ exit 0
 submit_jobs = Template(
     """#!/bin/bash
 create_ann_training_data_id=$$(sbatch --parsable ${WS_DIR}/imitating-weakal/${OUT_DIR}/create_ann_training_data.slurm)
-train_lstm=$$(sbatch --parsable --dependency=afterok:$$create_ann_training_data_id ${WS_DIR}/imitating-weakal/${OUT_DIR}/train_lstm.slurm)
-create_ann_eval_id=$$(sbatch --parsable --dependency=afterok:$$create_ann_training_data_id:$$train_lstm ${WS_DIR}/imitating-weakal//${OUT_DIR}/create_ann_eval_data.slurm)
+train_ann_id=$$(sbatch --parsable --dependency=afterok:$$create_ann_training_data_id ${WS_DIR}/imitating-weakal/${OUT_DIR}/train_ann.slurm)
+create_ann_eval_id=$$(sbatch --parsable --dependency=afterok:$$create_ann_training_data_id:$$train_ann_id ${WS_DIR}/imitating-weakal//${OUT_DIR}/create_ann_eval_data.slurm)
 classics_id=$$(sbatch --parsable ${WS_DIR}/imitating-weakal//${OUT_DIR}/classics.slurm)
 plots_id=$$(sbatch --parsable --dependency=afterok:$$create_ann_training_data_id:$$create_ann_eval_id:$$classics_id ${WS_DIR}/imitating-weakal//${OUT_DIR}/plots.slurm)
 exit 0
