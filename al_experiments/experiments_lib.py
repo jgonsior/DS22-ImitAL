@@ -83,6 +83,7 @@ def get_config():
             (["--INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY"], {"default": 0.2}),
             (["--TEST_PARALLEL_OFFSET"], {"default": 100000}),
             (["--TRAIN_PARALLEL_OFFSET"], {"default": 0}),
+            (["--OUTPUT_FILES_SUFFIX"], {"defaul": ""}),
         ],
         standard_args=False,
         return_argparse=True,
@@ -131,6 +132,7 @@ def get_config():
         train_base_param_string,
         test_base_param_string,
         evaluation_arguments,
+        config.OUTPUT_FILES_SUFFIX,
     )
 
 
@@ -244,6 +246,9 @@ def run_parallel_experiment(
             ids = [i for i in possible_ids if i not in rs]
         else:
             ids = possible_ids
+
+    if len(ids) == 0:
+        return
 
     def code(CLI_COMMAND, PARALLEL_AMOUNT, PARALLEL_OFFSET):
         with Parallel(

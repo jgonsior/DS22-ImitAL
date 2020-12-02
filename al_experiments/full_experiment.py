@@ -20,6 +20,7 @@ from experiments_lib import (
     train_base_param_string,
     test_base_param_string,
     evaluation_arguments,
+    suffix,
 ) = get_config()
 
 if not config.SKIP_TRAINING_DATA_GENERATION:
@@ -28,7 +29,8 @@ if not config.SKIP_TRAINING_DATA_GENERATION:
         "Creating dataset",
         OUTPUT_FILE=PARENT_OUTPUT_DIRECTORY
         + train_base_param_string
-        + "/dataset_creation.csv",
+        + "/dataset_creation.csv"
+        + SUFFIX,
         CLI_COMMAND="python imit_training.py",
         CLI_ARGUMENTS={
             "DATASETS_PATH": "../datasets",
@@ -66,6 +68,7 @@ if not config.SKIP_TRAINING_DATA_GENERATION:
         PARALLEL_AMOUNT=config.TRAIN_NR_LEARNING_SAMPLES,
         OUTPUT_FILE_LENGTH=config.TRAIN_NR_LEARNING_SAMPLES,
         RESTART_IF_NOT_ENOUGH_SAMPLES=False,
+        OUTPUT_FILES_SUFFIX=suffix,
     )
 
 if config.HYPER_SEARCH:
