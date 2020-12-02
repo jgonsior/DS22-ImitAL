@@ -50,6 +50,29 @@ exit 0
 """
 )
 
+train_ann = Template(
+    """#!/bin/bash
+#SBATCH --time=23:59:59   # walltime
+#SBATCH --nodes=1  # number of processor cores (i.e. threads)
+#SBATCH --ntasks=1      # limit to one node
+#SBATCH --tasks-per-node=1
+#SBATCH --cpus-per-task=1 # equals 256 threads
+#SBATCH --mem-per-cpu=5250M   # memory per CPU core
+#SBATCH --mail-user=julius.gonsior@tu-dresden.de   # email address
+#SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE,TIME_LIMIT
+#SBATCH -A p_ml_il
+#SBATCH --output ${WS_DIR}/slurm_${TITLE}_train_ann_out.txt
+#SBATCH --error ${WS_DIR}/slurm_${TITLE}_train_ann_error.txt
+
+# Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
+export OMP_NUM_THREADS=$$SLURM_CPUS_ON_NODE
+export JOBLIB_TEMP_FOLDER=${WS_DIR}/tmp
+MPLCONFIGDIR=${WS_DIR}/cache python3 -m pipenv run python ${WS_DIR}/imitating-weakal/full_experiment.py --OUTPUT_DIRECTORY ${WS_DIR}/single_vs_batch/ --BASE_PARAM_STRING batch_$TITLE --SKIP_TRAINING_DATA_GENERATION --ONLY_TRAINING_DATA --INITIAL_BATCH_SAMPLING_METHOD $INITIAL_BATCH_SAMPLING_METHOD --INITIAL_BATCH_SAMPLING_ARG 200
+exit 0
+"""
+)
+
+
 create_ann_eval_data = Template(
     """#!/bin/bash
 #SBATCH --time=23:59:59   # walltime
@@ -124,7 +147,8 @@ exit 0
 submit_jobs = Template(
     """#!/bin/bash
 create_ann_training_data_id=$$(sbatch --parsable ${WS_DIR}/imitating-weakal/${OUT_DIR}/create_ann_training_data.slurm)
-create_ann_eval_id=$$(sbatch --parsable --dependency=afterok:$$create_ann_training_data_id ${WS_DIR}/imitating-weakal//${OUT_DIR}/create_ann_eval_data.slurm)
+train_lstm=$$(sbatch --parsable --dependency=afterok:$$create_ann_training_data_id ${WS_DIR}/imitating-weakal/${OUT_DIR}/train_lstm.slurm)
+create_ann_eval_id=$$(sbatch --parsable --dependency=afterok:$$create_ann_training_data_id:$$train_lstm ${WS_DIR}/imitating-weakal//${OUT_DIR}/create_ann_eval_data.slurm)
 classics_id=$$(sbatch --parsable ${WS_DIR}/imitating-weakal//${OUT_DIR}/classics.slurm)
 plots_id=$$(sbatch --parsable --dependency=afterok:$$create_ann_training_data_id:$$create_ann_eval_id:$$classics_id ${WS_DIR}/imitating-weakal//${OUT_DIR}/plots.slurm)
 exit 0
@@ -149,6 +173,15 @@ with open(config.OUT_DIR + "/create_ann_training_data.slurm", "w") as f:
             INITIAL_BATCH_SAMPLING_METHOD=INITIAL_BATCH_SAMPLING_METHOD,
             TRAIN_NR_LEARNING_SAMPLES=config.TRAIN_NR_LEARNING_SAMPLES,
             BATCH_MODE=BATCH_MODE,
+        )
+    )
+
+with open(config.OUT_DIR + "/train_ann.slurm", "w") as f:
+    f.write(
+        train_ann.substitute(
+            WS_DIR=config.WS_DIR,
+            TITLE=config.TITLE,
+            INITIAL_BATCH_SAMPLING_METHOD=INITIAL_BATCH_SAMPLING_METHOD,
         )
     )
 
