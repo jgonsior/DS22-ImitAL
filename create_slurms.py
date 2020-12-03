@@ -175,7 +175,7 @@ with open(config.OUT_DIR + "/ann_eval_data.slurm", "w") as f:
             + config.TITLE
             + " --INITIAL_BATCH_SAMPLING_ARG 200 --OUTPUT_DIRECTORY "
             + config.DATASET_DIR
-            + " --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES "
+            + "/ --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES "
             + str(config.ITERATIONS_PER_BATCH)
             + " --TEST_PARALLEL_OFFSET $i",
         )
@@ -197,7 +197,7 @@ if config.WITH_CLASSICS:
                 ITERATIONS_PER_BATCH=config.ITERATIONS_PER_BATCH,
                 CLI_ARGS="--OUTPUT_DIRECTORY "
                 + config.DATASET_DIR
-                + " --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES "
+                + "/ --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES "
                 + str(config.ITERATIONS_PER_BATCH)
                 + " --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --TEST_PARALLEL_OFFSET $i",
             )
