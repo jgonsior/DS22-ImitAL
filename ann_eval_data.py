@@ -47,7 +47,12 @@ for DATASET_NAME in [
     evaluation_arguments["DATASET_NAME"] = DATASET_NAME
 
     EVALUATION_FILE_TRAINED_NN_PATH = (
-        config.OUTPUT_DIRECTORY + config.BASE_PARAM_STRING + "_" + DATASET_NAME + ".csv"
+        config.OUTPUT_DIRECTORY
+        + "/"
+        + config.BASE_PARAM_STRING
+        + "_"
+        + DATASET_NAME
+        + ".csv"
     )
 
     run_parallel_experiment(
