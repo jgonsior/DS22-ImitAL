@@ -148,7 +148,7 @@ with open(config.OUT_DIR + "/train_ann.slurm", "w") as f:
             MEMORY=5250,
             CLI_ARGS="--OUTPUT_DIRECTORY "
             + config.DATASET_DIR
-            + " --BASE_PARAM_STRING batch_"
+            + "/ --BASE_PARAM_STRING batch_"
             + config.TITLE
             + hypered_appendix,
         )
