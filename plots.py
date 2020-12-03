@@ -25,7 +25,7 @@ from experiments_lib import (
 ) = get_config()
 
 # this file expects /*/dataset_creation.csv and *_synthetic.csv files, and just concatenates them, and displays that afterwards
-
+DATASET_NAME = "synthetic"
 
 if config.FINAL_PICTURE == "":
     comparison_path = (
@@ -128,7 +128,7 @@ def plot_all_metrics_as_a_table(df):
     )
     with open(config.FINAL_PICTURE + "_table.txt", "a") as f:
         f.write(
-            +tabulate(
+            tabulate(
                 table,
                 headers="keys",
                 showindex=False,

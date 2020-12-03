@@ -21,7 +21,6 @@ from experiments_lib import (
     PARENT_OUTPUT_DIRECTORY,
     _,
     test_base_param_string,
-    evaluation_arguments,
 ) = get_config()
 
 

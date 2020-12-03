@@ -18,6 +18,9 @@ parser.add_argument("--TRAIN_NR_LEARNING_SAMPLES", default=1000, type=int)
 parser.add_argument("--ITERATIONS_PER_BATCH", default=10, type=int)
 parser.add_argument("--OUT_DIR", default="slurms2")
 parser.add_argument("--WS_DIR", default="/lustre/ssd/ws/s5968580-IL_TD2")
+parser.add_argument(
+    "--DATASET_DIR", default="/lustre/ssd/ws/s5968580-IL_TD2/single_vs_batch"
+)
 parser.add_argument("--WITH_HYPER_SEARCH", action="store_true")
 parser.add_argument("--WITH_CLASSICS", action="store_true")
 parser.add_argument("--SLURM", action="store_true")
@@ -104,29 +107,30 @@ with open(config.OUT_DIR + "/ann_training_data.slurm", "w") as f:
             + " --BASE_PARAM_STRING batch_"
             + config.TITLE
             + " --INITIAL_BATCH_SAMPLING_ARG 200 --OUTPUT_DIRECTORY "
-            + config.WS_DIR
-            + "/single_vs_batch/ --USER_QUERY_BUDGET_LIMIT 50 --TRAIN_NR_LEARNING_SAMPLES "
+            + config.DATASET_DIR
+            + " --USER_QUERY_BUDGET_LIMIT 50 --TRAIN_NR_LEARNING_SAMPLES "
             + str(config.ITERATIONS_PER_BATCH)
             + " --TRAIN_PARALLEL_OFFSET $i",
         )
     )
 
-with open(config.OUT_DIR + "/hyper_search.slurm", "w") as f:
-    f.write(
-        slurm_common.render(
-            WS_DIR=config.WS_DIR,
-            TITLE=config.TITLE,
-            PYTHON_FILE="hyper_search",
-            array=False,
-            THREADS=24,
-            MEMORY=5250,
-            CLI_ARGS="--DATA_PATH "
-            + config.WS_DIR
-            + "/single_vs_batch/batch_"
-            + config.TITLE
-            + " --STATE_ENCODING listwise --TARGET_ENCODING binary --HYPER_SEARCH --N_ITER 300",
+if config.WITH_HYPER_SEARCH:
+    with open(config.OUT_DIR + "/hyper_search.slurm", "w") as f:
+        f.write(
+            slurm_common.render(
+                WS_DIR=config.WS_DIR,
+                TITLE=config.TITLE,
+                PYTHON_FILE="hyper_search",
+                array=False,
+                THREADS=24,
+                MEMORY=5250,
+                CLI_ARGS="--DATA_PATH "
+                + config.DATASET_DIR
+                + "/batch_"
+                + config.TITLE
+                + " --STATE_ENCODING listwise --TARGET_ENCODING binary --HYPER_SEARCH --N_ITER 300",
+            )
         )
-    )
 
 
 with open(config.OUT_DIR + "/train_ann.slurm", "w") as f:
@@ -143,8 +147,8 @@ with open(config.OUT_DIR + "/train_ann.slurm", "w") as f:
             THREADS=8,
             MEMORY=5250,
             CLI_ARGS="--OUTPUT_DIRECTORY "
-            + config.WS_DIR
-            + "/single_vs_batch/ --BASE_PARAM_STRING batch_"
+            + config.DATASET_DIR
+            + " --BASE_PARAM_STRING batch_"
             + config.TITLE
             + hypered_appendix,
         )
@@ -170,32 +174,34 @@ with open(config.OUT_DIR + "/ann_eval_data.slurm", "w") as f:
             + " --BASE_PARAM_STRING batch_"
             + config.TITLE
             + " --INITIAL_BATCH_SAMPLING_ARG 200 --OUTPUT_DIRECTORY "
-            + config.WS_DIR
-            + "/single_vs_batch/ --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES "
+            + config.DATASET_DIR
+            + " --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES "
             + str(config.ITERATIONS_PER_BATCH)
             + " --TEST_PARALLEL_OFFSET $i",
         )
     )
-with open(config.OUT_DIR + "/classics.slurm", "w") as f:
-    START = 0
-    END = int(config.TEST_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
-    f.write(
-        slurm_common.render(
-            WS_DIR=config.WS_DIR,
-            TITLE=config.TITLE,
-            PYTHON_FILE="classics",
-            array=True,
-            START=START,
-            END=END,
-            OFFSET=100000,
-            ITERATIONS_PER_BATCH=config.ITERATIONS_PER_BATCH,
-            CLI_ARGS="--OUTPUT_DIRECTORY "
-            + config.WS_DIR
-            + "/single_vs_batch/ --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES "
-            + str(config.ITERATIONS_PER_BATCH)
-            + " --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --TEST_PARALLEL_OFFSET $i",
+
+if config.WITH_CLASSICS:
+    with open(config.OUT_DIR + "/classics.slurm", "w") as f:
+        START = 0
+        END = int(config.TEST_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
+        f.write(
+            slurm_common.render(
+                WS_DIR=config.WS_DIR,
+                TITLE=config.TITLE,
+                PYTHON_FILE="classics",
+                array=True,
+                START=START,
+                END=END,
+                OFFSET=100000,
+                ITERATIONS_PER_BATCH=config.ITERATIONS_PER_BATCH,
+                CLI_ARGS="--OUTPUT_DIRECTORY "
+                + config.DATASET_DIR
+                + " --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES "
+                + str(config.ITERATIONS_PER_BATCH)
+                + " --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --TEST_PARALLEL_OFFSET $i",
+            )
         )
-    )
 
 with open(config.OUT_DIR + "/plots.slurm", "w") as f:
     f.write(
@@ -208,14 +214,14 @@ with open(config.OUT_DIR + "/plots.slurm", "w") as f:
             MEMORY=5250,
             TEST_NR_LEARNING_SAMPLES=config.TEST_NR_LEARNING_SAMPLES,
             CLI_ARGS="--OUTPUT_DIRECTORY "
-            + config.WS_DIR
-            + "/single_vs_batch/ --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES "
+            + config.DATASET_DIR
+            + " --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES "
             + str(config.TEST_NR_LEARNING_SAMPLES)
             + " --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --BASE_PARAM_STRING batch_"
             + config.TITLE
             + " --FINAL_PICTURE "
-            + config.WS_DIR
-            + "/single_vs_batch/plots_batch_"
+            + config.DATASET_DIR
+            + "/plots_batch_"
             + config.TITLE
             + "/ --PLOT_METRIC acc_auc",
         )
@@ -235,7 +241,18 @@ if config.SLURM:
 else:
     # open all fake slurms and concat them into a single bash file
     submit_content = "#!/bin/bash\n"
-    for csv_file in list(glob.glob(config.OUT_DIR + "/*.slurm")):
+    sort_order = {
+        "ann_training_data.slurm": 0,
+        "hyper_search.slurm": 1,
+        "train_ann.slurm": 2,
+        "ann_eval_data.slurm": 3,
+        "classics.slurm": 4,
+        "plots.slurm": 5,
+    }
+    for csv_file in sorted(
+        list(glob.glob(config.OUT_DIR + "/*.slurm")),
+        key=lambda v: sort_order[v.split("/")[-1]],
+    ):
         with open(csv_file, "r") as f:
             content = f.read()
             content = content.replace("$i", "0")
