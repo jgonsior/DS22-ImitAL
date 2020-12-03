@@ -120,7 +120,7 @@ if config.WITH_HYPER_SEARCH:
             slurm_common.render(
                 WS_DIR=config.WS_DIR,
                 TITLE=config.TITLE,
-                PYTHON_FILE="hyper_search",
+                PYTHON_FILE="train_lstm",
                 array=False,
                 THREADS=24,
                 MEMORY=5250,
@@ -128,7 +128,7 @@ if config.WITH_HYPER_SEARCH:
                 + config.DATASET_DIR
                 + "/batch_"
                 + config.TITLE
-                + " --STATE_ENCODING listwise --TARGET_ENCODING binary --HYPER_SEARCH --N_ITER 300",
+                + " --STATE_ENCODING listwise --TARGET_ENCODING binary --HYPER_SEARCH --N_ITER 300 ",
             )
         )
 

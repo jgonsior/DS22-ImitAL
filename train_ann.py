@@ -23,7 +23,19 @@ from experiments_lib import (
     _,
 ) = get_config()
 
-if not config.HYPER_SEARCHED:
+if config.HYPER_SEARCHED:
+    HYPER_SEARCH_OUTPUT_FILE = (
+        config.OUTPUT_DIRECTORY + train_base_param_string + "/hyper_results.txt"
+    )
+
+    with open(HYPER_SEARCH_OUTPUT_FILE, "r") as f:
+        lines = f.read().splitlines()
+        last_line = lines[-1]
+        lower_params = json.loads(last_line)
+        ANN_HYPER_PARAMS = {}
+        for k, v in lower_params.items():
+            ANN_HYPER_PARAMS[k.upper()] = v
+else:
     ANN_HYPER_PARAMS = {
         "REGULAR_DROPOUT_RATE": 0.3,
         "OPTIMIZER": "Adam",
