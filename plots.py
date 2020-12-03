@@ -51,7 +51,7 @@ def concatenate_evaluation_csvs():
         )
         df = pd.concat([df, df2])
 
-    for csv_file in list(glob.glob(PARENT_OUTPUT_DIRECTORY + "/*synthetic.csv")):
+    for csv_file in list(glob.glob(PARENT_OUTPUT_DIRECTORY + "*synthetic.csv")):
         more_results = pd.read_csv(
             csv_file, index_col=None, nrows=config.TEST_NR_LEARNING_SAMPLES
         )
