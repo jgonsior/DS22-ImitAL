@@ -8,8 +8,8 @@
 #SBATCH --mail-user=julius.gonsior@tu-dresden.de   
 #SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE,TIME_LIMIT
 #SBATCH -A p_ml_il
-#SBATCH --output ../datasets/short_test/slurm_hybrid_ann_training_data_out.txt
-#SBATCH --error ../datasets/short_test/slurm_hybrid_ann_training_data_error.txt
+#SBATCH --output /lustre/ssd/ws/s5968580-IL_TD2/slurm_hybrid_ann_training_data_out.txt
+#SBATCH --error /lustre/ssd/ws/s5968580-IL_TD2/slurm_hybrid_ann_training_data_error.txt
 #SBATCH --array 0-99
 
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
@@ -17,6 +17,6 @@ export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
 
 i=$(( 0 + $SLURM_ARRAY_TASK_ID * 10 ))
 
-MPLCONFIGDIR=../datasets/short_test/cache python3 -m pipenv run python ../datasets/short_test/imitating-weakal/ann_training_data.py --TRAIN_STATE_DISTANCES --TRAIN_STATE_UNCERTAINTIES --TRAIN_STATE_PREDICTED_UNITY --BATCH_MODE --INITIAL_BATCH_SAMPLING_METHOD hybrid --BASE_PARAM_STRING batch_hybrid --INITIAL_BATCH_SAMPLING_ARG 200 --OUTPUT_DIRECTORY ../datasets/short_test/ --USER_QUERY_BUDGET_LIMIT 50 --TRAIN_NR_LEARNING_SAMPLES 10 --TRAIN_PARALLEL_OFFSET $i
+MPLCONFIGDIR=/lustre/ssd/ws/s5968580-IL_TD2/cache python3 -m pipenv run python /lustre/ssd/ws/s5968580-IL_TD2/imitating-weakal/ann_training_data.py --TRAIN_STATE_DISTANCES --TRAIN_STATE_UNCERTAINTIES --TRAIN_STATE_PREDICTED_UNITY --BATCH_MODE --INITIAL_BATCH_SAMPLING_METHOD hybrid --BASE_PARAM_STRING batch_hybrid --INITIAL_BATCH_SAMPLING_ARG 200 --OUTPUT_DIRECTORY /lustre/ssd/ws/s5968580-IL_TD2/single_vs_batch --USER_QUERY_BUDGET_LIMIT 50 --TRAIN_NR_LEARNING_SAMPLES 10 --TRAIN_PARALLEL_OFFSET $i
 exit 0
     
