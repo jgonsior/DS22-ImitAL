@@ -24,6 +24,7 @@ parser.add_argument(
 parser.add_argument("--WITH_HYPER_SEARCH", action="store_true")
 parser.add_argument("--WITH_CLASSICS", action="store_true")
 parser.add_argument("--SLURM", action="store_true")
+parser.add_argument("--INITIAL_BATCH_SAMPLING_ARG", type=int, default=200)
 parser.add_argument("--INITIAL_BATCH_SAMPLING_HYBRID_UNCERT", type=float, default=0.2)
 parser.add_argument("--INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST", type=float, default=0.2)
 parser.add_argument(
@@ -46,6 +47,8 @@ INITIAL_BATCH_SAMPLING_METHOD = config.TITLE
 if config.TITLE == "hybrid":
     config.TITLE = (
         "hybrid-"
+        + str(config.INITIAL_BATCH_SAMPLING_ARG)
+        + "#"
         + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST)
         + "_"
         + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB)
@@ -128,7 +131,9 @@ with open(config.OUT_DIR + "/ann_training_data.slurm", "w") as f:
             + str(INITIAL_BATCH_SAMPLING_METHOD)
             + " --BASE_PARAM_STRING batch_"
             + config.TITLE
-            + " --INITIAL_BATCH_SAMPLING_ARG 200 --OUTPUT_DIRECTORY "
+            + " --INITIAL_BATCH_SAMPLING_ARG "
+            + str(config.INITIAL_BATCH_SAMPLING_ARG)
+            + " --OUTPUT_DIRECTORY "
             + config.DATASET_DIR
             + " --USER_QUERY_BUDGET_LIMIT 50 --TRAIN_NR_LEARNING_SAMPLES "
             + str(config.ITERATIONS_PER_BATCH)
@@ -203,7 +208,9 @@ with open(config.OUT_DIR + "/ann_eval_data.slurm", "w") as f:
             + INITIAL_BATCH_SAMPLING_METHOD
             + " --BASE_PARAM_STRING batch_"
             + config.TITLE
-            + " --INITIAL_BATCH_SAMPLING_ARG 200 --OUTPUT_DIRECTORY "
+            + " --INITIAL_BATCH_SAMPLING_ARG "
+            + str(config.INITIAL_BATCH_SAMPLING_ARG)
+            + " --OUTPUT_DIRECTORY "
             + config.DATASET_DIR
             + "/ --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES "
             + str(config.ITERATIONS_PER_BATCH)
