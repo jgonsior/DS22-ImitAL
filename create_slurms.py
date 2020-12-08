@@ -24,13 +24,36 @@ parser.add_argument(
 parser.add_argument("--WITH_HYPER_SEARCH", action="store_true")
 parser.add_argument("--WITH_CLASSICS", action="store_true")
 parser.add_argument("--SLURM", action="store_true")
+parser.add_argument("--INITIAL_BATCH_SAMPLING_HYBRID_UNCERT", type=float, default=0.2)
+parser.add_argument("--INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST", type=float, default=0.2)
+parser.add_argument(
+    "--INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB", type=float, default=0.2
+)
+parser.add_argument(
+    "--INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY", type=float, default=0.2
+)
 
+#  wenn HYBRID -> HYBRID namen so ändern, dass die Werte von oben an den titel angefügt werden :)
 
 config = parser.parse_args()
 
 if len(sys.argv[:-1]) == 0:
     parser.print_help()
     parser.exit()
+
+
+INITIAL_BATCH_SAMPLING_METHOD = config.TITLE
+if config.TITLE == "hybrid":
+    config.TITLE = (
+        "hybrid-"
+        + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST)
+        + "_"
+        + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB)
+        + "_"
+        + str(config.INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY)
+        + "_"
+        + str(config.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT)
+    )
 
 config.OUT_DIR = config.OUT_DIR + "/" + config.TITLE
 
@@ -84,7 +107,6 @@ if config.TITLE == "single":
     BATCH_MODE = ""
     INITIAL_BATCH_SAMPLING_METHOD = "furthest"
 else:
-    INITIAL_BATCH_SAMPLING_METHOD = config.TITLE
     BATCH_MODE = "--BATCH_MODE"
 
 with open(config.OUT_DIR + "/ann_training_data.slurm", "w") as f:
@@ -110,6 +132,14 @@ with open(config.OUT_DIR + "/ann_training_data.slurm", "w") as f:
             + config.DATASET_DIR
             + " --USER_QUERY_BUDGET_LIMIT 50 --TRAIN_NR_LEARNING_SAMPLES "
             + str(config.ITERATIONS_PER_BATCH)
+            + " --INITIAL_BATCH_SAMPLING_HYBRID_UNCERT "
+            + str(config.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT)
+            + " --INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY "
+            + str(config.INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY)
+            + " --INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST "
+            + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST)
+            + " --INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB "
+            + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB)
             + " --TRAIN_PARALLEL_OFFSET $i",
         )
     )
@@ -177,6 +207,14 @@ with open(config.OUT_DIR + "/ann_eval_data.slurm", "w") as f:
             + config.DATASET_DIR
             + "/ --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES "
             + str(config.ITERATIONS_PER_BATCH)
+            + " --INITIAL_BATCH_SAMPLING_HYBRID_UNCERT "
+            + str(config.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT)
+            + " --INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY "
+            + str(config.INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY)
+            + " --INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST "
+            + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST)
+            + " --INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB "
+            + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB)
             + " --TEST_PARALLEL_OFFSET $i",
         )
     )
