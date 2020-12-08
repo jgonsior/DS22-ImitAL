@@ -10,7 +10,7 @@
 #SBATCH -A p_ml_il
 #SBATCH --output /lustre/ssd/ws/s5968580-IL_TD2/slurm_hybrid-0.0_0.2_0.4_0.4_ann_training_data_out.txt
 #SBATCH --error /lustre/ssd/ws/s5968580-IL_TD2/slurm_hybrid-0.0_0.2_0.4_0.4_ann_training_data_error.txt
-#SBATCH --array 0-9
+#SBATCH --array 0-999
 
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
 export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
