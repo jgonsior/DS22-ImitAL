@@ -93,7 +93,6 @@ def plot_all_metrics_as_a_table(df):
         "acc_test",
         "acc_test_oracle",
         "f1_auc",
-        "f1_test",
         "f1_test_oracle",
         "precision_test_oracle",
         "recall_test_oracle",
