@@ -254,18 +254,18 @@ def run_parallel_experiment(
             int(PARALLEL_OFFSET), int(PARALLEL_OFFSET) + int(PARALLEL_AMOUNT)
         )
         if Path(OUTPUT_FILE).is_file():
+            #  print(OUTPUT_FILE)
             df = pd.read_csv(OUTPUT_FILE, index_col=None, usecols=["random_seed"])
             rs = df["random_seed"].to_numpy()
             #  print(sorted(df["random_seed"]))
             ids = [i for i in possible_ids if i not in rs]
-            print(list(possible_ids))
-            print(ids)
+            #  print(list(possible_ids))
+            #  print(ids)
         else:
             ids = possible_ids
 
     if len(ids) == 0:
         return
-    print("hui")
 
     def code(CLI_COMMAND, PARALLEL_AMOUNT, PARALLEL_OFFSET):
         with Parallel(
@@ -276,10 +276,8 @@ def run_parallel_experiment(
         ) as parallel:
             output = parallel(delayed(run_parallel)(CLI_COMMAND, k) for k in ids)
 
-    print("hier")
     if Path(OUTPUT_FILE).is_file():
         OUTPUT_FILE_LENGTH = len(df) + len(ids)
-    print("und da")
     run_code_experiment(
         EXPERIMENT_TITLE,
         OUTPUT_FILE,

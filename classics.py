@@ -48,6 +48,7 @@ for DATASET_NAME in [
     evaluation_arguments["DATASET_NAME"] = DATASET_NAME
 
     for comparison in config.TEST_COMPARISONS:
+        #  print(comparison)
         COMPARISON_PATH = (
             PARENT_OUTPUT_DIRECTORY
             + "classics/"
