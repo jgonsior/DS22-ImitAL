@@ -159,12 +159,13 @@ def run_code_experiment(
     print("Saving to " + OUTPUT_FILE)
 
     # check if OUTPUT_FILE exists
-    if os.path.isfile(OUTPUT_FILE):
-        if OUTPUT_FILE_LENGTH is not None:
-            if sum(1 for l in open(OUTPUT_FILE)) >= OUTPUT_FILE_LENGTH:
-                return
-        else:
-            return
+    #  if os.path.isfile(OUTPUT_FILE):
+    #      if OUTPUT_FILE_LENGTH is not None:
+    #          if sum(1 for l in open(OUTPUT_FILE)) >= OUTPUT_FILE_LENGTH:
+    #              print("zu ende")
+    #              return
+    #      else:
+    #          return
 
     # if not run it
     print("#" * 80)
@@ -255,12 +256,16 @@ def run_parallel_experiment(
         if Path(OUTPUT_FILE).is_file():
             df = pd.read_csv(OUTPUT_FILE, index_col=None, usecols=["random_seed"])
             rs = df["random_seed"].to_numpy()
+            #  print(sorted(df["random_seed"]))
             ids = [i for i in possible_ids if i not in rs]
+            print(list(possible_ids))
+            print(ids)
         else:
             ids = possible_ids
 
     if len(ids) == 0:
         return
+    print("hui")
 
     def code(CLI_COMMAND, PARALLEL_AMOUNT, PARALLEL_OFFSET):
         with Parallel(
@@ -271,9 +276,10 @@ def run_parallel_experiment(
         ) as parallel:
             output = parallel(delayed(run_parallel)(CLI_COMMAND, k) for k in ids)
 
+    print("hier")
     if Path(OUTPUT_FILE).is_file():
         OUTPUT_FILE_LENGTH = len(df) + len(ids)
-
+    print("und da")
     run_code_experiment(
         EXPERIMENT_TITLE,
         OUTPUT_FILE,
