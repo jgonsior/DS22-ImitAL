@@ -91,9 +91,13 @@ def plot_all_metrics_as_a_table(df):
     metrics = [
         "acc_auc",
         "acc_test",
+        "acc_test_oracle",
+        "f1_auc",
+        "f1_test",
+        "f1_test_oracle",
+        "precision_test_oracle",
+        "recall_test_oracle",
         "acc_train",
-        "roc_auc_macro_oracle",
-        "roc_auc_weighted_oracle",
     ]
 
     table = pd.DataFrame(columns=["Source", *metrics])
