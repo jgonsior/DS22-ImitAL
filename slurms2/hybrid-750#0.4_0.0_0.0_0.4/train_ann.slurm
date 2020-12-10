@@ -17,6 +17,6 @@ export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
 
 
 
-MPLCONFIGDIR=/lustre/ssd/ws/s5968580-IL_TD2/cache python3 -m pipenv run python /lustre/ssd/ws/s5968580-IL_TD2/imitating-weakal/train_ann.py --OUTPUT_DIRECTORY /lustre/ssd/ws/s5968580-IL_TD2/single_vs_batch/ --BASE_PARAM_STRING batch_hybrid-750#0.4_0.0_0.0_0.4
+MPLCONFIGDIR=/lustre/ssd/ws/s5968580-IL_TD2/cache python3 -m pipenv run python /lustre/ssd/ws/s5968580-IL_TD2/imitating-weakal/train_ann.py --OUTPUT_DIRECTORY /lustre/ssd/ws/s5968580-IL_TD2/single_vs_batch/ --BASE_PARAM_STRING batch_hybrid-750#0.4_0.0_0.0_0.4 --HYPER_SEARCHED
 exit 0
     
