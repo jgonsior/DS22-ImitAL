@@ -109,8 +109,14 @@ if not os.path.exists(config.OUT_DIR):
 if config.TITLE == "single":
     BATCH_MODE = ""
     INITIAL_BATCH_SAMPLING_METHOD = "furthest"
+    ADDITIONAL_TRAINING_STATE_ARGS = ""
+elif config.TITLE == "single_full":
+    BATCH_MODE = ""
+    INITIAL_BATCH_SAMPLING_METHOD = "furthest"
+    ADDITIONAL_TRAINING_STATE_ARGS = " --STATE_ARGSECOND_PROBAS --STATE_ARGTHIRD_PROBAS --STATE_DISTANCES_LAB --STATE_DISTANCES_UNLAB "
 else:
     BATCH_MODE = "--BATCH_MODE"
+    ADDITIONAL_TRAINING_STATE_ARGS = ""
 
 with open(config.OUT_DIR + "/ann_training_data.slurm", "w") as f:
     START = 0
@@ -145,6 +151,7 @@ with open(config.OUT_DIR + "/ann_training_data.slurm", "w") as f:
             + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST)
             + " --INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB "
             + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB)
+            + ADDITIONAL_TRAINING_STATE_ARGS
             + " --TRAIN_PARALLEL_OFFSET $i",
         )
     )
@@ -222,6 +229,7 @@ with open(config.OUT_DIR + "/ann_eval_data.slurm", "w") as f:
             + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST)
             + " --INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB "
             + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB)
+            + ADDITIONAL_TRAINING_STATE_ARGS
             + " --TEST_PARALLEL_OFFSET $i",
         )
     )
