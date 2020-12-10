@@ -36,16 +36,28 @@ if config.HYPER_SEARCHED:
         for k, v in lower_params.items():
             ANN_HYPER_PARAMS[k.upper()] = v
 else:
-    ANN_HYPER_PARAMS = {
-        "REGULAR_DROPOUT_RATE": 0.3,
-        "OPTIMIZER": "Adam",
-        "NR_HIDDEN_NEURONS": 1024,
-        "NR_HIDDEN_LAYERS": 4,
-        "LOSS": "MeanSquaredError",
-        "EPOCHS": 10000,
-        "BATCH_SIZE": 32,
-        "ACTIVATION": "tanh",
-    }
+    if config.BATCH_MODE:
+        ANN_HYPER_PARAMS = {
+            "REGULAR_DROPOUT_RATE": 0.3,
+            "OPTIMIZER": "Adam",
+            "NR_HIDDEN_NEURONS": 1024,
+            "NR_HIDDEN_LAYERS": 4,
+            "LOSS": "MeanSquaredError",
+            "EPOCHS": 10000,
+            "BATCH_SIZE": 32,
+            "ACTIVATION": "tanh",
+        }
+    else:
+        ANN_HYPER_PARAMS = {
+            "REGULAR_DROPOUT_RATE": 0.1,
+            "OPTIMIZER": "Nadam",
+            "NR_HIDDEN_NEURONS": 300,
+            "NR_HIDDEN_LAYERS": 2,
+            "LOSS": "MeanSquaredError",
+            "EPOCHS": 10000,
+            "BATCH_SIZE": 32,
+            "ACTIVATION": "tanh",
+        }
 run_python_experiment(
     "Train ANN",
     PARENT_OUTPUT_DIRECTORY + train_base_param_string + "/trained_ann.pickle",
