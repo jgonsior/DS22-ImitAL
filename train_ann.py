@@ -38,14 +38,14 @@ if config.HYPER_SEARCHED:
 else:
     if config.BATCH_MODE:
         ANN_HYPER_PARAMS = {
-            "REGULAR_DROPOUT_RATE": 0.3,
-            "OPTIMIZER": "Adam",
-            "NR_HIDDEN_NEURONS": 1024,
-            "NR_HIDDEN_LAYERS": 4,
+            "REGULAR_DROPOUT_RATE": 0.2,
+            "OPTIMIZER": "RMSprop",
+            "NR_HIDDEN_NEURONS": 900,
+            "NR_HIDDEN_LAYERS": 3,
             "LOSS": "MeanSquaredError",
             "EPOCHS": 10000,
-            "BATCH_SIZE": 32,
-            "ACTIVATION": "tanh",
+            "BATCH_SIZE": 128,
+            "ACTIVATION": "elu",
         }
     else:
         ANN_HYPER_PARAMS = {
