@@ -33,6 +33,10 @@ parser.add_argument(
 parser.add_argument(
     "--INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY", type=float, default=0.2
 )
+parser.add_argument("--TRAIN_STATE_DISTANCES", action="store_true")
+parser.add_argument("--TRAIN_STATE_UNCERTAINTIES", action="store_true")
+parser.add_argument("--TRAIN_STATE_PREDICTED_UNITY", action="store_true")
+parser.add_argument("--TRAIN_STATE_DISTANCES_LAB", action="store_true")
 
 #  wenn HYBRID -> HYBRID namen so ändern, dass die Werte von oben an den titel angefügt werden :)
 
@@ -57,6 +61,43 @@ if config.TITLE == "hybrid":
         + "_"
         + str(config.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT)
     )
+
+if config.TITLE == "single":
+    BATCH_MODE = ""
+    INITIAL_BATCH_SAMPLING_METHOD = "furthest"
+    ADDITIONAL_TRAINING_STATE_ARGS = ""
+elif config.TITLE == "single_full":
+    BATCH_MODE = ""
+    INITIAL_BATCH_SAMPLING_METHOD = "furthest"
+    ADDITIONAL_TRAINING_STATE_ARGS = " --TRAIN_STATE_ARGSECOND_PROBAS --TRAIN_STATE_ARGTHIRD_PROBAS --TRAIN_STATE_DISTANCES_LAB --TRAIN_STATE_DISTANCES_UNLAB "
+elif config.TITLE == "single_full_lab":
+    BATCH_MODE = ""
+    INITIAL_BATCH_SAMPLING_METHOD = "furthest"
+    ADDITIONAL_TRAINING_STATE_ARGS = (
+        " --TRAIN_STATE_ARGSECOND_PROBAS --TRAIN_STATE_DISTANCES_LAB "
+    )
+elif config.TITLE == "single_full_unlab":
+    BATCH_MODE = ""
+    INITIAL_BATCH_SAMPLING_METHOD = "furthest"
+    ADDITIONAL_TRAINING_STATE_ARGS = (
+        " --TRAIN_STATE_ARGSECOND_PROBAS --TRAIN_STATE_DISTANCES_UNLAB "
+    )
+else:
+    BATCH_MODE = "--BATCH_MODE"
+    ADDITIONAL_TRAINING_STATE_ARGS = ""
+    if config.TRAIN_STATE_DISTANCES:
+        ADDITIONAL_TRAINING_STATE_ARGS += " --TRAIN_STATE_DISTANCES"
+        config.TITLE += "_D"
+    if config.TRAIN_STATE_UNCERTAINTIES:
+        ADDITIONAL_TRAINING_STATE_ARGS += " --TRAIN_STATE_UNCERTAINTIES"
+        config.TITLE += "_U"
+    if config.TRAIN_STATE_PREDICTED_UNITY:
+        ADDITIONAL_TRAINING_STATE_ARGS += " --TRAIN_STATE_PREDICTED_UNITY"
+        config.TITLE += "_P"
+    if config.TRAIN_STATE_DISTANCES_LAB:
+        ADDITIONAL_TRAINING_STATE_ARGS += "TRAIN_STATE_DISTANCES_LAB"
+        config.TITLE += "_DL"
+
 
 config.OUT_DIR = config.OUT_DIR + "/" + config.TITLE
 
@@ -106,30 +147,6 @@ exit 0
 if not os.path.exists(config.OUT_DIR):
     os.makedirs(config.OUT_DIR)
 
-if config.TITLE == "single":
-    BATCH_MODE = ""
-    INITIAL_BATCH_SAMPLING_METHOD = "furthest"
-    ADDITIONAL_TRAINING_STATE_ARGS = ""
-elif config.TITLE == "single_full":
-    BATCH_MODE = ""
-    INITIAL_BATCH_SAMPLING_METHOD = "furthest"
-    ADDITIONAL_TRAINING_STATE_ARGS = " --TRAIN_STATE_ARGSECOND_PROBAS --TRAIN_STATE_ARGTHIRD_PROBAS --TRAIN_STATE_DISTANCES_LAB --TRAIN_STATE_DISTANCES_UNLAB "
-elif config.TITLE == "single_full_lab":
-    BATCH_MODE = ""
-    INITIAL_BATCH_SAMPLING_METHOD = "furthest"
-    ADDITIONAL_TRAINING_STATE_ARGS = (
-        " --TRAIN_STATE_ARGSECOND_PROBAS --TRAIN_STATE_DISTANCES_LAB "
-    )
-elif config.TITLE == "single_full_unlab":
-    BATCH_MODE = ""
-    INITIAL_BATCH_SAMPLING_METHOD = "furthest"
-    ADDITIONAL_TRAINING_STATE_ARGS = (
-        " --TRAIN_STATE_ARGSECOND_PROBAS --TRAIN_STATE_DISTANCES_UNLAB "
-    )
-else:
-    BATCH_MODE = "--BATCH_MODE"
-    ADDITIONAL_TRAINING_STATE_ARGS = ""
-
 with open(config.OUT_DIR + "/ann_training_data.slurm", "w") as f:
     START = 0
     END = int(config.TRAIN_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
@@ -143,7 +160,7 @@ with open(config.OUT_DIR + "/ann_training_data.slurm", "w") as f:
             END=END,
             ITERATIONS_PER_BATCH=config.ITERATIONS_PER_BATCH,
             OFFSET=0,
-            CLI_ARGS="--TRAIN_STATE_DISTANCES --TRAIN_STATE_UNCERTAINTIES --TRAIN_STATE_PREDICTED_UNITY "
+            CLI_ARGS=" "
             + str(BATCH_MODE)
             + " --INITIAL_BATCH_SAMPLING_METHOD "
             + str(INITIAL_BATCH_SAMPLING_METHOD)
@@ -221,7 +238,7 @@ with open(config.OUT_DIR + "/ann_eval_data.slurm", "w") as f:
             END=END,
             OFFSET=100000,
             ITERATIONS_PER_BATCH=config.ITERATIONS_PER_BATCH,
-            CLI_ARGS="--TRAIN_STATE_DISTANCES --TRAIN_STATE_UNCERTAINTIES --TRAIN_STATE_PREDICTED_UNITY "
+            CLI_ARGS=" "
             + BATCH_MODE
             + " --INITIAL_BATCH_SAMPLING_METHOD "
             + INITIAL_BATCH_SAMPLING_METHOD
