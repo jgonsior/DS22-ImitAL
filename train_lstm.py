@@ -263,11 +263,11 @@ if config.HYPER_SEARCH:
             "MeanSquaredError",
             #  "CategoricalCrossentropy",
             #  "BinaryCrossentropy",
-            "CosineSimilarity",
+            #  "CosineSimilarity",
             # spearman_loss,
             # tau_loss,
         ],
-        "regular_dropout_rate": [0.1, 0.2, 0.3],
+        "regular_dropout_rate": [0, 0.1, 0.2, 0.3],
         #  "recurrentDropoutRate": [0, 0.1, 0.2],
         "nr_hidden_neurons": [
             #  1,
@@ -303,12 +303,12 @@ if config.HYPER_SEARCH:
             1500,
         ],  # [160, 240, 480, 720, 960],
         "epochs": [10000],  # <- early stopping :)
-        "nr_hidden_layers": [2, 3, 4, 6, 8],  # 16, 32, 64, 96, 128],  # , 2],
+        "nr_hidden_layers": [2, 3, 4, 8],  # 16, 32, 64, 96, 128],  # , 2],
         "batch_size": [16, 32, 64, 128],
         #  "nTs": [15000],
         #  "k2": [1000],
         #  "diff": [False],
-        "optimizer": ["sgd", "RMSprop", "Adadelta", "Adam", "Nadam"],
+        "optimizer": ["RMSprop", "Adam", "Nadam"],
         #  "kernel_initializer": [
         #      "glorot_uniform",
         #      "VarianceScaling",
