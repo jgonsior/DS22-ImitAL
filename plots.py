@@ -42,6 +42,7 @@ def concatenate_evaluation_csvs():
     df = pd.DataFrame()
 
     for comparison in config.TEST_COMPARISONS:
+        print("Reading " + PARENT_OUTPUT_DIRECTORY + "classics/" + comparison)
         df2 = pd.read_csv(
             PARENT_OUTPUT_DIRECTORY + "classics/" + comparison
             #  + test_base_param_string
@@ -52,6 +53,7 @@ def concatenate_evaluation_csvs():
         df = pd.concat([df, df2])
 
     for csv_file in list(glob.glob(PARENT_OUTPUT_DIRECTORY + "*synthetic.csv")):
+        print("Reading " + csv_file)
         more_results = pd.read_csv(
             csv_file, index_col=None, nrows=config.TEST_NR_LEARNING_SAMPLES
         )
@@ -142,6 +144,7 @@ def plot_all_metrics_as_a_table(df):
 
 
 df = pd.read_csv(comparison_path, index_col=None)
+print("Read " + comparison_path)
 run_code_experiment(
     "Printing dataset_metrics",
     config.FINAL_PICTURE + "_tabble.txt",
