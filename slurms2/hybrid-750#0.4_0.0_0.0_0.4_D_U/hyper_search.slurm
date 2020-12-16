@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=100:59:59   # walltime
+#SBATCH --time=23:59:59   # walltime
 #SBATCH --nodes=1  
 #SBATCH --ntasks=1      
 #SBATCH --tasks-per-node=1
@@ -17,6 +17,6 @@ export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
 
 
 
-MPLCONFIGDIR=/lustre/ssd/ws/s5968580-IL_TD2/cache python3 -m pipenv run python /lustre/ssd/ws/s5968580-IL_TD2/imitating-weakal/train_lstm.py --DATA_PATH /lustre/ssd/ws/s5968580-IL_TD2/single_vs_batch/batch_hybrid-750#0.4_0.0_0.0_0.4_D_U --STATE_ENCODING listwise --TARGET_ENCODING binary --HYPER_SEARCH --N_ITER 200 
+MPLCONFIGDIR=/lustre/ssd/ws/s5968580-IL_TD2/cache python3 -m pipenv run python /lustre/ssd/ws/s5968580-IL_TD2/imitating-weakal/train_lstm.py --DATA_PATH /lustre/ssd/ws/s5968580-IL_TD2/single_vs_batch/batch_hybrid-750#0.4_0.0_0.0_0.4_D_U --STATE_ENCODING listwise --TARGET_ENCODING binary --HYPER_SEARCH --N_ITER 300 
 exit 0
     
