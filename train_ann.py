@@ -49,14 +49,14 @@ else:
         }
     else:
         ANN_HYPER_PARAMS = {
-            "REGULAR_DROPOUT_RATE": 0.1,
+            "REGULAR_DROPOUT_RATE": 0.2,
             "OPTIMIZER": "Nadam",
-            "NR_HIDDEN_NEURONS": 300,
+            "NR_HIDDEN_NEURONS": 1100,
             "NR_HIDDEN_LAYERS": 2,
             "LOSS": "MeanSquaredError",
             "EPOCHS": 10000,
-            "BATCH_SIZE": 32,
-            "ACTIVATION": "tanh",
+            "BATCH_SIZE": 128,
+            "ACTIVATION": "elu",
         }
 run_python_experiment(
     "Train ANN",
