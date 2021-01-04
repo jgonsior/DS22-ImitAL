@@ -22,10 +22,8 @@ print("train label shape:", y_train.shape)  # output (50000, 1)
 print("test image shape:", x_test.shape)  # output (10000, 32, 32, 3)
 print("test label shape:", y_test.shape)  # output (10000, 1)
 
-df = pd.DataFrame()
-for line in x_test:
-    df = df.append(line.flatten().tolist())
-print(df)
+x_test = np.reshape(x_test, (10000, 3072))
+df = pd.DataFrame(x_test)
 df["LABEL"] = y_test.flatten()
 print(df)
 
