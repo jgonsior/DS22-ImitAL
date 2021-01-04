@@ -18,6 +18,8 @@ parsing_dict = {
     "HABERMAN.csv": [",", None, None, 3],
     "BREAST.csv": [",", 0, None, "diagnosis"],
     "DIABETES.csv": [",", 0, None, "Outcome"],
+    #  "wine.csv": [",", 0, None, "Type"],
+    "glass.csv": [",", 0, None, "Type"],
 }
 
 for f in list(glob.glob("../datasets/uci/*")):

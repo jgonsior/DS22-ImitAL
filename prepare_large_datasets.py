@@ -1,24 +1,53 @@
 import glob
+import csv
 import os
-
+import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
+from sklearn.datasets import (
+    olivetti_faces,
+    fetch_20newsgroups_vectorized,
+    fetch_lfw_people,
+    fetch_rcv1,
+    fetch_kddcup99,
+)
 
-parsing_dict = {
-    "dwtc.csv": [",", 0, 0, "CLASS"],
-    "PLANNING_plrx.txt": ["\t", None, None, 12],
-    "GERMAN_credit_data.data": ["\s+", None, None, 24],
-    "FERTILITY.csv": [",", 0, None, "Diagnosis"],
-    "PIMA-indians-diabetes.csv": [",", 0, None, "Outcome"],
-    "australian.dat": [" ", None, None, 14],
-    "ILPD_Indian Liver Patient Dataset (ILPD).csv": [",", 0, None, "label"],
-    "IONOSPHERE_ionosphere.data": [",", None, None, 34],
-    "HEART.csv": [",", 0, None, "target"],
-    "HABERMAN.csv": [",", None, None, 3],
-    "BREAST.csv": [",", 0, None, "diagnosis"],
-    "DIABETES.csv": [",", 0, None, "Outcome"],
-    "emnist": [",", None, None, 0],
-}
+data = fetch_kddcup99()
+df = pd.DataFrame(data.data)
+df["LABEL"] = data.target
+print(df)
+
+
+for column, dtype in df.dtypes.items():
+    if column == "LABEL":
+        continue
+    if dtype not in ["int64", "float64"]:
+        if len(df[column].unique()) > 2:
+            #  print(pd.get_dummies(df[column], prefix=column))
+            df = pd.concat(
+                [
+                    pd.get_dummies(df[column], prefix=column),
+                    df.drop(column, axis=1),
+                ],
+                axis=1,
+            )
+        else:
+            df.loc[:, column] = df.loc[:, column].astype("category").cat.codes
+labelEncoder = LabelEncoder()
+df["LABEL"] = labelEncoder.fit_transform(df.LABEL.values)
+
+df = df.dropna()
+
+print(df)
+
+#  df.to_csv("kdd.csv")
+#  df.to_csv(
+#      "../datasets/large_cleaned/" + os.path.basename(f).split(".")[0] + ".csv",
+#      index=False,
+#  )
+#
+
+exit(-1)
 
 #  for f in list(glob.glob("../datasets/uci/*")):
 for f in list(glob.glob("../datasets/large_datasets/emnist/emnist-byclass*.csv")):
