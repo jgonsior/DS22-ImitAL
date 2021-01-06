@@ -80,6 +80,9 @@ if not os.path.isfile(config.OUTPUT_DIRECTORY + "/states.csv"):
                 for i in range(0, config.AMOUNT_OF_PEAKED_OBJECTS)
             ]
 
+    if config.STATE_INCLUDE_NR_FEATURES:
+        columns = ["nr_features"] + columns
+
     states = pd.DataFrame(data=None, columns=columns)
 
     optimal_policies = pd.DataFrame(
