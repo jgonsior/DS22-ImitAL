@@ -222,7 +222,7 @@ if config.WITH_HYPER_SEARCH:
                 + config.DATASET_DIR
                 + "/batch_"
                 + config.TITLE
-                + " --STATE_ENCODING listwise --TARGET_ENCODING binary --HYPER_SEARCH --N_ITER 300 ",
+                + " --STATE_ENCODING listwise --TARGET_ENCODING binary --HYPER_SEARCH --N_ITER 100 ",
             )
         )
 
