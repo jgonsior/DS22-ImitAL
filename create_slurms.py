@@ -156,8 +156,8 @@ else:
 submit_jobs = Template(
     """#!/bin/bash
 ann_training_data_id=$(sbatch --parsable {{WS_DIR}}/imitating-weakal/{{OUT_DIR}}/ann_training_data.slurm)
-train_ann_id=$(sbatch --parsable --dependency=afterok:$ann_training_data_id {{WS_DIR}}/imitating-weakal/{{OUT_DIR}}/train_ann.slurm)
-{%if WITH_HYPER_SEARCH %}hyper_search_id=$(sbatch --parsable --dependency=afterok:$train_ann_id {{WS_DIR}}/imitating-weakal/{{OUT_DIR}}/hyper_search.slurm){% endif %}
+{%if WITH_HYPER_SEARCH %}hyper_search_id=$(sbatch --parsable --dependency=afterok:$ann_training_data_id {{WS_DIR}}/imitating-weakal/{{OUT_DIR}}/hyper_search.slurm){% endif %}
+train_ann_id=$(sbatch --parsable --dependency=afterok:$ann_training_data_id{%if WITH_HYPER_SEARCH %}:$hyper_search_id{% endif %} {{WS_DIR}}/imitating-weakal/{{OUT_DIR}}/train_ann.slurm)
 {%if WITH_EVAL %}create_ann_eval_id=$(sbatch --parsable --dependency=afterok:$ann_training_data_id:$train_ann_id{%if WITH_HYPER_SEARCH %}:$hyper_search_id{% endif %} {{WS_DIR}}/imitating-weakal//{{OUT_DIR}}/ann_eval_data.slurm){% endif %}
 {%if WITH_CLASSICS %}classics_id=$(sbatch --parsable {{WS_DIR}}/imitating-weakal//{{OUT_DIR}}/classics.slurm){% endif %}
 {%if WITH_PLOTS %}plots_id=$(sbatch --parsable --dependency=afterok:$ann_training_data_id{%if WITH_EVAL %}:$create_ann_eval_id{% endif %}{%if WITH_CLASSICS %}:$classics_id{% endif %} {{WS_DIR}}/imitating-weakal//{{OUT_DIR}}/plots.slurm){% endif %}
