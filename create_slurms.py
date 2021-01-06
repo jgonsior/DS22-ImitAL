@@ -74,10 +74,7 @@ elif config.TITLE == "single_full":
     BATCH_MODE = ""
     INITIAL_BATCH_SAMPLING_METHOD = "furthest"
     ADDITIONAL_TRAINING_STATE_ARGS = " --TRAIN_STATE_ARGSECOND_PROBAS --TRAIN_STATE_ARGTHIRD_PROBAS --TRAIN_STATE_DISTANCES_LAB --TRAIN_STATE_DISTANCES_UNLAB "
-    if config.DISTANCE_METRIC == "cosine":
-        config.TITLE += "_cos"
-    if config.STATE_INCLUDE_NR_FEATURES:
-        config.TITLE += "_nrf"
+    config.INITIAL_BATCH_SAMPLING_ARG = 10
 elif config.TITLE == "single_full_f1":
     BATCH_MODE = ""
     INITIAL_BATCH_SAMPLING_METHOD = "furthest"
@@ -117,6 +114,11 @@ else:
 
 if config.STATE_INCLUDE_NR_FEATURES:
     ADDITIONAL_TRAINING_STATE_ARGS += " --STATE_INCLUDE_NR_FEATURES"
+
+if config.DISTANCE_METRIC == "cosine":
+    config.TITLE += "_cos"
+if config.STATE_INCLUDE_NR_FEATURES:
+    config.TITLE += "_nrf"
 
 config.OUT_DIR = config.OUT_DIR + "/" + config.TITLE
 
