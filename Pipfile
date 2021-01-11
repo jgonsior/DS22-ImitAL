@@ -36,4 +36,4 @@ jinja2 = "*"
 scikeras = "==0.2.0"
 
 [requires]
-python_version = "3"
+python_version = "3.6"

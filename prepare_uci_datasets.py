@@ -18,12 +18,20 @@ parsing_dict = {
     "HABERMAN.csv": [",", None, None, 3],
     "BREAST.csv": [",", 0, None, "diagnosis"],
     "DIABETES.csv": [",", 0, None, "Outcome"],
+    "abalone.csv": [",", 0, None, "label"],
+    "adult.csv": [",", 0, None, "Target"],
     #  "wine.csv": [",", 0, None, "Type"],
+    "wine.csv": [",", 0, None, "Class"],
     "glass.csv": [",", 0, None, "Type"],
+    "parkinsons.csv": [",", 0, None, "status"],
+    "zoo.csv": [",", None, None, 17],
+    "flag.csv": [",", None, None, 6],
+    #  "hepatitis.csv": [",", None, None, 0], # missing values!
 }
 
 for f in list(glob.glob("../datasets/uci/*")):
-
+    if f not in ["../datasets/uci/flag.csv"]:
+        continue
     print(f)
     parsing_args = parsing_dict[os.path.basename(f)]
 
@@ -34,10 +42,19 @@ for f in list(glob.glob("../datasets/uci/*")):
         del df[13]
     if os.path.basename(f) == "BREAST.csv":
         del df["Unnamed: 32"]
+    if os.path.basename(f) == "adult.csv":
+        df["Age"].astype("int32")
+    if os.path.basename(f) == "zoo.csv":
+        df = df.drop(0, 1)
+    if os.path.basename(f) == "parkinsons.csv":
+        df = df.drop("name", 1)
+    if os.path.basename(f) == "flag.csv":
+        df = df.drop(0, 1)
 
     df = df.rename(columns={parsing_args[3]: "LABEL"})
-
+    print(df)
     for column, dtype in df.dtypes.items():
+        print(column, dtype)
         if column == "LABEL":
             continue
         if dtype not in ["int64", "float64"]:
