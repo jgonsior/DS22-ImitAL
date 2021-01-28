@@ -73,17 +73,4 @@ for DATASET_NAME in [
         OUTPUT_FILE_LENGTH=config.TEST_NR_LEARNING_SAMPLES,
     )
 
-    #  ERROR FOUND -> DAS HIER MUSS DANN DANACH WENN ALLES FERTIG UND SO
-    #  # rename sampling column
-    #  # Read in the file
-    #  with open(EVALUATION_FILE_TRAINED_NN_PATH, "r") as file:
-    #      filedata = file.read()
-    #
-    #  # Replace the target string
-    #  filedata = filedata.replace("trained_nn", config.OUTPUT_DIRECTORY)
-    #
-    #  # Write the file out again
-    #  with open(EVALUATION_FILE_TRAINED_NN_PATH, "w") as file:
-    #      file.write(filedata)
-    #
     test_base_param_string = original_test_base_param_string
