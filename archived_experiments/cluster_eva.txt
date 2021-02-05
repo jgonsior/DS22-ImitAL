@@ -1,3 +1,0 @@
-zebra -> 	aglo 8, kmeans 7, langsamer
-hiva -> 	algo 8, kmeans 7, langsamer
-ibn_sina ->	kmeans 10, algo 10, langsamer
