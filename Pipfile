@@ -8,7 +8,6 @@ pylint = "*"
 pydocstyle = "*"
 rope = "*"
 black = "==20.08b1"
-data-science-types = "*"
 mypy = "*"
 
 [packages]
@@ -25,6 +24,7 @@ dill = "*"
 ipykernel = "*"
 # numba = "*"
 # scikeras = "*"
+data-science-types = "*"
 
 [requires]
 python_version = "3"
