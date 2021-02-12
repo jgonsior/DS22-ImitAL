@@ -3,11 +3,11 @@ import os
 import random
 
 import numpy as np
-from active_learning.oracles import FakeExperimentOracle
 
 from active_learning.al_cycle_wrapper import train_and_eval_dataset
 from active_learning.config import get_active_config
 from active_learning.logger import init_logger
+from active_learning.oracles import FakeExperimentOracle
 
 config: argparse.Namespace = get_active_config(  # type: ignore
     [

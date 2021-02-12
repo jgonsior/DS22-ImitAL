@@ -1,16 +1,17 @@
 import argparse
-from typing import Any, Callable, Dict, List
-from active_learning.config.config import get_active_config
 import json
 import math
 import multiprocessing
 import os
 import time
 from pathlib import Path
+from typing import Any, Callable, Dict, List
 
 import pandas as pd
 from joblib import Parallel, delayed
+
 from active_learning.config import standard_config
+from active_learning.config.config import get_active_config
 
 
 def get_config():
@@ -87,7 +88,7 @@ def run_code_experiment(
     EXPERIMENT_TITLE: str,
     OUTPUT_FILE: str,
     code: Callable,
-    code_kwargs:Dict={},
+    code_kwargs: Dict = {},
     OUTPUT_FILE_LENGTH=None,
 ) -> None:
     # check if folder for OUTPUT_FILE exists
@@ -122,13 +123,13 @@ def run_code_experiment(
 
 
 def run_python_experiment(
-    EXPERIMENT_TITLE:str,
-    OUTPUT_FILE:str,
-    CLI_COMMAND:str,
-    CLI_ARGUMENTS:Dict[str, Any],
-    OUTPUT_FILE_LENGTH:float=None,
-    SAVE_ARGUMENT_JSON:bool=True,
-)-> None:
+    EXPERIMENT_TITLE: str,
+    OUTPUT_FILE: str,
+    CLI_COMMAND: str,
+    CLI_ARGUMENTS: Dict[str, Any],
+    OUTPUT_FILE_LENGTH: float = None,
+    SAVE_ARGUMENT_JSON: bool = True,
+) -> None:
     def code(CLI_COMMAND):
         for k, v in CLI_ARGUMENTS.items():
             if str(v) == "True":
@@ -153,16 +154,16 @@ def run_python_experiment(
 
 
 def run_parallel_experiment(
-    EXPERIMENT_TITLE:str,
-    OUTPUT_FILE:str,
-    CLI_COMMAND:str,
-    CLI_ARGUMENTS:Dict[str, Any],
-    RANDOM_IDS:List[int]=None,
-    PARALLEL_OFFSET:int=0,
-    PARALLEL_AMOUNT:int=0,
-    OUTPUT_FILE_LENGTH:int=None,
-    SAVE_ARGUMENT_JSON:bool=True,
-    RESTART_IF_NOT_ENOUGH_SAMPLES:bool=False,
+    EXPERIMENT_TITLE: str,
+    OUTPUT_FILE: str,
+    CLI_COMMAND: str,
+    CLI_ARGUMENTS: Dict[str, Any],
+    RANDOM_IDS: List[int] = None,
+    PARALLEL_OFFSET: int = 0,
+    PARALLEL_AMOUNT: int = 0,
+    OUTPUT_FILE_LENGTH: int = None,
+    SAVE_ARGUMENT_JSON: bool = True,
+    RESTART_IF_NOT_ENOUGH_SAMPLES: bool = False,
 ):
     # check if folder for OUTPUT_FILE exists
     Path(os.path.dirname(OUTPUT_FILE)).mkdir(parents=True, exist_ok=True)
