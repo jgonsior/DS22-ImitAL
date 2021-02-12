@@ -3,8 +3,7 @@ import locale
 import math
 import pickle
 import sys
-from itertools import chain, combinations
-from itertools import product
+from itertools import chain, combinations, product
 from queue import Queue
 
 import matplotlib.pyplot as plt

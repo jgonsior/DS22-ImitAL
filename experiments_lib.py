@@ -1,4 +1,3 @@
-import pandas as pd
 import json
 import math
 import multiprocessing
@@ -6,6 +5,7 @@ import os
 import time
 from pathlib import Path
 
+import pandas as pd
 from joblib import Parallel, delayed
 
 from active_learning.experiment_setup_lib import standard_config

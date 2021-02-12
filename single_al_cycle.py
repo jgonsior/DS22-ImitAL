@@ -2,13 +2,10 @@ import os
 import random
 
 import numpy as np
+from fake_experiment_oracle import FakeExperimentOracle
 
 from active_learning.al_cycle_wrapper import train_and_eval_dataset
-from active_learning.experiment_setup_lib import (
-    get_active_config,
-    init_logger,
-)
-from fake_experiment_oracle import FakeExperimentOracle
+from active_learning.experiment_setup_lib import get_active_config, init_logger
 
 config = get_active_config(
     [

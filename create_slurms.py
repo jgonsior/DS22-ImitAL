@@ -1,15 +1,15 @@
-import glob
-import stat
-from jinja2 import Template
 import argparse
 import datetime
+import glob
 import os
 import random
+import stat
 import sys
 import threading
 import warnings
 
 import numpy as np
+from jinja2 import Template
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--TITLE")

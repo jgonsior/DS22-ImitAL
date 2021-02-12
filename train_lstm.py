@@ -1,8 +1,5 @@
-import os
-from joblib import parallel_backend
-import json
-from tensorflow import keras
 import argparse
+import json
 import os
 import random
 import sys
@@ -11,18 +8,15 @@ import dill
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from joblib import parallel_backend
 from keras.layers import Dense, Dropout
 from keras.models import Sequential
 from scikeras.wrappers import KerasRegressor
-from scipy.stats import spearmanr, kendalltau
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import make_scorer
-from sklearn.model_selection import RandomizedSearchCV
-from sklearn.model_selection import train_test_split
-from tensorflow.keras.callbacks import (
-    EarlyStopping,
-    ReduceLROnPlateau,
-)
+from scipy.stats import kendalltau, spearmanr
+from sklearn.metrics import accuracy_score, make_scorer
+from sklearn.model_selection import RandomizedSearchCV, train_test_split
+from tensorflow import keras
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--DATA_PATH", default="../datasets/")

@@ -1,26 +1,32 @@
+import argparse
 import os
 import random
 from timeit import default_timer as timer
+from typing import Dict
 
 import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score
 
+from active_learning.activeLearner import ActiveLearner
 from active_learning.al_cycle_wrapper import eval_al
-from active_learning.cluster_strategies import DummyClusterStrategy
+from active_learning.callbacks.MetricCallback import (MetricCallback,
+                                                      test_acc_metric,
+                                                      test_f1_metric)
+from active_learning.config import get_active_config
+from active_learning.datasets.synthetic import load_synthetic
 from active_learning.dataStorage import DataStorage
-from active_learning.experiment_setup_lib import (
-    get_active_config,
-    init_logger,
-    get_classifier,
-)
-from active_learning.experiment_setup_lib import log_it
-from active_learning.sampling_strategies import ImitationLearner, ImitationBatchLearner
-from fake_experiment_oracle import FakeExperimentOracle
+from active_learning.learner.standard import get_classifier
+from active_learning.logger import init_logger, log_it
+from active_learning.oracles.FakeExperimentOracle import FakeExperimentOracle
+from active_learning.sampling_strategies.BaseSamplingStrategy import \
+    BaseSamplingStrategy
+from active_learning.sampling_strategies.ImitationLearner import (
+    ImitationLearner, TrainImitALBatch, TrainImitALSingle)
+from active_learning.stopping_criterias.ALCyclesStoppingCriteria import \
+    ALCyclesStoppingCriteria
 
-#  import np.random.distributions as dists
-
-config = get_active_config()
+config: argparse.Namespace = get_active_config()  # type: ignore
 
 if not os.path.isfile(config.OUTPUT_DIRECTORY + "/states.csv"):
     if not config.BATCH_MODE:
@@ -99,6 +105,7 @@ if not os.path.isfile(config.OUTPUT_DIRECTORY + "/states.csv"):
     states.to_csv(config.OUTPUT_DIRECTORY + "/states.csv", index=False)
     optimal_policies.to_csv(config.OUTPUT_DIRECTORY + "/opt_pol.csv", index=False)
 
+# -2 means that a true random seed is used, all other numbers use the provided CLI argument random_seed
 if config.RANDOM_SEED == -2:
     random_but_not_random = True
 else:
@@ -107,26 +114,29 @@ else:
 
 init_logger(config.LOG_FILE)
 
-config = vars(config)
-for i in range(0, config["AMOUNT_OF_LEARN_ITERATIONS"]):
+for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
 
     if random_but_not_random:
-        config["RANDOM_SEED"] = random.randint(0, 2147483647)
+        configRANDOM_SEED = random.randint(0, 2147483647)
         np.random.seed(config.RANDOM_SEED)
         random.seed(config.RANDOM_SEED)
 
     log_it("Learn iteration {}".format(i))
 
-    data_storage = DataStorage(
-        df=None,
-        **config,
+    df = load_synthetic(
+        config.RANDOM_SEED,
+        config.NEW_SYNTHETIC_PARAMS,
+        config.VARIABLE_DATASET,
+        config.AMOUNT_OF_FEATURES,
+        config.HYPERCUBE,
+        config.GENERATE_NOISE,
     )
 
-    if config["STOP_AFTER_MAXIMUM_ACCURACY_REACHED"]:
+    data_storage = DataStorage(df=df, TEST_FRACTION=config.TEST_FRACTION)
+
+    if config.STOP_AFTER_MAXIMUM_ACCURACY_REACHED:
         # calculate maximum theoretical accuracy
-        tmp_clf = get_classifier(
-            config["CLASSIFIER"], random_state=config["RANDOM_SEED"]
-        )
+        tmp_clf = get_classifier(config.CLASSIFIER, random_state=config.RANDOM_SEED)
 
         tmp_clf.fit(
             data_storage.X[
@@ -142,45 +152,48 @@ for i in range(0, config["AMOUNT_OF_LEARN_ITERATIONS"]):
         )
         tmp_Y_pred = tmp_clf.predict(data_storage.X[data_storage.test_mask])
         THEORETICALLY_BEST_ACHIEVABLE_ACCURACY = (
-            accuracy_score(data_storage.Y[data_storage.test_mask], tmp_Y_pred) * 0.95
+            accuracy_score(data_storage.Y[data_storage.test_mask], tmp_Y_pred) * 0.99
         )
-        config[
-            "THEORETICALLY_BEST_ACHIEVABLE_ACCURACY"
-        ] = THEORETICALLY_BEST_ACHIEVABLE_ACCURACY
+        config.THEORETICALLY_BEST_ACHIEVABLE_ACCURACY = (
+            THEORETICALLY_BEST_ACHIEVABLE_ACCURACY
+        )
 
-    config["LEN_TRAIN_DATA"] = len(data_storage.unlabeled_mask) + len(
+    config.LEN_TRAIN_DATA = len(data_storage.unlabeled_mask) + len(
         data_storage.labeled_mask
     )
-    cluster_strategy = DummyClusterStrategy()
-    cluster_strategy.set_data_storage(data_storage, config["N_JOBS"])
-    classifier = get_classifier(
-        config["CLASSIFIER"],
-        n_jobs=config["N_JOBS"],
-        random_state=config["RANDOM_SEED"],
-    )
-
-    weak_supervision_label_sources = []
 
     oracle = FakeExperimentOracle()
 
+    if config.BATCH_MODE:
+        samplingStrategy: ImitationLearner = TrainImitALBatch(
+            AMOUNT_OF_PEAKED_OBJECTS=config.AMOUNT_OF_PEAKED_OBJECTS
+        )
+    else:
+
+        samplingStrategy = TrainImitALSingle(
+            AMOUNT_OF_PEAKED_OBJECTS=config.AMOUNT_OF_PEAKED_OBJECTS
+        )
+
     active_learner_params = {
+        "sampling_strategy": samplingStrategy,
         "data_storage": data_storage,
-        "cluster_strategy": cluster_strategy,
-        "oracle": oracle,
-        "clf": classifier,
-        "weak_supervision_label_sources": weak_supervision_label_sources,
+        "oracles": [oracle],
+        "learner": get_classifier(config.CLASSIFIER, random_state=config.RANDOM_SEED),
+        "callbacks": {
+            "acc_test": MetricCallback(test_acc_metric),
+            "f1_test": MetricCallback(test_f1_metric),
+        },
+        "stopping_criteria": ALCyclesStoppingCriteria(50),
+        "BATCH_SIZE": config.BATCH_SIZE,
     }
 
-    if config["BATCH_MODE"]:
-        active_learner = ImitationBatchLearner(**active_learner_params, **config)
-    else:
-        active_learner = ImitationLearner(**active_learner_params, **config)
+    active_learner = ActiveLearner(**active_learner_params)
 
     start = timer()
-    trained_active_clf_list, metrics_per_al_cycle = active_learner.learn()
+    active_learner.al_cycle()
     end = timer()
 
-    active_learner.save_nn_training_data(config["OUTPUT_DIRECTORY"])
+    samplingStrategy.save_nn_training_data(config.OUTPUT_DIRECTORY)
 
 eval_al(
     data_storage,
