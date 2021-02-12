@@ -361,7 +361,7 @@ else:
         "plots.slurm": 5,
     }
     for csv_file in sorted(
-        list(glob.glob(config.OUT_DIR + "/*.slurm")),
+        list(glob.glob(str(config.OUT_DIR) + "/*.slurm")),
         key=lambda v: sort_order[v.split("/")[-1]],
     ):
         with open(csv_file, "r") as f:

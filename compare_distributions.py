@@ -45,7 +45,7 @@ def plot_distributions(
     )
     sns.set_palette("tab10")
 
-    fig = plt.gcf()
+    fig = plt.gcf()  # type: ignore
     fig.set_size_inches(18.5, 10.5)
 
     for selection, label in sorted(selection_list, key=lambda tup: tup[1]):
@@ -70,13 +70,13 @@ def plot_distributions(
                 high = selection.mean() + 1.96 * selection.std() / math.sqrt(
                     selection.count()
                 )
-            ax.axvline(mean, color=plt.gca().lines[-1].get_color())
-            ax.axvspan(low, high, alpha=0.2, color=plt.gca().lines[-1].get_color())
+            ax.axvline(mean, color=plt.gca().lines[-1].get_color())  # type: ignore
+            ax.axvspan(low, high, alpha=0.2, color=plt.gca().lines[-1].get_color())  # type: ignore
         ax.set_xticklabels(["{:.0%}".format(x) for x in ax.get_xticks()])
-    ax.set_title(title)
-    ax.legend()
+    ax.set_title(title)  # type: ignore
+    ax.legend()  # type: ignore
     plt.xlabel(config.METRIC)
-    plt.tight_layout()
+    plt.tight_layout()  # type: ignore
     if SAVE_FILE is not None:
         if title == "":
             title = "comparison_dist"
@@ -102,7 +102,7 @@ def compare_distributions(CSV_FILE, GROUP_COLUMNS, VALUE_GROUPINGS, SAVE_FILE):
         for restriction, column in zip(comb, GROUP_COLUMNS):
             sel &= df[column] == restriction
         #  print(comb)
-        selection = df.loc[sel][config.METRIC]
+        selection = df.loc[sel][config.METRIC]  # type: ignore
         if len(selection) != 0:
             sels.append((selection, comb))
     plot_distributions(sels, axvline=True, SAVE_FILE=SAVE_FILE, title=config.TITLE)
@@ -246,12 +246,12 @@ def compare_two_distributions(
                 high = selection.mean() + 1.96 * selection.std() / math.sqrt(
                     selection.count()
                 )
-            ax.axvline(mean, color=plt.gca().lines[-1].get_color())
-            ax.axvspan(low, high, alpha=0.2, color=plt.gca().lines[-1].get_color())
+            ax.axvline(mean, color=plt.gca().lines[-1].get_color())  # type: ignore
+            ax.axvspan(low, high, alpha=0.2, color=plt.gca().lines[-1].get_color())  # type: ignore
         ax.set_xticklabels(["{0:g}%".format(x) for x in ax.get_xticks()])
-    ax.set_title(title)
+    ax.set_title(title)  # type: ignore
     plt.xlabel("Test Accuracy")
-    plt.tight_layout()
+    plt.tight_layout()  # type: ignore
     if save:
         if title == "":
             title = "comparison_dist"
@@ -347,7 +347,7 @@ def recursive_hyper_search(param_list, sel, baseline, df, sel_dict):
         score = calculate_difference(selection, baseline)
         #  print(sel_dict, score)
         return score, sel_dict, len(selection)
-    max_score = last_score = np.float("-inf")
+    max_score = last_score = np.float("-inf")  # type: ignore
     max_sel = None
     max_len = None
     lower_bound_reached = upper_bound_reached = False
@@ -384,12 +384,12 @@ def recursive_hyper_search(param_list, sel, baseline, df, sel_dict):
             max_len = length
         if not upper_bound_reached:
             if score + 0.01 >= last_score and type(value) != set:
-                q.put((lower_bound + 0.01, upper_bound))
+                q.put((lower_bound + 0.01, upper_bound))  # type: ignore
             else:
                 upper_bound_reached = True
         if not lower_bound_reached:
             if score + 0.01 >= last_score and type(value) != set:
-                q.put((lower_bound, upper_bound - 0.01))
+                q.put((lower_bound, upper_bound - 0.01))  # type: ignore
             else:
                 lower_bound_reached = True
 
@@ -473,22 +473,22 @@ def get_distributions_for_interesting(params):
             )
         else:
             fig = plt.figure()
-            ax = fig.gca(projection="3d")
+            ax = fig.gca(projection="3d")  # type: ignore
 
             surf = ax.plot_trisurf(
                 true_interesting[x],
                 true_interesting[y],
                 true_interesting[config.METRIC],
                 #  cmap=plt.cm.viridis,
-                cmap=plt.cm.jet,
+                cmap=plt.cm.jet,  # type: ignore
                 linewidth=0.2,
             )
             ax.set_xlabel(x)
             ax.set_ylabel(y)
             ax.set_zlabel("Test Accuracy")
 
-            fig.colorbar(surf, shrink=0.5, aspect=5)
-        plt.tight_layout()
+            fig.colorbar(surf, shrink=0.5, aspect=5)  # type: ignore
+        plt.tight_layout()  # type: ignore
         plt.savefig("plots/{}_{}".format(x, y))
         #  plt.show()
         plt.clf()

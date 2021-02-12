@@ -1,13 +1,15 @@
+import argparse
 import os
 import random
 
 import numpy as np
-from fake_experiment_oracle import FakeExperimentOracle
+from active_learning.oracles import FakeExperimentOracle
 
 from active_learning.al_cycle_wrapper import train_and_eval_dataset
-from active_learning.experiment_setup_lib import get_active_config, init_logger
+from active_learning.config import get_active_config
+from active_learning.logger import init_logger
 
-config = get_active_config(
+config: argparse.Namespace = get_active_config(  # type: ignore
     [
         (["--NN_BINARY_PATH"], {"type": str}),
     ]
@@ -27,6 +29,5 @@ if config.OUTPUT_DIRECTORY == "NN_BINARY":
 
 score = train_and_eval_dataset(
     hyper_parameters=vars(config),
-    oracle=FakeExperimentOracle(),
+    oracles=[FakeExperimentOracle()],
 )
-#  print("Done with ", score)
