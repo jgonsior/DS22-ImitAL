@@ -10,17 +10,18 @@ from sklearn.metrics import accuracy_score
 
 from active_learning.activeLearner import ActiveLearner
 from active_learning.al_cycle_wrapper import eval_al
-from active_learning.callbacks import (MetricCallback, test_acc_metric,
-                                       test_f1_metric)
+from active_learning.callbacks import MetricCallback, test_acc_metric, test_f1_metric
 from active_learning.config import get_active_config
 from active_learning.datasets import load_synthetic
 from active_learning.dataStorage import DataStorage
 from active_learning.learner import get_classifier
 from active_learning.logger import init_logger, log_it
 from active_learning.oracles import FakeExperimentOracle
-from active_learning.sampling_strategies import (ImitationLearner,
-                                                 TrainImitALBatch,
-                                                 TrainImitALSingle)
+from active_learning.sampling_strategies import (
+    ImitationLearner,
+    TrainImitALBatch,
+    TrainImitALSingle,
+)
 from active_learning.stopping_criterias import ALCyclesStoppingCriteria
 
 config: argparse.Namespace = get_active_config()  # type: ignore
@@ -112,7 +113,6 @@ else:
 init_logger(config.LOG_FILE)
 
 for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
-
     if random_but_not_random:
         configRANDOM_SEED = random.randint(0, 2147483647)
         np.random.seed(config.RANDOM_SEED)
@@ -120,7 +120,7 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
 
     log_it("Learn iteration {}".format(i))
 
-    df = load_synthetic(
+    df, synthetic_creation_args = load_synthetic(
         config.RANDOM_SEED,
         config.NEW_SYNTHETIC_PARAMS,
         config.VARIABLE_DATASET,
@@ -170,16 +170,16 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
         samplingStrategy = TrainImitALSingle(
             AMOUNT_OF_PEAKED_OBJECTS=config.AMOUNT_OF_PEAKED_OBJECTS
         )
-
+    callbacks = {
+        "acc_test": MetricCallback(test_acc_metric),
+        "f1_test": MetricCallback(test_f1_metric),
+    }
     active_learner_params = {
         "sampling_strategy": samplingStrategy,
         "data_storage": data_storage,
         "oracles": [oracle],
         "learner": get_classifier(config.CLASSIFIER, random_state=config.RANDOM_SEED),
-        "callbacks": {
-            "acc_test": MetricCallback(test_acc_metric),
-            "f1_test": MetricCallback(test_f1_metric),
-        },
+        "callbacks": callbacks,
         "stopping_criteria": ALCyclesStoppingCriteria(50),
         "BATCH_SIZE": config.BATCH_SIZE,
     }
@@ -192,11 +192,12 @@ for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
 
     samplingStrategy.save_nn_training_data(config.OUTPUT_DIRECTORY)
 
-eval_al(
-    data_storage,
-    trained_active_clf_list,
-    end - start,
-    metrics_per_al_cycle,
-    active_learner,
-    config,
-)
+    hyper_parameters = vars(config)
+    hyper_parameters["synthetic_creation_args"] = synthetic_creation_args
+
+    eval_al(
+        data_storage,
+        end - start,
+        callbacks,
+        hyper_parameters,
+    )
