@@ -9,6 +9,7 @@ pydocstyle = "*"
 rope = "*"
 black = "==20.08b1"
 mypy = "*"
+pycln = "*"
 
 [packages]
 pandas = "*"

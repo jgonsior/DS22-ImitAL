@@ -3,6 +3,7 @@ import json
 import os
 import random
 import sys
+from typing import List
 
 import dill
 import numpy as np
@@ -103,7 +104,7 @@ def _evaluate_top_k(Y_true, Y_pred):
 
     Y_pred_binarized = _binarize_targets(Y_pred)
 
-    accs = []
+    accs: List[float] = []
     for i in range(0, AMOUNT_OF_PEAKED_OBJECTS):
         accs.append(
             accuracy_score(
@@ -112,7 +113,7 @@ def _evaluate_top_k(Y_true, Y_pred):
             )
         )
     #  print(accs)
-    return np.mean(accs)
+    return np.mean(np.array(accs))
 
 
 #  print(config.TARGET_ENCODING)
