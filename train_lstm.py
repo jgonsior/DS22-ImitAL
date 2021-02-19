@@ -42,7 +42,7 @@ parser.add_argument("--BATCH_SIZE", type=int, default=32)
 parser.add_argument("--N_ITER", type=int, default=100)
 parser.add_argument("--ACTIVATION", type=str, default="elu")
 parser.add_argument("--HYPER_SEARCH", action="store_true")
-parser.add_argument("--NR_QUERIES_PER_ITERATION", type=int, default=5)
+parser.add_argument("--BATCH_SIZE", type=int, default=5)
 parser.add_argument(
     "--STATE_ENCODING",
     type=str,

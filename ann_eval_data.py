@@ -60,7 +60,7 @@ for DATASET_NAME in [
             **ann_arguments,
             **evaluation_arguments,
         },
-        PARALLEL_OFFSET=config.TEST_PARALLEL_OFFSET,
+        RANDOM_ID_OFFSET=config.TEST_RANDOM_ID_OFFSET,
         PARALLEL_AMOUNT=config.TEST_NR_LEARNING_SAMPLES,
         OUTPUT_FILE_LENGTH=config.TEST_NR_LEARNING_SAMPLES,
     )

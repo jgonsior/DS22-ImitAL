@@ -10,10 +10,15 @@ from joblib import Parallel, delayed
 
 from active_learning.config.config import get_active_config
 
-print("hui")
+
 def get_config():
-    print("hui")
-    config: argparse.Namespace = get_active_config()  # type: ignore
+    config: argparse.Namespace = get_active_config(
+        [
+            (["--BASE_PARAM_STRING"], {"type": str, "required": True}),
+            (["--NR_LEARNING_SAMPLES"], {"type": int, "default": 10}),
+            (["--TRAIN_RANDOM_ID_OFFSET"], {"type": int, "default": 0}),
+        ]
+    )  # type: ignore
 
     # calculate resulting pathes
     splitted_base_param_string = config.BASE_PARAM_STRING.split("#")
@@ -33,7 +38,7 @@ def get_config():
 
     shared_arguments = {
         "CLUSTER": "dummy",
-        "NR_QUERIES_PER_ITERATION": config.NR_QUERIES_PER_ITERATION,
+        "BATCH_SIZE": config.BATCH_SIZE,
         "START_SET_SIZE": 1,
         "USER_QUERY_BUDGET_LIMIT": config.USER_QUERY_BUDGET_LIMIT,
         "N_JOBS": 1,
@@ -157,7 +162,7 @@ def run_parallel_experiment(
     CLI_COMMAND: str,
     CLI_ARGUMENTS: Dict[str, Any],
     RANDOM_IDS: List[int] = None,
-    PARALLEL_OFFSET: int = 0,
+    RANDOM_ID_OFFSET: int = 0,
     PARALLEL_AMOUNT: int = 0,
     OUTPUT_FILE_LENGTH: int = None,
     SAVE_ARGUMENT_JSON: bool = True,
@@ -189,7 +194,7 @@ def run_parallel_experiment(
         ids = RANDOM_IDS
     else:
         possible_ids = range(
-            int(PARALLEL_OFFSET), int(PARALLEL_OFFSET) + int(PARALLEL_AMOUNT)
+            int(RANDOM_ID_OFFSET), int(RANDOM_ID_OFFSET) + int(PARALLEL_AMOUNT)
         )
         if Path(OUTPUT_FILE).is_file():
             #  print(OUTPUT_FILE)
@@ -205,7 +210,7 @@ def run_parallel_experiment(
     if len(ids) == 0:
         return
 
-    def code(CLI_COMMAND, PARALLEL_AMOUNT, PARALLEL_OFFSET):
+    def code(CLI_COMMAND, PARALLEL_AMOUNT, RANDOM_ID_OFFSET):
         with Parallel(
             #  n_jobs=1,
             len(os.sched_getaffinity(0)),
@@ -223,7 +228,7 @@ def run_parallel_experiment(
         code_kwargs={
             "CLI_COMMAND": CLI_COMMAND,
             "PARALLEL_AMOUNT": PARALLEL_AMOUNT,
-            "PARALLEL_OFFSET": PARALLEL_OFFSET,
+            "RANDOM_ID_OFFSET": RANDOM_ID_OFFSET,
         },
         OUTPUT_FILE_LENGTH=OUTPUT_FILE_LENGTH,
     )

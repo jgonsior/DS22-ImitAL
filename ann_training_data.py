@@ -35,7 +35,7 @@ run_parallel_experiment(
         **ann_arguments,
         **shared_arguments,
     },
-    PARALLEL_OFFSET=config.TRAIN_PARALLEL_OFFSET,
+    RANDOM_ID_OFFSET=config.TRAIN_RANDOM_ID_OFFSET,
     PARALLEL_AMOUNT=config.TRAIN_NR_LEARNING_SAMPLES,
     OUTPUT_FILE_LENGTH=config.TRAIN_NR_LEARNING_SAMPLES,
     RESTART_IF_NOT_ENOUGH_SAMPLES=False,

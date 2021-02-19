@@ -140,8 +140,8 @@ param_dist = {
     ],
     #  "NR_LEARNING_ITERATIONS": [NR_LEARNING_ITERATIONS],
     #  "NR_LEARNING_ITERATIONS": [1],
-    #  "NR_QUERIES_PER_ITERATION":
-    #  NR_QUERIES_PER_ITERATION,
+    #  "BATCH_SIZE":
+    #  BATCH_SIZE,
     #  "START_SET_SIZE":
     #  START_SET_SIZE,
     "STOPPING_CRITERIA_UNCERTAINTY": [1],  # zero_to_one,
