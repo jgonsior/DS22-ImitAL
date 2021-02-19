@@ -4,13 +4,9 @@ import os
 import numpy as np
 import pandas as pd
 from keras.datasets import cifar10
-from sklearn.datasets import (
-    fetch_20newsgroups_vectorized,
-    fetch_kddcup99,
-    fetch_lfw_people,
-    fetch_olivetti_faces,
-    fetch_rcv1,
-)
+from sklearn.datasets import (fetch_20newsgroups_vectorized, fetch_kddcup99,
+                              fetch_lfw_people, fetch_olivetti_faces,
+                              fetch_rcv1)
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler, RobustScaler
 
 # load the datasets

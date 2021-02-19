@@ -1,7 +1,4 @@
-from experiments_lib import (
-    get_config,
-    run_parallel_experiment,
-)
+from experiments_lib import get_config, run_parallel_experiment
 
 (
     config,

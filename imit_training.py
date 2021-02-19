@@ -9,18 +9,17 @@ from sklearn.metrics import accuracy_score
 
 from active_learning.activeLearner import ActiveLearner
 from active_learning.al_cycle_wrapper import eval_al
-from active_learning.callbacks import MetricCallback, test_acc_metric, test_f1_metric
+from active_learning.callbacks import (MetricCallback, test_acc_metric,
+                                       test_f1_metric)
 from active_learning.config import get_active_config
 from active_learning.datasets import load_synthetic
 from active_learning.dataStorage import DataStorage
 from active_learning.learner import get_classifier
 from active_learning.logger import init_logger, log_it
 from active_learning.oracles import FakeExperimentOracle
-from active_learning.sampling_strategies import (
-    ImitationLearner,
-    TrainImitALBatch,
-    TrainImitALSingle,
-)
+from active_learning.sampling_strategies import (ImitationLearner,
+                                                 TrainImitALBatch,
+                                                 TrainImitALSingle)
 from active_learning.stopping_criterias import ALCyclesStoppingCriteria
 
 config: argparse.Namespace = get_active_config()  # type: ignore

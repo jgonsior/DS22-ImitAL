@@ -8,11 +8,11 @@ from typing import Any, Callable, Dict, List
 import pandas as pd
 from joblib import Parallel, delayed
 
-from active_learning.config import standard_config
 from active_learning.config.config import get_active_config
 
-
+print("hui")
 def get_config():
+    print("hui")
     config: argparse.Namespace = get_active_config()  # type: ignore
 
     # calculate resulting pathes
