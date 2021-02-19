@@ -4,7 +4,6 @@ import os
 import stat
 import sys
 
-import numpy as np
 from jinja2 import Template
 
 parser = argparse.ArgumentParser()
@@ -160,6 +159,17 @@ train_ann_id=$(sbatch --parsable --dependency=afterok:$ann_training_data_id{%if 
 exit 0
 """
 )
+
+
+
+sync_to_taurus = Template(
+    """
+    """
+)
+
+
+
+
 
 if not os.path.exists(config.OUT_DIR):
     os.makedirs(config.OUT_DIR)

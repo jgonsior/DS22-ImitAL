@@ -171,7 +171,6 @@ paper/
 plots/
 *.db
 
-Pipfile.lock
 log.txt
 node_modules/
 
