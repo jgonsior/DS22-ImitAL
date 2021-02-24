@@ -15,7 +15,7 @@ def get_config():
     config: argparse.Namespace = get_active_config(
         [
             (["--BASE_PARAM_STRING"], {"default": "default"}),
-            (["--TRAIN_CLASSIFIER"], {"default": "MLP"}),
+            (["--TRAIN_CLASSIFIER"], {"default": "RF"}),
             (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
             (["--TRAIN_AMOUNT_OF_PEAKED_SAMPLES"], {"type": int, "default": 20}),
             (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 1000}),
@@ -43,7 +43,7 @@ def get_config():
             (["--TEST_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
             (["--TEST_HYPERCUBE"], {"action": "store_true"}),
             (["--TEST_NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
-            (["--TEST_CLASSIFIER"], {"default": "MLP"}),
+            (["--TEST_CLASSIFIER"], {"default": "RF"}),
             (["--TEST_GENERATE_NOISE"], {"action": "store_false"}),
             (
                 ["--TEST_COMPARISONS"],
@@ -88,8 +88,7 @@ def get_config():
     shared_arguments = {
         "CLUSTER": "dummy",
         "BATCH_SIZE": config.BATCH_SIZE,
-        "START_SET_SIZE": 1,
-        "USER_QUERY_BUDGET_LIMIT": config.USER_QUERY_BUDGET_LIMIT,
+        "TOTAL_BUDGET": config.TOTAL_BUDGET,
         "N_JOBS": 1,
         "BATCH_MODE": config.BATCH_MODE,
     }

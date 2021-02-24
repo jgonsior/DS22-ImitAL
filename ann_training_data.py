@@ -24,8 +24,6 @@ run_parallel_experiment(
         "DATASET_NAME": "synthetic",
         "SAMPLING": "trained_nn",
         "AMOUNT_OF_PEAKED_OBJECTS": config.TRAIN_AMOUNT_OF_PEAKED_SAMPLES,
-        "MAX_AMOUNT_OF_WS_PEAKS": 0,
-        "AMOUNT_OF_LEARN_ITERATIONS": 1,
         "AMOUNT_OF_FEATURES": config.TRAIN_AMOUNT_OF_FEATURES,
         "VARIABLE_DATASET": config.TRAIN_VARIABLE_DATASET,
         "NEW_SYNTHETIC_PARAMS": config.TRAIN_NEW_SYNTHETIC_PARAMS,

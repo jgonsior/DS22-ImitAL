@@ -191,7 +191,7 @@ with open(config.OUT_DIR + "/ann_training_data.slurm", "w") as f:
             + str(config.INITIAL_BATCH_SAMPLING_ARG)
             + " --OUTPUT_DIRECTORY "
             + config.DATASET_DIR
-            + " --USER_QUERY_BUDGET_LIMIT 50 --TRAIN_NR_LEARNING_SAMPLES "
+            + " --TOTAL_BUDGET 50 --TRAIN_NR_LEARNING_SAMPLES "
             + str(config.ITERATIONS_PER_BATCH)
             + " --INITIAL_BATCH_SAMPLING_HYBRID_UNCERT "
             + str(config.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT)
@@ -272,7 +272,7 @@ if config.WITH_EVAL:
                 + str(config.INITIAL_BATCH_SAMPLING_ARG)
                 + " --OUTPUT_DIRECTORY "
                 + config.DATASET_DIR
-                + "/ --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES "
+                + "/ --TOTAL_BUDGET 50 --TEST_NR_LEARNING_SAMPLES "
                 + str(config.ITERATIONS_PER_BATCH)
                 + " --INITIAL_BATCH_SAMPLING_HYBRID_UNCERT "
                 + str(config.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT)
@@ -305,7 +305,7 @@ if config.WITH_CLASSICS:
                 ITERATIONS_PER_BATCH=config.ITERATIONS_PER_BATCH,
                 CLI_ARGS="--OUTPUT_DIRECTORY "
                 + config.DATASET_DIR
-                + "/ --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES "
+                + "/ --TOTAL_BUDGET 50 --TEST_NR_LEARNING_SAMPLES "
                 + str(config.ITERATIONS_PER_BATCH)
                 + " --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --TEST_RANDOM_ID_OFFSET $i",
             )
@@ -324,7 +324,7 @@ if config.WITH_PLOTS:
                 TEST_NR_LEARNING_SAMPLES=config.TEST_NR_LEARNING_SAMPLES,
                 CLI_ARGS="--OUTPUT_DIRECTORY "
                 + config.DATASET_DIR
-                + " --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES "
+                + " --TOTAL_BUDGET 50 --TEST_NR_LEARNING_SAMPLES "
                 + str(config.TEST_NR_LEARNING_SAMPLES)
                 + " --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --BASE_PARAM_STRING batch_"
                 + config.TITLE

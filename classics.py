@@ -31,7 +31,7 @@ for DATASET_NAME in [
     test_base_param_string += "_" + DATASET_NAME
     if DATASET_NAME != "synthetic":
         #  config.TEST_NR_LEARNING_SAMPLES = 100
-        evaluation_arguments["USER_QUERY_BUDGET_LIMIT"] = 20
+        evaluation_arguments["TOTAL_BUDGET"] = 20
     evaluation_arguments["DATASET_NAME"] = DATASET_NAME
 
     for comparison in config.TEST_COMPARISONS:

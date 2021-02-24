@@ -30,7 +30,7 @@ for DATASET_NAME in [
     test_base_param_string += "_" + DATASET_NAME
 
     if DATASET_NAME != "synthetic":
-        evaluation_arguments["USER_QUERY_BUDGET_LIMIT"] = 20
+        evaluation_arguments["TOTAL_BUDGET"] = 20
     evaluation_arguments["DATASET_NAME"] = DATASET_NAME
 
     EVALUATION_FILE_TRAINED_NN_PATH = (

@@ -17,6 +17,6 @@ export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
 
 
 
-MPLCONFIGDIR=/lustre/ssd/ws/s5968580-IL_TD2/cache python3 -m pipenv run python /lustre/ssd/ws/s5968580-IL_TD2/imitating-weakal/plots.py --OUTPUT_DIRECTORY /lustre/ssd/ws/s5968580-IL_TD2/single_vs_batch --USER_QUERY_BUDGET_LIMIT 50 --TEST_NR_LEARNING_SAMPLES 10000 --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --BASE_PARAM_STRING batch_hybrid-750#0.4_0.0_0.1_0.4 --FINAL_PICTURE /lustre/ssd/ws/s5968580-IL_TD2/single_vs_batch/plots_batch_hybrid-750#0.4_0.0_0.1_0.4/ --PLOT_METRIC acc_auc
+MPLCONFIGDIR=/lustre/ssd/ws/s5968580-IL_TD2/cache python3 -m pipenv run python /lustre/ssd/ws/s5968580-IL_TD2/imitating-weakal/plots.py --OUTPUT_DIRECTORY /lustre/ssd/ws/s5968580-IL_TD2/single_vs_batch --TOTAL_BUDGET 50 --TEST_NR_LEARNING_SAMPLES 10000 --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --BASE_PARAM_STRING batch_hybrid-750#0.4_0.0_0.1_0.4 --FINAL_PICTURE /lustre/ssd/ws/s5968580-IL_TD2/single_vs_batch/plots_batch_hybrid-750#0.4_0.0_0.1_0.4/ --PLOT_METRIC acc_auc
 exit 0
     

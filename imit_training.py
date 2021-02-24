@@ -1,3 +1,6 @@
+from active_learning.callbacks.PrintLoggingStatisticsCallback import (
+    PrintLoggingStatisticsCallback,
+)
 from active_learning.sampling_strategies.BatchStateEncoding import TrainImitALBatch
 import argparse
 import os
@@ -108,96 +111,96 @@ else:
 
 init_logger(config.LOG_FILE)
 
-for i in range(0, config.AMOUNT_OF_LEARN_ITERATIONS):
-    if random_but_not_random:
-        configRANDOM_SEED = random.randint(0, 2147483647)
-        np.random.seed(config.RANDOM_SEED)
-        random.seed(config.RANDOM_SEED)
+if random_but_not_random:
+    config.RANDOM_SEED = random.randint(0, 2147483647)
+    np.random.seed(config.RANDOM_SEED)
+    random.seed(config.RANDOM_SEED)
 
-    log_it("Learn iteration {}".format(i))
+df, synthetic_creation_args = load_synthetic(
+    config.RANDOM_SEED,
+    config.NEW_SYNTHETIC_PARAMS,
+    config.VARIABLE_DATASET,
+    config.AMOUNT_OF_FEATURES,
+    config.HYPERCUBE,
+    config.GENERATE_NOISE,
+)
 
-    df, synthetic_creation_args = load_synthetic(
-        config.RANDOM_SEED,
-        config.NEW_SYNTHETIC_PARAMS,
-        config.VARIABLE_DATASET,
-        config.AMOUNT_OF_FEATURES,
-        config.HYPERCUBE,
-        config.GENERATE_NOISE,
+data_storage = DataStorage(df=df, TEST_FRACTION=config.TEST_FRACTION)
+
+if config.STOP_AFTER_MAXIMUM_ACCURACY_REACHED:
+    # calculate maximum theoretical accuracy
+    tmp_clf = get_classifier(config.CLASSIFIER, random_state=config.RANDOM_SEED)
+
+    tmp_clf.fit(
+        data_storage.X[
+            np.concatenate(
+                (data_storage.labeled_mask, data_storage.unlabeled_mask), axis=0
+            )
+        ],
+        data_storage.Y[
+            np.concatenate(
+                (data_storage.labeled_mask, data_storage.unlabeled_mask), axis=0
+            )
+        ],
+    )
+    tmp_Y_pred = tmp_clf.predict(data_storage.X[data_storage.test_mask])
+    THEORETICALLY_BEST_ACHIEVABLE_ACCURACY = (
+        accuracy_score(data_storage.Y[data_storage.test_mask], tmp_Y_pred) * 0.99
+    )
+    config.THEORETICALLY_BEST_ACHIEVABLE_ACCURACY = (
+        THEORETICALLY_BEST_ACHIEVABLE_ACCURACY
     )
 
-    data_storage = DataStorage(df=df, TEST_FRACTION=config.TEST_FRACTION)
+config.LEN_TRAIN_DATA = len(data_storage.unlabeled_mask) + len(
+    data_storage.labeled_mask
+)
 
-    if config.STOP_AFTER_MAXIMUM_ACCURACY_REACHED:
-        # calculate maximum theoretical accuracy
-        tmp_clf = get_classifier(config.CLASSIFIER, random_state=config.RANDOM_SEED)
+oracle = FakeExperimentOracle()
 
-        tmp_clf.fit(
-            data_storage.X[
-                np.concatenate(
-                    (data_storage.labeled_mask, data_storage.unlabeled_mask), axis=0
-                )
-            ],
-            data_storage.Y[
-                np.concatenate(
-                    (data_storage.labeled_mask, data_storage.unlabeled_mask), axis=0
-                )
-            ],
-        )
-        tmp_Y_pred = tmp_clf.predict(data_storage.X[data_storage.test_mask])
-        THEORETICALLY_BEST_ACHIEVABLE_ACCURACY = (
-            accuracy_score(data_storage.Y[data_storage.test_mask], tmp_Y_pred) * 0.99
-        )
-        config.THEORETICALLY_BEST_ACHIEVABLE_ACCURACY = (
-            THEORETICALLY_BEST_ACHIEVABLE_ACCURACY
-        )
-
-    config.LEN_TRAIN_DATA = len(data_storage.unlabeled_mask) + len(
-        data_storage.labeled_mask
+if config.BATCH_MODE:
+    samplingStrategy: ImitationLearner = TrainImitALBatch(
+        PRE_SAMPLING_METHOD=config.PRE_SAMPLING_METHOD,
+        PRE_SAMPLING_ARG=config.PRE_SAMPLING_ARG,
+        AMOUNT_OF_PEAKED_OBJECTS=config.AMOUNT_OF_PEAKED_OBJECTS,
     )
+else:
 
-    oracle = FakeExperimentOracle()
-
-    if config.BATCH_MODE:
-        samplingStrategy: ImitationLearner = TrainImitALBatch(
-            PRE_SAMPLING_METHOD=config.PRE_SAMPLING_METHOD,
-            PRE_SAMPLING_ARG=config.PRE_SAMPLING_ARG,
-            AMOUNT_OF_PEAKED_OBJECTS=config.AMOUNT_OF_PEAKED_OBJECTS,
-        )
-    else:
-
-        samplingStrategy = TrainImitALSingle(
-            PRE_SAMPLING_METHOD=config.PRE_SAMPLING_METHOD,
-            PRE_SAMPLING_ARG=config.PRE_SAMPLING_ARG,
-            AMOUNT_OF_PEAKED_OBJECTS=config.AMOUNT_OF_PEAKED_OBJECTS,
-        )
-    callbacks = {
-        "acc_test": MetricCallback(test_acc_metric),
-        "f1_test": MetricCallback(test_f1_metric),
-    }
-    active_learner_params = {
-        "sampling_strategy": samplingStrategy,
-        "data_storage": data_storage,
-        "oracles": [oracle],
-        "learner": get_classifier(config.CLASSIFIER, random_state=config.RANDOM_SEED),
-        "callbacks": callbacks,
-        "stopping_criteria": ALCyclesStoppingCriteria(50),
-        "BATCH_SIZE": config.BATCH_SIZE,
-    }
-
-    active_learner = ActiveLearner(**active_learner_params)
-
-    start = timer()
-    active_learner.al_cycle()
-    end = timer()
-
-    samplingStrategy.save_nn_training_data(config.OUTPUT_DIRECTORY)
-
-    hyper_parameters = vars(config)
-    hyper_parameters["synthetic_creation_args"] = synthetic_creation_args
-
-    eval_al(
-        data_storage,
-        end - start,
-        callbacks,
-        hyper_parameters,
+    samplingStrategy = TrainImitALSingle(
+        PRE_SAMPLING_METHOD=config.PRE_SAMPLING_METHOD,
+        PRE_SAMPLING_ARG=config.PRE_SAMPLING_ARG,
+        AMOUNT_OF_PEAKED_OBJECTS=config.AMOUNT_OF_PEAKED_OBJECTS,
     )
+callbacks = {
+    "acc_test": MetricCallback(test_acc_metric),
+    "f1_test": MetricCallback(test_f1_metric),
+    "logging": PrintLoggingStatisticsCallback(),
+}
+active_learner_params = {
+    "sampling_strategy": samplingStrategy,
+    "data_storage": data_storage,
+    "oracles": [oracle],
+    "learner": get_classifier(config.CLASSIFIER, random_state=config.RANDOM_SEED),
+    "callbacks": callbacks,
+    "stopping_criteria": ALCyclesStoppingCriteria(
+        config.TOTAL_BUDGET / config.BATCH_SIZE
+    ),
+    "BATCH_SIZE": config.BATCH_SIZE,
+}
+
+active_learner = ActiveLearner(**active_learner_params)
+
+start = timer()
+active_learner.al_cycle()
+end = timer()
+
+samplingStrategy.save_nn_training_data(config.OUTPUT_DIRECTORY)
+
+hyper_parameters = vars(config)
+hyper_parameters["synthetic_creation_args"] = synthetic_creation_args
+
+eval_al(
+    data_storage,
+    end - start,
+    callbacks,
+    hyper_parameters,
+)

@@ -120,11 +120,6 @@ zero_to_one = np.linspace(0, 1, num=param_size * 2 + 1).astype(float)
 half_to_one = np.linspace(0.5, 1, num=param_size + 1).astype(float)
 
 param_dist = {
-    #  "DATASETS_PATH": [DATASETS_PATH],
-    #  "CLASSIFIER": [CLASSIFIER],
-    #  "N_JOBS": [N_JOBS],
-    #  "RANDOM_SEED": [RANDOM_SEED],
-    #  "TEST_FRACTION": [TEST_FRACTION],
     "SAMPLING": [
         #  "random",
         "uncertainty_lc",
@@ -138,17 +133,8 @@ param_dist = {
         "MostUncertain_max_margin",
         "MostUncertain_entropy",
     ],
-    #  "NR_LEARNING_ITERATIONS": [NR_LEARNING_ITERATIONS],
-    #  "NR_LEARNING_ITERATIONS": [1],
-    #  "BATCH_SIZE":
-    #  BATCH_SIZE,
-    #  "START_SET_SIZE":
-    #  START_SET_SIZE,
     "STOPPING_CRITERIA_UNCERTAINTY": [1],  # zero_to_one,
     "STOPPING_CRITERIA_STD": [1],  # zero_to_one,
-    "STOPPING_CRITERIA_ACC": [1],  # zero_to_one,
-    "ALLOW_RECOMMENDATIONS_AFTER_STOP": [True],
-    # uncertainty_recommendation_grid = {
     "UNCERTAINTY_RECOMMENDATION_CERTAINTY_THRESHOLD": half_to_one,
     "UNCERTAINTY_RECOMMENDATION_RATIO": [
         1 / 100,
@@ -157,18 +143,14 @@ param_dist = {
         1 / 100000,
         1 / 1000000,
     ],
-    # snuba_lite_grid = {
     "SNUBA_LITE_MINIMUM_HEURISTIC_ACCURACY": [0],
-    #  half_to_one,
-    # cluster_recommendation_grid = {
     "CLUSTER_RECOMMENDATION_MINIMUM_CLUSTER_UNITY_SIZE": half_to_one,
     "CLUSTER_RECOMMENDATION_RATIO_LABELED_UNLABELED": half_to_one,
     "WITH_UNCERTAINTY_RECOMMENDATION": [True, False],
     "WITH_CLUSTER_RECOMMENDATION": [True, False],
     "WITH_SNUBA_LITE": [False],
     "MINIMUM_TEST_ACCURACY_BEFORE_RECOMMENDATIONS": half_to_one,
-    #  "DB_NAME_OR_TYPE": [DB_NAME_OR_TYPE],
-    "USER_QUERY_BUDGET_LIMIT": [2000],
+    "TOTAL_BUDGET": [2000],
     "INTERESTING?": [True, False],
     "TRUE_WEAK?": [True, False],
 }
