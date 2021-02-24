@@ -82,9 +82,7 @@ elif config.TITLE == "single_full_10":
 elif config.TITLE == "single_full_lab":
     BATCH_MODE = ""
     INITIAL_BATCH_SAMPLING_METHOD = "furthest"
-    ADDITIONAL_TRAINING_STATE_ARGS = (
-        " --STATE_ARGSECOND_PROBAS --STATE_DISTANCES_LAB "
-    )
+    ADDITIONAL_TRAINING_STATE_ARGS = " --STATE_ARGSECOND_PROBAS --STATE_DISTANCES_LAB "
 elif config.TITLE == "single_full_unlab":
     BATCH_MODE = ""
     INITIAL_BATCH_SAMPLING_METHOD = "furthest"
@@ -161,14 +159,10 @@ exit 0
 )
 
 
-
 sync_to_taurus = Template(
     """
     """
 )
-
-
-
 
 
 if not os.path.exists(config.OUT_DIR):
@@ -197,7 +191,7 @@ with open(config.OUT_DIR + "/ann_training_data.slurm", "w") as f:
             + str(config.INITIAL_BATCH_SAMPLING_ARG)
             + " --OUTPUT_DIRECTORY "
             + config.DATASET_DIR
-            + " --USER_QUERY_BUDGET_LIMIT 50 --NR_LEARNING_SAMPLES "
+            + " --USER_QUERY_BUDGET_LIMIT 50 --TRAIN_NR_LEARNING_SAMPLES "
             + str(config.ITERATIONS_PER_BATCH)
             + " --INITIAL_BATCH_SAMPLING_HYBRID_UNCERT "
             + str(config.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT)
