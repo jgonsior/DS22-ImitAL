@@ -1,3 +1,6 @@
+from typing import List
+from active_learning.BaseOracle import BaseOracle
+from active_learning.oracles.LabelingFunctionsOracle import get_n_labeling_functions
 from active_learning.callbacks.PrintLoggingStatisticsCallback import (
     PrintLoggingStatisticsCallback,
 )
@@ -155,7 +158,10 @@ config.LEN_TRAIN_DATA = len(data_storage.unlabeled_mask) + len(
     data_storage.labeled_mask
 )
 
-oracle = FakeExperimentOracle()
+
+oracles: List[BaseOracle] = [FakeExperimentOracle()] + get_n_labeling_functions(  # type: ignore
+    amount=2, X=data_storage.X, Y=data_storage.Y
+)
 
 if config.BATCH_MODE:
     samplingStrategy: ImitationLearner = TrainImitALBatch(
@@ -178,7 +184,7 @@ callbacks = {
 active_learner_params = {
     "sampling_strategy": samplingStrategy,
     "data_storage": data_storage,
-    "oracles": [oracle],
+    "oracles": oracles,
     "learner": get_classifier(config.CLASSIFIER, random_state=config.RANDOM_SEED),
     "callbacks": callbacks,
     "stopping_criteria": ALCyclesStoppingCriteria(
