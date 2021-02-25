@@ -37,7 +37,7 @@ else:
             "NR_HIDDEN_LAYERS": 3,
             "LOSS": "MeanSquaredError",
             "EPOCHS": 10000,
-            "BATCH_SIZE": 128,
+            "ANN_BATCH_SIZE": 128,
             "ACTIVATION": "elu",
         }
     else:
@@ -48,7 +48,7 @@ else:
             "NR_HIDDEN_LAYERS": 2,
             "LOSS": "MeanSquaredError",
             "EPOCHS": 10000,
-            "BATCH_SIZE": 128,
+            "ANN_BATCH_SIZE": 128,
             "ACTIVATION": "elu",
         }
 run_python_experiment(
@@ -68,7 +68,7 @@ run_python_experiment(
         "NR_HIDDEN_LAYERS": ANN_HYPER_PARAMS["NR_HIDDEN_LAYERS"],
         "LOSS": ANN_HYPER_PARAMS["LOSS"],
         "EPOCHS": ANN_HYPER_PARAMS["EPOCHS"],
-        "BATCH_SIZE": ANN_HYPER_PARAMS["BATCH_SIZE"],
+        "ANN_BATCH_SIZE": ANN_HYPER_PARAMS["ANN_BATCH_SIZE"],
         "ACTIVATION": ANN_HYPER_PARAMS["ACTIVATION"],
         "RANDOM_SEED": 1,
     },
