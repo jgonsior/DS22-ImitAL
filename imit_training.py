@@ -1,12 +1,24 @@
-from active_learning.oracles.SyntheticLabelingFunctionsOracle import (
-    SyntheticLabelingFunctionsOracle,
+from active_learning.merge_weak_supervision_label_strategies.MajorityVoteLabelMergeStrategy import (
+    MajorityVoteLabelMergeStrategy,
+)
+from active_learning.weak_supervision.BaseWeakSupervision import BaseWeakSupervision
+from active_learning.query_sampling_strategies.BatchStateEncoding import (
+    TrainImitALBatch,
+)
+from active_learning.query_sampling_strategies.ImitationLearner import TrainImitALSingle
+from active_learning.weak_supervision import SyntheticLabelingFunctions
+from active_learning.query_sampling_strategies.TrainedImitALQuerySampling import (
+    TrainedImitALBatchSampling,
+    TrainedImitALSingleSampling,
+)
+from active_learning.query_sampling_strategies.ImitationLearningBaseQuerySampling import (
+    ImitationLearningBaseQuerySampling,
 )
 from typing import List
 from active_learning.BaseOracle import BaseOracle
 from active_learning.callbacks.PrintLoggingStatisticsCallback import (
     PrintLoggingStatisticsCallback,
 )
-from active_learning.sampling_strategies.BatchStateEncoding import TrainImitALBatch
 import argparse
 import os
 import random
@@ -25,7 +37,6 @@ from active_learning.dataStorage import DataStorage
 from active_learning.learner import get_classifier
 from active_learning.logger import init_logger, log_it
 from active_learning.oracles import FakeExperimentOracle
-from active_learning.sampling_strategies import ImitationLearner, TrainImitALSingle
 from active_learning.stopping_criterias import ALCyclesStoppingCriteria
 
 config: argparse.Namespace = get_active_config()  # type: ignore
@@ -161,14 +172,17 @@ config.LEN_TRAIN_DATA = len(data_storage.unlabeled_mask) + len(
 )
 
 
-oracles: List[BaseOracle] = []
-if not config.DISABLE_FAKE_EXPERIMENT_ORACLE:
-    oracles += [FakeExperimentOracle()]  # type: ignore
+oracle: BaseOracle = FakeExperimentOracle()
 
-oracles += [SyntheticLabelingFunctionsOracle(X=data_storage.X, Y=data_storage.Y) for i in range(0, config.AMOUNT_OF_SYNTHETIC_LABELLING_FUNCTIONS)]  # type: ignore
+ws_list: List[BaseWeakSupervision] = [
+    SyntheticLabelingFunctions(X=data_storage.X, Y=data_storage.Y)
+    for i in range(0, config.AMOUNT_OF_SYNTHETIC_LABELLING_FUNCTIONS)
+]  # type: ignore
+
+data_storage.set_weak_supervisions(ws_list, MajorityVoteLabelMergeStrategy())
 
 if config.BATCH_MODE:
-    samplingStrategy: ImitationLearner = TrainImitALBatch(
+    samplingStrategy: ImitationLearningBaseQuerySampling = TrainImitALBatch(
         PRE_SAMPLING_METHOD=config.PRE_SAMPLING_METHOD,
         PRE_SAMPLING_ARG=config.PRE_SAMPLING_ARG,
         AMOUNT_OF_PEAKED_OBJECTS=config.AMOUNT_OF_PEAKED_OBJECTS,
@@ -186,9 +200,9 @@ callbacks = {
     "logging": PrintLoggingStatisticsCallback(),
 }
 active_learner_params = {
-    "sampling_strategy": samplingStrategy,
+    "query_sampling_strategy": samplingStrategy,
     "data_storage": data_storage,
-    "oracles": oracles,
+    "oracle": oracle,
     "learner": get_classifier(config.CLASSIFIER, random_state=config.RANDOM_SEED),
     "callbacks": callbacks,
     "stopping_criteria": ALCyclesStoppingCriteria(
