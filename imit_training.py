@@ -1,18 +1,19 @@
 from active_learning.merge_weak_supervision_label_strategies.MajorityVoteLabelMergeStrategy import (
     MajorityVoteLabelMergeStrategy,
 )
+from active_learning.query_sampling_strategies import ImitationLearner
 from active_learning.weak_supervision.BaseWeakSupervision import BaseWeakSupervision
 from active_learning.query_sampling_strategies.BatchStateEncoding import (
     TrainImitALBatch,
 )
 from active_learning.query_sampling_strategies.ImitationLearner import TrainImitALSingle
 from active_learning.weak_supervision import SyntheticLabelingFunctions
-from active_learning.query_sampling_strategies.TrainedImitALQuerySampling import (
-    TrainedImitALBatchSampling,
-    TrainedImitALSingleSampling,
+from active_learning.query_sampling_strategies.TrainedImitALQuerySampler import (
+    TrainedImitALBatchSampler,
+    TrainedImitALSingleSampler,
 )
-from active_learning.query_sampling_strategies.ImitationLearningBaseQuerySampling import (
-    ImitationLearningBaseQuerySampling,
+from active_learning.query_sampling_strategies.ImitationLearningBaseQuerySampler import (
+    ImitationLearningBaseQuerySampler,
 )
 from typing import List
 from active_learning.BaseOracle import BaseOracle
@@ -183,7 +184,7 @@ ws_list: List[BaseWeakSupervision] = [
 data_storage.set_weak_supervisions(ws_list, MajorityVoteLabelMergeStrategy())
 
 if config.BATCH_MODE:
-    samplingStrategy: ImitationLearningBaseQuerySampling = TrainImitALBatch(
+    samplingStrategy: ImitationLearner = TrainImitALBatch(
         PRE_SAMPLING_METHOD=config.PRE_SAMPLING_METHOD,
         PRE_SAMPLING_ARG=config.PRE_SAMPLING_ARG,
         AMOUNT_OF_PEAKED_OBJECTS=config.AMOUNT_OF_PEAKED_OBJECTS,

@@ -29,5 +29,5 @@ if config.OUTPUT_DIRECTORY == "NN_BINARY":
 
 score = train_and_eval_dataset(
     hyper_parameters=vars(config),
-    oracles=[FakeExperimentOracle()],
+    oracle=FakeExperimentOracle(),
 )
