@@ -141,7 +141,7 @@ df, synthetic_creation_args = load_synthetic(
     config.GENERATE_NOISE,
 )
 
-data_storage = DataStorage(df=df, TEST_FRACTION=config.TEST_FRACTION)
+data_storage: DataStorage = DataStorage(df=df, TEST_FRACTION=config.TEST_FRACTION)
 
 if config.STOP_AFTER_MAXIMUM_ACCURACY_REACHED:
     # calculate maximum theoretical accuracy
@@ -153,7 +153,7 @@ if config.STOP_AFTER_MAXIMUM_ACCURACY_REACHED:
                 (data_storage.labeled_mask, data_storage.unlabeled_mask), axis=0
             )
         ],
-        data_storage.Y[
+        data_storage.Y_merged_final[
             np.concatenate(
                 (data_storage.labeled_mask, data_storage.unlabeled_mask), axis=0
             )
@@ -161,7 +161,8 @@ if config.STOP_AFTER_MAXIMUM_ACCURACY_REACHED:
     )
     tmp_Y_pred = tmp_clf.predict(data_storage.X[data_storage.test_mask])
     THEORETICALLY_BEST_ACHIEVABLE_ACCURACY = (
-        accuracy_score(data_storage.Y[data_storage.test_mask], tmp_Y_pred) * 0.99
+        accuracy_score(data_storage.Y_merged_final[data_storage.test_mask], tmp_Y_pred)
+        * 0.99
     )
     config.THEORETICALLY_BEST_ACHIEVABLE_ACCURACY = (
         THEORETICALLY_BEST_ACHIEVABLE_ACCURACY
@@ -172,10 +173,10 @@ config.LEN_TRAIN_DATA = len(data_storage.unlabeled_mask) + len(
 )
 
 
-oracle: BaseOracle = FakeExperimentOracle()
+oracle: BaseOracle = FakeExperimentOracle()  # type: ignore
 
 ws_list: List[BaseWeakSupervision] = [
-    SyntheticLabelingFunctions(X=data_storage.X, Y=data_storage.Y)
+    SyntheticLabelingFunctions(X=data_storage.X, Y=data_storage.Y_merged_final)
     for i in range(0, config.AMOUNT_OF_SYNTHETIC_LABELLING_FUNCTIONS)
 ]  # type: ignore
 
