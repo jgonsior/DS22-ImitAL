@@ -65,6 +65,10 @@ if len(sys.argv[:-1]) == 0:
     parser.exit()
 
 
+if config.WITH_CLASSICS or config.WITH_TUD_EVAL or config.WITH_PLOTS:
+    print("config option deprecated")
+    exit(-1)
+
 INITIAL_BATCH_SAMPLING_METHOD = config.TITLE
 if config.TITLE == "hybrid":
     config.TITLE = (
@@ -168,7 +172,7 @@ else:
 submit_jobs = Template(
     """#!/bin/bash
 01_create_synthetic_training_data_id=$(sbatch --parsable {{HPC_WS_DIR}}/imitating-weakal/{{SLURM_FILE_PATH}}/01_create_synthetic_training_data.slurm)
-{%if WITH_HYPER_SEARCH %}hyper_search_id=$(sbatch --parsable --dependency=afterok:$01_create_synthetic_training_data_id {{HPC_WS_DIR}}/imitating-weakal/{{SLURM_FILE_PATH}}/hyper_search.slurm){% endif %}
+{%if WITH_HYPER_SEARCH %}hyper_search_id=$(sbatch --parsable --dependency=afterok:$01_create_synthetic_training_data_id {{HPC_WS_DIR}}/imitating-weakal/{{SLURM_FILE_PATH}}/02_hyper_search.slurm){% endif %}
 03_train_imital_id=$(sbatch --parsable --dependency=afterok:$01_create_synthetic_training_data_id{%if WITH_HYPER_SEARCH %}:$hyper_search_id{% endif %} {{HPC_WS_DIR}}/imitating-weakal/{{SLURM_FILE_PATH}}/03_train_imital.slurm)
 {%if WITH_TUD_EVAL %}create_ann_eval_id=$(sbatch --parsable --dependency=afterok:$01_create_synthetic_training_data_id:$03_train_imital_id{%if WITH_HYPER_SEARCH %}:$hyper_search_id{% endif %} {{HPC_WS_DIR}}/imitating-weakal//{{SLURM_FILE_PATH}}/ann_eval_data.slurm){% endif %}
 {%if WITH_CLASSICS %}classics_id=$(sbatch --parsable {{HPC_WS_DIR}}/imitating-weakal//{{SLURM_FILE_PATH}}/classics.slurm){% endif %}
@@ -232,7 +236,7 @@ with open(
     )
 
 if config.WITH_HYPER_SEARCH:
-    with open(config.SLURM_FILE_PATH + "/hyper_search.slurm", "w") as f:
+    with open(config.SLURM_FILE_PATH + "/02_hyper_search.slurm", "w") as f:
         f.write(
             slurm_common.render(
                 HPC_WS_DIR=config.HPC_WS_DIR,
@@ -272,7 +276,7 @@ with open(config.SLURM_FILE_PATH + "/03_train_imital.slurm", "w") as f:
     )
 
 if config.WITH_ALIPY:
-    with open(config.SLURM_FILE_PATH + "/alipy_init_seeds.slurm", "w") as f:
+    with open(config.SLURM_FILE_PATH + "/04_alipy_init_seeds.slurm", "w") as f:
         START = 0
         END = int(config.TEST_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
         f.write(
@@ -314,99 +318,6 @@ if config.WITH_ALIPY:
             )
         )
 
-if config.WITH_TUD_EVAL:
-    with open(config.SLURM_FILE_PATH + "/ann_eval_data.slurm", "w") as f:
-        START = 0
-        END = int(config.TEST_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
-        f.write(
-            slurm_common.render(
-                HPC_WS_DIR=config.HPC_WS_DIR,
-                TITLE=config.TITLE,
-                PYTHON_FILE="ann_eval_data",
-                array=True,
-                START=START,
-                END=END,
-                OFFSET=100000,
-                ITERATIONS_PER_BATCH=config.ITERATIONS_PER_BATCH,
-                CLI_ARGS=" "
-                + BATCH_MODE
-                + " --INITIAL_BATCH_SAMPLING_METHOD "
-                + INITIAL_BATCH_SAMPLING_METHOD
-                + " --BASE_PARAM_STRING batch_"
-                + config.TITLE
-                + " --INITIAL_BATCH_SAMPLING_ARG "
-                + str(config.INITIAL_BATCH_SAMPLING_ARG)
-                + " --OUTPUT_DIRECTORY "
-                + config.OUTPUT_DIR
-                + "/ --TOTAL_BUDGET "
-                + str(config.TOTAL_BUDGET)
-                + " --NR_LEARNING_SAMPLES "
-                + str(config.ITERATIONS_PER_BATCH)
-                + " --INITIAL_BATCH_SAMPLING_HYBRID_UNCERT "
-                + str(config.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT)
-                + " --INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY "
-                + str(config.INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY)
-                + " --INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST "
-                + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST)
-                + " --INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB "
-                + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB)
-                + ADDITIONAL_TRAINING_STATE_ARGS
-                + " --RANDOM_ID_OFFSET $i"
-                + " --DISTANCE_METRIC "
-                + str(config.DISTANCE_METRIC),
-            )
-        )
-
-if config.WITH_CLASSICS:
-    with open(config.SLURM_FILE_PATH + "/classics.slurm", "w") as f:
-        START = 0
-        END = int(config.TEST_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
-        f.write(
-            slurm_common.render(
-                HPC_WS_DIR=config.HPC_WS_DIR,
-                TITLE=config.TITLE,
-                PYTHON_FILE="classics",
-                array=True,
-                START=START,
-                END=END,
-                OFFSET=100000,
-                ITERATIONS_PER_BATCH=config.ITERATIONS_PER_BATCH,
-                CLI_ARGS="--OUTPUT_DIRECTORY "
-                + config.OUTPUT_DIR
-                + "/ --TOTAL_BUDGET "
-                + str(config.TOTAL_BUDGET)
-                + " --NR_LEARNING_SAMPLES "
-                + str(config.ITERATIONS_PER_BATCH)
-                + " --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --RANDOM_ID_OFFSET $i",
-            )
-        )
-
-if config.WITH_PLOTS:
-    with open(config.SLURM_FILE_PATH + "/plots.slurm", "w") as f:
-        f.write(
-            slurm_common.render(
-                HPC_WS_DIR=config.HPC_WS_DIR,
-                TITLE=config.TITLE,
-                PYTHON_FILE="plots",
-                array=False,
-                THREADS=2,
-                MEMORY=5250,
-                TEST_NR_LEARNING_SAMPLES=config.TEST_NR_LEARNING_SAMPLES,
-                CLI_ARGS="--OUTPUT_DIRECTORY "
-                + config.OUTPUT_DIR
-                + " --TOTAL_BUDGET "
-                + str(config.TOTAL_BUDGET)
-                + " --NR_LEARNING_SAMPLES "
-                + str(config.TEST_NR_LEARNING_SAMPLES)
-                + " --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --BASE_PARAM_STRING batch_"
-                + config.TITLE
-                + " --FINAL_PICTURE "
-                + config.OUTPUT_DIR
-                + "/plots_batch_"
-                + config.TITLE
-                + "/ --PLOT_METRIC acc_auc",
-            )
-        )
 
 if config.SLURM:
     with open(config.SLURM_FILE_PATH + "/submit_jobs.sh", "w") as f:
@@ -416,9 +327,7 @@ if config.SLURM:
                 SLURM_FILE_PATH=config.SLURM_FILE_PATH,
                 TITLE=config.TITLE,
                 WITH_HYPER_SEARCH=config.WITH_HYPER_SEARCH,
-                WITH_CLASSICS=config.WITH_CLASSICS,
-                WITH_PLOTS=config.WITH_PLOTS,
-                WITH_TUD_EVAL=config.WITH_TUD_EVAL,
+                WITH_ALIPY=config.WITH_ALIPY,
             )
         )
 else:
@@ -426,11 +335,10 @@ else:
     submit_content = "#!/bin/bash\n"
     sort_order = {
         "01_create_synthetic_training_data.slurm": 0,
-        "hyper_search.slurm": 1,
+        "02_hyper_search.slurm": 1,
         "03_train_imital.slurm": 2,
-        "ann_eval_data.slurm": 3,
-        "classics.slurm": 4,
-        "plots.slurm": 5,
+        "04_alipy_init_seeds.slurm": 3,
+        "05_alipy_eva.py": 4,
     }
     for csv_file in sorted(
         list(glob.glob(str(config.SLURM_FILE_PATH) + "/*.slurm")),
