@@ -181,4 +181,4 @@ training_data/
 .vscode/settings.json
 .vscode/launch.json
 typings/
-test/
+_*/

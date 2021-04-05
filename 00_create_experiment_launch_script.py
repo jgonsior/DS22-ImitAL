@@ -28,7 +28,7 @@ parser.add_argument("--TITLE")
 parser.add_argument("--TEST_NR_LEARNING_SAMPLES", default=1000, type=int)
 parser.add_argument("--TRAIN_NR_LEARNING_SAMPLES", default=1000, type=int)
 parser.add_argument("--ITERATIONS_PER_BATCH", default=10, type=int)
-parser.add_argument("--SLURM_FILE_PATH", default="slurms2")
+parser.add_argument("--SLURM_FILE_PATH", default="_experiment_slurm_files")
 parser.add_argument("--HPC_WS_DIR", default="/lustre/ssd/ws/s5968580-IL_TD2")
 parser.add_argument(
     "--OUTPUT_DIR", default="/lustre/ssd/ws/s5968580-IL_TD2/single_vs_batch"
@@ -164,7 +164,7 @@ exit 0
     """
     )
 else:
-    config.SLURM_FILE_PATH = "fake_slurms"
+    config.SLURM_FILE_PATH = "_start_experiment_locally"
     os.makedirs(config.SLURM_FILE_PATH, exist_ok=True)
     slurm_common = Template("{{PYTHON_FILE}}.py {{ CLI_ARGS }}")
 
