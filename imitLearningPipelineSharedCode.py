@@ -12,39 +12,11 @@ from active_learning.config.config import get_active_config
 
 
 def get_config():
-    config: argparse.Namespace = get_active_config(
+    config, parser = get_active_config(
         [
             (["--BASE_PARAM_STRING"], {"default": "default"}),
-            (["--TRAIN_CLASSIFIER"], {"default": "RF"}),
-            (["--TRAIN_VARIABLE_DATASET"], {"action": "store_false"}),
-            (["--TRAIN_AMOUNT_OF_PEAKED_SAMPLES"], {"type": int, "default": 20}),
-            (["--TRAIN_NR_LEARNING_SAMPLES"], {"type": int, "default": 1000}),
-            (["--TRAIN_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
-            (["--TRAIN_HYPERCUBE"], {"action": "store_true"}),
-            (["--TRAIN_NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
-            (
-                ["--TRAIN_STOP_AFTER_MAXIMUM_ACCURACY_REACHED"],
-                {"action": "store_true"},
-            ),
-            (["--TRAIN_GENERATE_NOISE"], {"action": "store_false"}),
-            (["--TRAIN_STATE_DIFF_PROBAS"], {"action": "store_true"}),
-            (["--TRAIN_STATE_ARGSECOND_PROBAS"], {"action": "store_true"}),
-            (["--TRAIN_STATE_ARGTHIRD_PROBAS"], {"action": "store_true"}),
-            (["--TRAIN_STATE_DISTANCES_LAB"], {"action": "store_true"}),
-            (["--TRAIN_STATE_DISTANCES_UNLAB"], {"action": "store_true"}),
-            (["--TRAIN_STATE_PREDICTED_CLASS"], {"action": "store_true"}),
-            (["--TRAIN_STATE_DISTANCES"], {"action": "store_true"}),
-            (["--TRAIN_STATE_UNCERTAINTIES"], {"action": "store_true"}),
-            (["--TRAIN_STATE_PREDICTED_UNITY"], {"action": "store_true"}),
-            (["--TRAIN_INITIAL_BATCH_SAMPLING_METHOD"], {"default": "random"}),
-            (["--TRAIN_INITIAL_BATCH_SAMPLING_ARG"], {"type": int, "default": 100}),
-            (["--TEST_VARIABLE_DATASET"], {"action": "store_false"}),
-            (["--TEST_NR_LEARNING_SAMPLES"], {"type": int, "default": 500}),
-            (["--TEST_AMOUNT_OF_FEATURES"], {"type": int, "default": -1}),
-            (["--TEST_HYPERCUBE"], {"action": "store_true"}),
-            (["--TEST_NEW_SYNTHETIC_PARAMS"], {"action": "store_true"}),
-            (["--TEST_CLASSIFIER"], {"default": "RF"}),
-            (["--TEST_GENERATE_NOISE"], {"action": "store_false"}),
+            (["--AMOUNT_OF_PEAKED_SAMPLES"], {"type": int, "default": 20}),
+            (["--NR_LEARNING_SAMPLES"], {"type": int, "default": 1000}),
             (
                 ["--TEST_COMPARISONS"],
                 {
@@ -64,24 +36,10 @@ def get_config():
             (["--INCLUDE_ONLY_OPTIMAL_IN_PLOT"], {"action": "store_true"}),
             (["--COMPARE_ALL_FOLDERS"], {"action": "store_true"}),
             (["--NR_ANN_HYPER_SEARCH_ITERATIONS"], {"default": 50}),
-            (["--TEST_RANDOM_ID_OFFSET"], {"default": 100000}),
-            (["--TRAIN_RANDOM_ID_OFFSET"], {"default": 0}),
-        ]
+            (["--RANDOM_ID_OFFSET"], {"default": 0}),
+        ],
+        return_parser=True,
     )  # type: ignore
-
-    # calculate resulting pathes
-    splitted_base_param_string = config.BASE_PARAM_STRING.split("#")
-    train_base_param_string = "#".join(
-        [x for x in splitted_base_param_string if not x.startswith("TEST_")]
-    )
-    test_base_param_string = "#".join(
-        [x for x in splitted_base_param_string if not x.startswith("TRAIN_")]
-    )
-
-    if train_base_param_string == "":
-        train_base_param_string = "DEFAULT"
-    if test_base_param_string == "":
-        test_base_param_string = "DEFAULT"
 
     PARENT_OUTPUT_DIRECTORY = config.OUTPUT_DIRECTORY + "/"
 
@@ -95,25 +53,31 @@ def get_config():
 
     evaluation_arguments = {
         #  "DATASET_NAME": "synthetic",
-        "AMOUNT_OF_FEATURES": config.TEST_AMOUNT_OF_FEATURES,
-        "CLASSIFIER": config.TEST_CLASSIFIER,
-        "VARIABLE_DATASET": config.TEST_VARIABLE_DATASET,
-        "NEW_SYNTHETIC_PARAMS": config.TEST_NEW_SYNTHETIC_PARAMS,
-        "HYPERCUBE": config.TEST_HYPERCUBE,
-        "GENERATE_NOISE": config.TEST_GENERATE_NOISE,
+        "AMOUNT_OF_FEATURES": config.AMOUNT_OF_FEATURES,
+        "CLASSIFIER": config.CLASSIFIER,
+        "VARIABLE_DATASET": config.VARIABLE_DATASET,
+        "NEW_SYNTHETIC_PARAMS": config.NEW_SYNTHETIC_PARAMS,
+        "HYPERCUBE": config.HYPERCUBE,
+        "GENERATE_NOISE": config.GENERATE_NOISE,
         **shared_arguments,
     }
+    base_param_string = ""
 
+    for k, v in vars(config).items():
+        if v != parser.get_default(k):
+            base_param_string += str(v) + "_"
+
+    base_param_string = base_param_string[-1]
     ann_arguments = {
-        "STATE_DISTANCES_LAB": config.TRAIN_STATE_DISTANCES_LAB,
-        "STATE_DISTANCES_UNLAB": config.TRAIN_STATE_DISTANCES_UNLAB,
-        "STATE_PREDICTED_CLASS": config.TRAIN_STATE_PREDICTED_CLASS,
-        "STATE_PREDICTED_UNITY": config.TRAIN_STATE_PREDICTED_UNITY,
-        "STATE_ARGSECOND_PROBAS": config.TRAIN_STATE_ARGSECOND_PROBAS,
-        "STATE_ARGTHIRD_PROBAS": config.TRAIN_STATE_ARGTHIRD_PROBAS,
-        "STATE_DIFF_PROBAS": config.TRAIN_STATE_DIFF_PROBAS,
-        "STATE_DISTANCES": config.TRAIN_STATE_DISTANCES,
-        "STATE_UNCERTAINTIES": config.TRAIN_STATE_UNCERTAINTIES,
+        "STATE_DISTANCES_LAB": config.STATE_DISTANCES_LAB,
+        "STATE_DISTANCES_UNLAB": config.STATE_DISTANCES_UNLAB,
+        "STATE_PREDICTED_CLASS": config.STATE_PREDICTED_CLASS,
+        "STATE_PREDICTED_UNITY": config.STATE_PREDICTED_UNITY,
+        "STATE_ARGSECOND_PROBAS": config.STATE_ARGSECOND_PROBAS,
+        "STATE_ARGTHIRD_PROBAS": config.STATE_ARGTHIRD_PROBAS,
+        "STATE_DIFF_PROBAS": config.STATE_DIFF_PROBAS,
+        "STATE_DISTANCES": config.STATE_DISTANCES,
+        "STATE_UNCERTAINTIES": config.STATE_UNCERTAINTIES,
         "STATE_INCLUDE_NR_FEATURES": config.STATE_INCLUDE_NR_FEATURES,
         "DISTANCE_METRIC": config.DISTANCE_METRIC,
         "INITIAL_BATCH_SAMPLING_METHOD": config.INITIAL_BATCH_SAMPLING_METHOD,
@@ -130,8 +94,7 @@ def get_config():
         evaluation_arguments,
         ann_arguments,
         PARENT_OUTPUT_DIRECTORY,
-        train_base_param_string,
-        test_base_param_string,
+        base_param_string,
     )
 
 
