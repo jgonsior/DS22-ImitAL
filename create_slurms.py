@@ -314,7 +314,7 @@ if config.WITH_CLASSICS:
                 + str(config.TOTAL_BUDGET)
                 + " --NR_LEARNING_SAMPLES "
                 + str(config.ITERATIONS_PER_BATCH)
-                + " --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --TEST_RANDOM_ID_OFFSET $i",
+                + " --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --RANDOM_ID_OFFSET $i",
             )
         )
 

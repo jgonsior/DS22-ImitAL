@@ -7,8 +7,11 @@ from imitLearningPipelineSharedCode import get_config, run_parallel_experiment
     ann_arguments,
     PARENT_OUTPUT_DIRECTORY,
     train_base_param_string,
-    test_base_param_string,
 ) = get_config()
+
+# FIXME: currently the same training and test params are being used here, but that depends on how the new evaluation will look like actually
+# probably better to replace this here with alipy altogether?
+test_base_param_string = train_base_param_string
 
 for DATASET_NAME in [
     #  "emnist-byclass-test",

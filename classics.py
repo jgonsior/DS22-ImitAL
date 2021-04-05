@@ -1,4 +1,4 @@
- from imitLearningPipelineSharedCode import get_config, run_parallel_experiment
+from imitLearningPipelineSharedCode import get_config, run_parallel_experiment
 
 (
     config,
@@ -6,8 +6,7 @@
     evaluation_arguments,
     _,
     PARENT_OUTPUT_DIRECTORY,
-    _,
-    test_base_param_string,
+    base_param_string,
 ) = get_config()
 
 
@@ -27,10 +26,10 @@ for DATASET_NAME in [
     #  "PLANNING",
     #  "australian",
 ]:
-    original_test_base_param_string = test_base_param_string
-    test_base_param_string += "_" + DATASET_NAME
+    original_base_param_string = base_param_string
+    base_param_string += "_" + DATASET_NAME
     if DATASET_NAME != "synthetic":
-        #  config.TEST_NR_LEARNING_SAMPLES = 100
+        #  config.NR_LEARNING_SAMPLES = 100
         evaluation_arguments["TOTAL_BUDGET"] = 20
     evaluation_arguments["DATASET_NAME"] = DATASET_NAME
 
@@ -40,7 +39,7 @@ for DATASET_NAME in [
             PARENT_OUTPUT_DIRECTORY
             + "classics/"
             + comparison
-            #  + test_base_param_string
+            #  + base_param_string
             + ".csv"
         )
         run_parallel_experiment(
@@ -52,8 +51,8 @@ for DATASET_NAME in [
                 "SAMPLING": comparison,
                 **evaluation_arguments,
             },
-            RANDOM_ID_OFFSET=config.TEST_RANDOM_ID_OFFSET,
-            PARALLEL_AMOUNT=config.TEST_NR_LEARNING_SAMPLES,
-            OUTPUT_FILE_LENGTH=config.TEST_NR_LEARNING_SAMPLES,
+            RANDOM_ID_OFFSET=config.RANDOM_ID_OFFSET,
+            PARALLEL_AMOUNT=config.NR_LEARNING_SAMPLES,
+            OUTPUT_FILE_LENGTH=config.NR_LEARNING_SAMPLES,
         )
-    test_base_param_string = original_test_base_param_string
+    base_param_string = original_base_param_string
