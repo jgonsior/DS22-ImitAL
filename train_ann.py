@@ -12,13 +12,12 @@ from imitLearningPipelineSharedCode import get_config, run_python_experiment
     _,
     _,
     PARENT_OUTPUT_DIRECTORY,
-    train_base_param_string,
-    _,
+    base_param_string,
 ) = get_config()
-
+print(base_param_string)
 if config.HYPER_SEARCHED:
     HYPER_SEARCH_OUTPUT_FILE = (
-        config.OUTPUT_DIRECTORY + train_base_param_string + "/hyper_results.txt"
+        config.OUTPUT_DIRECTORY + base_param_string + "/hyper_results.txt"
     )
 
     with open(HYPER_SEARCH_OUTPUT_FILE, "r") as f:
@@ -53,14 +52,14 @@ else:
         }
 run_python_experiment(
     "Train ANN",
-    PARENT_OUTPUT_DIRECTORY + train_base_param_string + "/trained_ann.pickle",
+    PARENT_OUTPUT_DIRECTORY + base_param_string + "/trained_ann.pickle",
     CLI_COMMAND="python train_lstm.py",
     CLI_ARGUMENTS={
-        "DATA_PATH": config.OUTPUT_DIRECTORY + train_base_param_string,
+        "DATA_PATH": config.OUTPUT_DIRECTORY + base_param_string,
         "STATE_ENCODING": "listwise",
         "TARGET_ENCODING": "binary",
         "SAVE_DESTINATION": config.OUTPUT_DIRECTORY
-        + train_base_param_string
+        + base_param_string
         + "/trained_ann.pickle",
         "REGULAR_DROPOUT_RATE": ANN_HYPER_PARAMS["REGULAR_DROPOUT_RATE"],
         "OPTIMIZER": ANN_HYPER_PARAMS["OPTIMIZER"],

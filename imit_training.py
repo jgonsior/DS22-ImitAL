@@ -185,6 +185,7 @@ data_storage.set_weak_supervisions(ws_list, MajorityVoteLabelMergeStrategy())
 
 # FIXME dem ImitationLearner werden die state configs nie weitergereicht?
 if config.BATCH_MODE:
+    print("ui" * 1000)
     samplingStrategy: ImitationLearner = TrainImitALBatch(
         PRE_SAMPLING_METHOD=config.PRE_SAMPLING_METHOD,
         PRE_SAMPLING_ARG=config.PRE_SAMPLING_ARG,

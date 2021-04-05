@@ -16,8 +16,7 @@ from imitLearningPipelineSharedCode import (
     _,
     _,
     PARENT_OUTPUT_DIRECTORY,
-    _,
-    test_base_param_string,
+    base_param_string,
 ) = get_config()
 
 # this file expects /*/dataset_creation.csv and *_synthetic.csv files, and just concatenates them, and displays that afterwards
@@ -26,7 +25,7 @@ DATASET_NAME = "synthetic"
 if config.FINAL_PICTURE == "":
     comparison_path = (
         PARENT_OUTPUT_DIRECTORY
-        #  + test_base_param_string
+        #  + base_param_string
         + "_".join(config.TEST_COMPARISONS)
         + ".csv"
     )
@@ -41,7 +40,7 @@ def concatenate_evaluation_csvs():
         print("Reading " + PARENT_OUTPUT_DIRECTORY + "classics/" + comparison)
         df2 = pd.read_csv(
             PARENT_OUTPUT_DIRECTORY + "classics/" + comparison
-            #  + test_base_param_string
+            #  + base_param_string
             + ".csv",
             index_col=None,
             nrows=1 + config.TEST_NR_LEARNING_SAMPLES,

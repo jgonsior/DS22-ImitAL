@@ -61,13 +61,15 @@ def get_config():
         "GENERATE_NOISE": config.GENERATE_NOISE,
         **shared_arguments,
     }
-    base_param_string = ""
+    base_param_string = config.BASE_PARAM_STRING
 
-    for k, v in vars(config).items():
-        if v != parser.get_default(k):
-            base_param_string += str(v) + "_"
+    # only include config key if it is different from default
+    # for k, v in vars(config).items():
+    #    if v != parser.get_default(k):
+    #        base_param_string += str(v) + "_"
 
-    base_param_string = base_param_string[-1]
+    # base_param_string = base_param_string[-1]
+
     ann_arguments = {
         "STATE_DISTANCES_LAB": config.STATE_DISTANCES_LAB,
         "STATE_DISTANCES_UNLAB": config.STATE_DISTANCES_UNLAB,

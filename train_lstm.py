@@ -9,13 +9,13 @@ import dill
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from joblib import parallel_backend
-from keras.layers import Dense, Dropout
-from keras.models import Sequential
+
+# Tfrom keras.layers import Dense, Dropout
+# from keras.models import Sequential
 from scikeras.wrappers import KerasRegressor
 from scipy.stats import kendalltau, spearmanr
 from sklearn.metrics import accuracy_score, make_scorer
-from sklearn.model_selection import RandomizedSearchCV, train_test_split
+from sklearn.model_selection import RandomizedSearchCV
 from tensorflow import keras
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
@@ -63,8 +63,8 @@ if config.RANDOM_SEED != -1 and config.RANDOM_SEED != -2:
     np.random.seed(config.RANDOM_SEED)
     random.seed(config.RANDOM_SEED)
 
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+# os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
+# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 DATA_PATH = config.DATA_PATH
 states = pd.read_csv(DATA_PATH + "/states.csv")
@@ -390,77 +390,13 @@ else:
         ],
         #  random_state=config.RANDOM_SEED,
     )
+    print(X)
+    print(Y)
 
     fitted_model = model.fit(
         X=X,
         y=Y,
     )
-
-    #  Y_pred = fitted_model.predict(X_test)
-
-    #  print(Y_test)
-    #  print(Y_pred)
-    #  print(mean_squared_error(Y_test, Y_pred))
-
-    def random_sampling_probas(X_test):
-        result = np.random.uniform(
-            low=0, high=1, size=(len(X_test), AMOUNT_OF_PEAKED_OBJECTS)
-        )
-        return result
-
-    def random_sampling(X_test):
-        result = np.array(
-            list(
-                ([1] * 5 + [0] * (AMOUNT_OF_PEAKED_OBJECTS - 5))
-                for _ in range(0, len(X_test))
-            )
-        )
-        list(map(np.random.shuffle, result))
-        return result
-
-    def uncertainty_sampling(X_test, strategy="least_confident"):
-        df = X_test.copy()
-        if strategy == "least_confident":
-            df = df.loc[:, ~df.columns.str.endswith("_proba_diff")]
-        elif strategy == "max_margin":
-            for i in df.columns:
-                if i.endswith("diff"):
-                    continue
-                df[i[0 : i.find("_")]] = df[i] - df[i[:-3] + "diff"]
-            df = df.loc[:, ~df.columns.str.contains("_")]
-        # for entropy we are lacking the other classes
-        #  elif strategy == "entropy":
-        #      result = np.apply_along_axis(entropy, 1, Y_temp_proba)
-
-        return _binarize_targets(df).to_numpy()
-
-    #  Y_pred_random_probas = random_sampling_probas(X_test)
-    #  Y_pred_random = random_sampling(X_test)
-    #  Y_pred_uncertainty_lc = uncertainty_sampling(X_test, strategy="least_confident")
-    #  Y_pred_uncertainty_mm = uncertainty_sampling(X_test, strategy="max_margin")
-    #  Y_pred_uncertainty_ent = uncertainty_sampling(X_test, strategy="entropy")
-
-    #  print(
-    #      "Pleas note: uncertainty measures in real AL have access to ALL data from all samples, not just only from a small subset of only 20 samples!"
-    #  )
-    #  print("Y_pred:\t\t", _evaluate_top_k(Y_test, Y_pred))
-    #  print("Y_pred_random:\t", _evaluate_top_k(Y_test, Y_pred_random))
-    #  print("Y_pred_probas:\t", _evaluate_top_k(Y_test, Y_pred_random_probas))
-    #  print("Y_pred_unc_lc:\t", _evaluate_top_k(Y_test, Y_pred_uncertainty_lc))
-    #  print("Y_pred_unc_mm:\t", _evaluate_top_k(Y_test, Y_pred_uncertainty_mm))
-    #  print("Y_pred_unc_ent:\t", _evaluate_top_k(Y_test, Y_pred_uncertainty_ent))
-
-    #  history = fitted_model.history_
-    #  print(history.history)
-    #
-    #  plt.plot(history.history["loss"])
-    #  plt.plot(history.history["val_loss"])
-    #  plt.title("Model loss")
-    #  plt.ylabel("Loss")
-    #  plt.xlabel("Epoch")
-    #  plt.legend(["Train", "Test"], loc="upper left")
-    #  plt.show()
-
     if config.SAVE_DESTINATION:
         with open(config.SAVE_DESTINATION, "wb") as handle:
             dill.dump(fitted_model, handle)

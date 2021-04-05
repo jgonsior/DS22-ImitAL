@@ -36,6 +36,7 @@ parser.add_argument("--TRAIN_STATE_PREDICTED_UNITY", action="store_true")
 parser.add_argument("--TRAIN_STATE_DISTANCES_LAB", action="store_true")
 parser.add_argument("--STATE_INCLUDE_NR_FEATURES", action="store_true")
 parser.add_argument("--DISTANCE_METRIC", default="euclidean")
+parser.add_argument("--TOTAL_BUDGET", type=int, default=50)
 
 # FIXME wenn HYBRID -> HYBRID namen so ändern, dass die Werte von oben an den titel angefügt werden
 
@@ -191,7 +192,9 @@ with open(config.SLURM_FILE_PATH + "/ann_training_data.slurm", "w") as f:
             + str(config.INITIAL_BATCH_SAMPLING_ARG)
             + " --OUTPUT_DIRECTORY "
             + config.OUTPUT_DIR
-            + " --TOTAL_BUDGET 50 --NR_LEARNING_SAMPLES "
+            + " --TOTAL_BUDGET "
+            + str(config.TOTAL_BUDGET)
+            + " --NR_LEARNING_SAMPLES "
             + str(config.ITERATIONS_PER_BATCH)
             + " --INITIAL_BATCH_SAMPLING_HYBRID_UNCERT "
             + str(config.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT)
@@ -272,7 +275,9 @@ if config.WITH_EVAL:
                 + str(config.INITIAL_BATCH_SAMPLING_ARG)
                 + " --OUTPUT_DIRECTORY "
                 + config.OUTPUT_DIR
-                + "/ --TOTAL_BUDGET 50 --NR_LEARNING_SAMPLES "
+                + "/ --TOTAL_BUDGET "
+                + str(config.TOTAL_BUDGET)
+                + " --NR_LEARNING_SAMPLES "
                 + str(config.ITERATIONS_PER_BATCH)
                 + " --INITIAL_BATCH_SAMPLING_HYBRID_UNCERT "
                 + str(config.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT)
@@ -305,7 +310,9 @@ if config.WITH_CLASSICS:
                 ITERATIONS_PER_BATCH=config.ITERATIONS_PER_BATCH,
                 CLI_ARGS="--OUTPUT_DIRECTORY "
                 + config.OUTPUT_DIR
-                + "/ --TOTAL_BUDGET 50 --NR_LEARNING_SAMPLES "
+                + "/ --TOTAL_BUDGET "
+                + str(config.TOTAL_BUDGET)
+                + " --NR_LEARNING_SAMPLES "
                 + str(config.ITERATIONS_PER_BATCH)
                 + " --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --TEST_RANDOM_ID_OFFSET $i",
             )
@@ -324,7 +331,9 @@ if config.WITH_PLOTS:
                 TEST_NR_LEARNING_SAMPLES=config.TEST_NR_LEARNING_SAMPLES,
                 CLI_ARGS="--OUTPUT_DIRECTORY "
                 + config.OUTPUT_DIR
-                + " --TOTAL_BUDGET 50 --NR_LEARNING_SAMPLES "
+                + " --TOTAL_BUDGET "
+                + str(config.TOTAL_BUDGET)
+                + " --NR_LEARNING_SAMPLES "
                 + str(config.TEST_NR_LEARNING_SAMPLES)
                 + " --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --BASE_PARAM_STRING batch_"
                 + config.TITLE
