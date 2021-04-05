@@ -14,7 +14,7 @@ parser.add_argument("--ITERATIONS_PER_BATCH", default=10, type=int)
 parser.add_argument("--SLURM_FILE_PATH", default="slurms2")
 parser.add_argument("--HPC_WS_DIR", default="/lustre/ssd/ws/s5968580-IL_TD2")
 parser.add_argument(
-    "--DATASET_DIR", default="/lustre/ssd/ws/s5968580-IL_TD2/single_vs_batch"
+    "--OUTPUT_DIR", default="/lustre/ssd/ws/s5968580-IL_TD2/single_vs_batch"
 )
 parser.add_argument("--WITH_HYPER_SEARCH", action="store_true")
 parser.add_argument("--WITH_CLASSICS", action="store_true")
@@ -190,7 +190,7 @@ with open(config.SLURM_FILE_PATH + "/ann_training_data.slurm", "w") as f:
             + " --INITIAL_BATCH_SAMPLING_ARG "
             + str(config.INITIAL_BATCH_SAMPLING_ARG)
             + " --OUTPUT_DIRECTORY "
-            + config.DATASET_DIR
+            + config.OUTPUT_DIR
             + " --TOTAL_BUDGET 50 --NR_LEARNING_SAMPLES "
             + str(config.ITERATIONS_PER_BATCH)
             + " --INITIAL_BATCH_SAMPLING_HYBRID_UNCERT "
@@ -219,7 +219,7 @@ if config.WITH_HYPER_SEARCH:
                 THREADS=24,
                 MEMORY=5250,
                 CLI_ARGS="--DATA_PATH "
-                + config.DATASET_DIR
+                + config.OUTPUT_DIR
                 + "/batch_"
                 + config.TITLE
                 + " --STATE_ENCODING listwise --TARGET_ENCODING binary --HYPER_SEARCH --N_ITER 100 ",
@@ -241,7 +241,7 @@ with open(config.SLURM_FILE_PATH + "/train_ann.slurm", "w") as f:
             THREADS=8,
             MEMORY=5250,
             CLI_ARGS="--OUTPUT_DIRECTORY "
-            + config.DATASET_DIR
+            + config.OUTPUT_DIR
             + "/ --BASE_PARAM_STRING batch_"
             + config.TITLE
             + hypered_appendix,
@@ -271,7 +271,7 @@ if config.WITH_EVAL:
                 + " --INITIAL_BATCH_SAMPLING_ARG "
                 + str(config.INITIAL_BATCH_SAMPLING_ARG)
                 + " --OUTPUT_DIRECTORY "
-                + config.DATASET_DIR
+                + config.OUTPUT_DIR
                 + "/ --TOTAL_BUDGET 50 --NR_LEARNING_SAMPLES "
                 + str(config.ITERATIONS_PER_BATCH)
                 + " --INITIAL_BATCH_SAMPLING_HYBRID_UNCERT "
@@ -304,7 +304,7 @@ if config.WITH_CLASSICS:
                 OFFSET=100000,
                 ITERATIONS_PER_BATCH=config.ITERATIONS_PER_BATCH,
                 CLI_ARGS="--OUTPUT_DIRECTORY "
-                + config.DATASET_DIR
+                + config.OUTPUT_DIR
                 + "/ --TOTAL_BUDGET 50 --NR_LEARNING_SAMPLES "
                 + str(config.ITERATIONS_PER_BATCH)
                 + " --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --TEST_RANDOM_ID_OFFSET $i",
@@ -323,13 +323,13 @@ if config.WITH_PLOTS:
                 MEMORY=5250,
                 TEST_NR_LEARNING_SAMPLES=config.TEST_NR_LEARNING_SAMPLES,
                 CLI_ARGS="--OUTPUT_DIRECTORY "
-                + config.DATASET_DIR
+                + config.OUTPUT_DIR
                 + " --TOTAL_BUDGET 50 --NR_LEARNING_SAMPLES "
                 + str(config.TEST_NR_LEARNING_SAMPLES)
                 + " --TEST_COMPARISONS random uncertainty_max_margin uncertainty_lc uncertainty_entropy --BASE_PARAM_STRING batch_"
                 + config.TITLE
                 + " --FINAL_PICTURE "
-                + config.DATASET_DIR
+                + config.OUTPUT_DIR
                 + "/plots_batch_"
                 + config.TITLE
                 + "/ --PLOT_METRIC acc_auc",

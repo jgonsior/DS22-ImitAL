@@ -183,11 +183,20 @@ ws_list: List[BaseWeakSupervision] = [
 
 data_storage.set_weak_supervisions(ws_list, MajorityVoteLabelMergeStrategy())
 
+# FIXME dem ImitationLearner werden die state configs nie weitergereicht?
 if config.BATCH_MODE:
     samplingStrategy: ImitationLearner = TrainImitALBatch(
         PRE_SAMPLING_METHOD=config.PRE_SAMPLING_METHOD,
         PRE_SAMPLING_ARG=config.PRE_SAMPLING_ARG,
         AMOUNT_OF_PEAKED_OBJECTS=config.AMOUNT_OF_PEAKED_OBJECTS,
+        # fixme later (depending if BATCH_MODE is still being pursued in future) -> these are not the BATCH state args
+        STATE_ARGSECOND_PROBAS=config.STATE_ARGSECOND_PROBAS,
+        STATE_ARGTHIRD_PROBAS=config.STATE_ARGTHIRD_PROBAS,
+        STATE_DIFF_PROBAS=config.STATE_DIFF_PROBAS,
+        STATE_PREDICTED_CLASS=config.STATE_PREDICTED_CLASS,
+        STATE_DISTANCES_LAB=config.STATE_DISTANCES_LAB,
+        STATE_DISTANCES_UNLAB=config.STATE_DISTANCES_UNLAB,
+        STATE_INCLUDE_NR_FEATURES=config.STATE_INCLUDE_NR_FEATURES,
     )
 else:
 
@@ -195,6 +204,13 @@ else:
         PRE_SAMPLING_METHOD=config.PRE_SAMPLING_METHOD,
         PRE_SAMPLING_ARG=config.PRE_SAMPLING_ARG,
         AMOUNT_OF_PEAKED_OBJECTS=config.AMOUNT_OF_PEAKED_OBJECTS,
+        STATE_ARGSECOND_PROBAS=config.STATE_ARGSECOND_PROBAS,
+        STATE_ARGTHIRD_PROBAS=config.STATE_ARGTHIRD_PROBAS,
+        STATE_DIFF_PROBAS=config.STATE_DIFF_PROBAS,
+        STATE_PREDICTED_CLASS=config.STATE_PREDICTED_CLASS,
+        STATE_DISTANCES_LAB=config.STATE_DISTANCES_LAB,
+        STATE_DISTANCES_UNLAB=config.STATE_DISTANCES_UNLAB,
+        STATE_INCLUDE_NR_FEATURES=config.STATE_INCLUDE_NR_FEATURES,
     )
 callbacks = {
     "acc_test": MetricCallback(test_acc_metric),
