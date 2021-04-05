@@ -1,26 +1,7 @@
 import argparse
-import csv
-import math
-import multiprocessing
 import os
-import random
 import sys
-from timeit import default_timer as timer
-from operator import itemgetter
-import dill
-import numpy as np
 import pandas as pd
-from joblib import Parallel, delayed
-from sklearn.datasets import make_classification
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import pairwise_distances
-from sklearn.neural_network import MLPClassifier
-from sklearn.preprocessing import MinMaxScaler, RobustScaler
-
-from alipy.data_manipulate.al_split import split
-from alipy.experiment.al_experiment import AlExperiment
-from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import roc_auc_score
 import itertools
 
 parser = argparse.ArgumentParser()
@@ -69,7 +50,7 @@ else:
     strategy_ids_which_should_be_in_evaluation.add(15)  # single_10
     #  strategy_ids_which_should_be_in_evaluation = set([16, 17, 18, 19, 20, 21])
     #  strategy_ids_which_should_be_in_evaluation = set([4, 15, 23])
-    strategy_ids_which_should_be_in_evaluation = set([34,35])
+    strategy_ids_which_should_be_in_evaluation = set([34, 35])
 
 missing_ids = []
 

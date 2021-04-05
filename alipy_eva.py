@@ -345,18 +345,26 @@ class ANNQuerySingle:
         if TRUE_DISTANCES:
             if STATE_DISTANCES_LAB:
                 # calculate average distance to labeled and average distance to unlabeled samples
-                average_distance_labeled = np.sum(
-                    self._pairwise_distances_subsampling(labeled_index, X_query),
-                    axis=0,
-                ) / len(labeled_index)
+                average_distance_labeled = (
+                    np.sum(
+                        self._pairwise_distances_subsampling(labeled_index, X_query),
+                        axis=0,
+                    )
+                    / len(labeled_index)
+                )
                 state_list += average_distance_labeled.tolist()
 
             if STATE_DISTANCES_UNLAB:
                 # calculate average distance to labeled and average distance to unlabeled samples
-                average_distance_unlabeled = np.sum(
-                    self._pairwise_distances_subsampling(train_unlabeled_X, X_query),
-                    axis=0,
-                ) / len(train_unlabeled_X)
+                average_distance_unlabeled = (
+                    np.sum(
+                        self._pairwise_distances_subsampling(
+                            train_unlabeled_X, X_query
+                        ),
+                        axis=0,
+                    )
+                    / len(train_unlabeled_X)
+                )
                 state_list += average_distance_unlabeled.tolist()
         else:
             state_list += np.zeros(len(X_query) * 2).tolist()
@@ -428,7 +436,7 @@ class ANNQueryBatch(ANNQuerySingle):
     STATE_DISTANCES_LAB = False
     STATE_PREDICTED_UNITY = False
     NR_QUERIES_PER_ITERATION = BATCH_SIZE
-    #INITIAL_BATCH_SAMPLING_ARG = 750
+    # INITIAL_BATCH_SAMPLING_ARG = 750
     #  INITIAL_BATCH_SAMPLING_METHOD = "hybrid"
     #  INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST = 0.4
     INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB = 0
@@ -441,8 +449,12 @@ class ANNQueryBatch(ANNQuerySingle):
         self.DISTANCE_METRIC = kwargs["DISTANCE_METRIC"]
         self.STATE_INCLUDE_NR_FEATURES = kwargs["STATE_INCLUDE_NR_FEATURES"]
         self.INITIAL_BATCH_SAMPLING_ARG = kwargs["INITIAL_BATCH_SAMPLING_ARG"]
-        self.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT = kwargs["INITIAL_BATCH_SAMPLING_HYBRID_UNCERT"]
-        self.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST = kwargs["INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST"]
+        self.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT = kwargs[
+            "INITIAL_BATCH_SAMPLING_HYBRID_UNCERT"
+        ]
+        self.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST = kwargs[
+            "INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST"
+        ]
         self.INITIAL_BATCH_SAMPLING_METHOD = kwargs["INITIAL_BATCH_SAMPLING_METHOD"]
 
     def _calculate_furthest_metric(self, batch_indices):
@@ -712,7 +724,7 @@ class ANNQueryBatch(ANNQuerySingle):
                     )
                 ]
                 index_batches = set(index_batches)
-                
+
                 # add some random batches as padding
                 index_batches = [np.array(list(i)) for i in index_batches] + [
                     np.array(i)
@@ -788,19 +800,18 @@ query_strategies = {
     #          "TRUE_DISTANCES": False,
     #      },
     #  ),
-   35: (
+    35: (
         ANNQueryBatch,
         {
             "NN_BINARY_PATH": config.OUTPUT_PATH + "/batch.pickle",
             "DISTANCE_METRIC": "cosine",
             "STATE_INCLUDE_NR_FEATURES": False,
             "INITIAL_BATCH_SAMPLING_ARG": 1,
-            "INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST" : 0,
-            "INITIAL_BATCH_SAMPLING_HYBRID_UNCERT" : 0,
+            "INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST": 0,
+            "INITIAL_BATCH_SAMPLING_HYBRID_UNCERT": 0,
             "INITIAL_BATCH_SAMPLING_METHOD": "random",
         },
     ),
-  
     34: (
         ANNQueryBatch,
         {
@@ -808,14 +819,12 @@ query_strategies = {
             "DISTANCE_METRIC": "euclidean",
             "STATE_INCLUDE_NR_FEATURES": False,
             "INITIAL_BATCH_SAMPLING_ARG": 1,
-            "INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST" : 0,
-            "INITIAL_BATCH_SAMPLING_HYBRID_UNCERT" : 0,
+            "INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST": 0,
+            "INITIAL_BATCH_SAMPLING_HYBRID_UNCERT": 0,
             "INITIAL_BATCH_SAMPLING_METHOD": "random",
         },
     ),
-  
-
-   32: (
+    32: (
         ANNQuerySingle,
         {
             "NN_BINARY_PATH": config.OUTPUT_PATH + "/single_10.pickle",
@@ -825,7 +834,7 @@ query_strategies = {
             "STATE_INCLUDE_NR_FEATURES": False,
         },
     ),
-  33: (
+    33: (
         ANNQuerySingle,
         {
             "NN_BINARY_PATH": config.OUTPUT_PATH + "/single_10.pickle",
@@ -835,8 +844,6 @@ query_strategies = {
             "STATE_INCLUDE_NR_FEATURES": False,
         },
     ),
-  
-
     24: (
         ANNQuerySingle,
         {
@@ -960,7 +967,10 @@ query_strategies = {
             "STATE_INCLUDE_NR_FEATURES": False,
         },
     ),
-    1: (Uncertainty, {},),
+    1: (
+        Uncertainty,
+        {},
+    ),
     2: ("QueryInstanceQBC", {}),
     3: ("QueryInstanceUncertainty", {"measure": "least_confident"}),
     4: ("QueryInstanceUncertainty", {"measure": "margin"}),
