@@ -14,7 +14,7 @@ OUTPUT_FILE = PARENT_OUTPUT_DIRECTORY + base_param_string
 run_parallel_experiment(
     "Creating dataset",
     OUTPUT_FILE=PARENT_OUTPUT_DIRECTORY + base_param_string + "/dataset_creation.csv",
-    CLI_COMMAND="python imit_training.py",
+    CLI_COMMAND="python synthetic_datasets_imitation_training.py",
     CLI_ARGUMENTS={
         "DATASETS_PATH": "../datasets",
         "CLASSIFIER": config.CLASSIFIER,

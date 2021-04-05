@@ -7,19 +7,19 @@ import sys
 from jinja2 import Template
 
 """
-1. ann_training_data.py creates synthetic training data
-(optional: 2. train_lstm.py hyper search)
-3. train_ann.py trains ann using default hyperparams or the ones from step 2
+1. 01_create_synthetic_training_data.py creates synthetic training data
+(optional: 2. 02_hyper_search_or_train_imital.py hyper search)
+3. 03_train_imital.py trains ann using default hyperparams or the ones from step 2
 
-variant a: (old variant)
+variant a: (old variant - deprecated (code is in archived))
 4. classics.py  random + uncertainty baselines data
 5. ann_eval_data.py eva data for the from step 3 trained ANN
 6. plots.py creates some basic plots using the data from 4. and 5.
 
 variant b: (new ALiPy variant)
-4. alipy_init_seeds.py creaets a CSV containing all the needed data for step 5
-5. alipy_eva.py actually is intended to run in a batch mode wit the provided data and csv file from step 4
-6. sync_and_run_experiment.sh -> updates taurus, starts experiment there --> only those, where the data is not present yet! should be able to detect if we are already at step 4 and that only some data has to be run again etc.
+4. 04_alipy_init_seeds.py creaets a CSV containing all the needed data for step 5
+5. 05_alipy_eva.py actually is intended to run in a batch mode wit the provided data and csv file from step 4
+6. 06_sync_and_run_experiment.sh -> updates taurus, starts experiment there --> only those, where the data is not present yet! should be able to detect if we are already at step 4 and that only some data has to be run again etc.
 """
 
 
@@ -167,12 +167,12 @@ else:
 
 submit_jobs = Template(
     """#!/bin/bash
-ann_training_data_id=$(sbatch --parsable {{HPC_WS_DIR}}/imitating-weakal/{{SLURM_FILE_PATH}}/ann_training_data.slurm)
-{%if WITH_HYPER_SEARCH %}hyper_search_id=$(sbatch --parsable --dependency=afterok:$ann_training_data_id {{HPC_WS_DIR}}/imitating-weakal/{{SLURM_FILE_PATH}}/hyper_search.slurm){% endif %}
-train_ann_id=$(sbatch --parsable --dependency=afterok:$ann_training_data_id{%if WITH_HYPER_SEARCH %}:$hyper_search_id{% endif %} {{HPC_WS_DIR}}/imitating-weakal/{{SLURM_FILE_PATH}}/train_ann.slurm)
-{%if WITH_TUD_EVAL %}create_ann_eval_id=$(sbatch --parsable --dependency=afterok:$ann_training_data_id:$train_ann_id{%if WITH_HYPER_SEARCH %}:$hyper_search_id{% endif %} {{HPC_WS_DIR}}/imitating-weakal//{{SLURM_FILE_PATH}}/ann_eval_data.slurm){% endif %}
+01_create_synthetic_training_data_id=$(sbatch --parsable {{HPC_WS_DIR}}/imitating-weakal/{{SLURM_FILE_PATH}}/01_create_synthetic_training_data.slurm)
+{%if WITH_HYPER_SEARCH %}hyper_search_id=$(sbatch --parsable --dependency=afterok:$01_create_synthetic_training_data_id {{HPC_WS_DIR}}/imitating-weakal/{{SLURM_FILE_PATH}}/hyper_search.slurm){% endif %}
+03_train_imital_id=$(sbatch --parsable --dependency=afterok:$01_create_synthetic_training_data_id{%if WITH_HYPER_SEARCH %}:$hyper_search_id{% endif %} {{HPC_WS_DIR}}/imitating-weakal/{{SLURM_FILE_PATH}}/03_train_imital.slurm)
+{%if WITH_TUD_EVAL %}create_ann_eval_id=$(sbatch --parsable --dependency=afterok:$01_create_synthetic_training_data_id:$03_train_imital_id{%if WITH_HYPER_SEARCH %}:$hyper_search_id{% endif %} {{HPC_WS_DIR}}/imitating-weakal//{{SLURM_FILE_PATH}}/ann_eval_data.slurm){% endif %}
 {%if WITH_CLASSICS %}classics_id=$(sbatch --parsable {{HPC_WS_DIR}}/imitating-weakal//{{SLURM_FILE_PATH}}/classics.slurm){% endif %}
-{%if WITH_PLOTS %}plots_id=$(sbatch --parsable --dependency=afterok:$ann_training_data_id{%if WITH_TUD_EVAL %}:$create_ann_eval_id{% endif %}{%if WITH_CLASSICS %}:$classics_id{% endif %} {{HPC_WS_DIR}}/imitating-weakal//{{SLURM_FILE_PATH}}/plots.slurm){% endif %}
+{%if WITH_PLOTS %}plots_id=$(sbatch --parsable --dependency=afterok:$01_create_synthetic_training_data_id{%if WITH_TUD_EVAL %}:$create_ann_eval_id{% endif %}{%if WITH_CLASSICS %}:$classics_id{% endif %} {{HPC_WS_DIR}}/imitating-weakal//{{SLURM_FILE_PATH}}/plots.slurm){% endif %}
 exit 0
 """
 )
@@ -187,14 +187,16 @@ sync_to_taurus = Template(
 if not os.path.exists(config.SLURM_FILE_PATH):
     os.makedirs(config.SLURM_FILE_PATH)
 
-with open(config.SLURM_FILE_PATH + "/ann_training_data.slurm", "w") as f:
+with open(
+    config.SLURM_FILE_PATH + "/01_create_synthetic_training_data.slurm", "w"
+) as f:
     START = 0
     END = int(config.TRAIN_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
     f.write(
         slurm_common.render(
             HPC_WS_DIR=config.HPC_WS_DIR,
             TITLE=config.TITLE,
-            PYTHON_FILE="ann_training_data",
+            PYTHON_FILE="01_create_synthetic_training_data",
             array=True,
             START=START,
             END=END,
@@ -235,7 +237,7 @@ if config.WITH_HYPER_SEARCH:
             slurm_common.render(
                 HPC_WS_DIR=config.HPC_WS_DIR,
                 TITLE=config.TITLE,
-                PYTHON_FILE="train_lstm",
+                PYTHON_FILE="02_hyper_search_or_train_imital",
                 array=False,
                 THREADS=24,
                 MEMORY=5250,
@@ -248,7 +250,7 @@ if config.WITH_HYPER_SEARCH:
         )
 
 
-with open(config.SLURM_FILE_PATH + "/train_ann.slurm", "w") as f:
+with open(config.SLURM_FILE_PATH + "/03_train_imital.slurm", "w") as f:
     if config.WITH_HYPER_SEARCH:
         hypered_appendix = " --HYPER_SEARCHED"
     else:
@@ -257,7 +259,7 @@ with open(config.SLURM_FILE_PATH + "/train_ann.slurm", "w") as f:
         slurm_common.render(
             HPC_WS_DIR=config.HPC_WS_DIR,
             TITLE=config.TITLE,
-            PYTHON_FILE="train_ann",
+            PYTHON_FILE="03_train_imital",
             array=False,
             THREADS=8,
             MEMORY=5250,
@@ -270,7 +272,7 @@ with open(config.SLURM_FILE_PATH + "/train_ann.slurm", "w") as f:
     )
 
 if config.WITH_ALIPY:
-    with open(config.SLURM_FILE_PATH + "/ann_eval_data.slurm", "w") as f:
+    with open(config.SLURM_FILE_PATH + "/alipy_init_seeds.slurm", "w") as f:
         START = 0
         END = int(config.TEST_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
         f.write(
@@ -423,9 +425,9 @@ else:
     # open all fake slurms and concat them into a single bash file
     submit_content = "#!/bin/bash\n"
     sort_order = {
-        "ann_training_data.slurm": 0,
+        "01_create_synthetic_training_data.slurm": 0,
         "hyper_search.slurm": 1,
-        "train_ann.slurm": 2,
+        "03_train_imital.slurm": 2,
         "ann_eval_data.slurm": 3,
         "classics.slurm": 4,
         "plots.slurm": 5,

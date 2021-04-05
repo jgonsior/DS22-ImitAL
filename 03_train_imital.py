@@ -53,7 +53,7 @@ else:
 run_python_experiment(
     "Train ANN",
     PARENT_OUTPUT_DIRECTORY + base_param_string + "/trained_ann.pickle",
-    CLI_COMMAND="python train_lstm.py",
+    CLI_COMMAND="python 02_hyper_search_or_train_imital.py",
     CLI_ARGUMENTS={
         "DATA_PATH": config.OUTPUT_DIRECTORY + base_param_string,
         "STATE_ENCODING": "listwise",
