@@ -352,6 +352,11 @@ with open(
 ) as f:
     f.write(
         """
+    # 6. 06_sync_and_run_experiment.sh
+    # check if data can be downloaded from taurus
+    # updates taurus
+    # start experiment there
+-> 06 downloaded zuerst von taurus die neuen results (backup von den alten vorher),  startet dann schritt 4, und pushed das zeugs dann hoch (rsync)!
 
     """
     )
