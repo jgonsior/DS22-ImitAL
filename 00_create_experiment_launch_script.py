@@ -20,6 +20,7 @@ variant b: (new ALiPy variant)
 4. 04_alipy_init_seeds.py creaets a CSV containing all the needed data for step 5
 5. 05_alipy_eva.py actually is intended to run in a batch mode wit the provided data and csv file from step 4
 6. 06_sync_and_run_experiment.sh -> updates taurus, starts experiment there --> only those, where the data is not present yet! should be able to detect if we are already at step 4 and that only some data has to be run again etc.
+-> 06 downloaded zuerst von taurus die neuen results (backup von den alten vorher),  startet dann schritt 4, und pushed das zeugs dann hoch (rsync)!
 """
 
 
@@ -38,7 +39,6 @@ parser.add_argument("--WITH_CLASSICS", action="store_true")
 parser.add_argument("--WITH_PLOTS", action="store_true")
 parser.add_argument("--WITH_TUD_EVAL", action="store_true")
 parser.add_argument("--WITH_ALIPY", action="store_true")
-parser.add_argument("--SLURM", action="store_true")
 parser.add_argument("--INITIAL_BATCH_SAMPLING_ARG", type=int, default=200)
 parser.add_argument("--INITIAL_BATCH_SAMPLING_HYBRID_UNCERT", type=float, default=0.2)
 parser.add_argument("--INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST", type=float, default=0.2)
@@ -55,6 +55,8 @@ parser.add_argument("--TRAIN_STATE_DISTANCES_LAB", action="store_true")
 parser.add_argument("--STATE_INCLUDE_NR_FEATURES", action="store_true")
 parser.add_argument("--DISTANCE_METRIC", default="euclidean")
 parser.add_argument("--TOTAL_BUDGET", type=int, default=50)
+parser.add_argument("--EVA_DATASETS", nargs="*", default=["synthetic"])
+
 
 # FIXME wenn HYBRID -> HYBRID namen so ändern, dass die Werte von oben an den titel angefügt werden
 
@@ -138,9 +140,8 @@ if config.STATE_INCLUDE_NR_FEATURES:
 
 config.SLURM_FILE_PATH = config.SLURM_FILE_PATH + "/" + config.TITLE
 
-if config.SLURM:
-    slurm_common = Template(
-        """#!/bin/bash{% if array %}{% set THREADS = 1 %}{% set MEMORY = 2583 %}{% endif %}
+slurm_common_template = Template(
+    """#!/bin/bash{% if array %}{% set THREADS = 1 %}{% set MEMORY = 2583 %}{% endif %}
 #SBATCH --time=23:59:59   # walltime
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -161,13 +162,10 @@ export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
 
 MPLCONFIGDIR={{HPC_WS_DIR}}/cache python3 -m pipenv run python {{HPC_WS_DIR}}/imitating-weakal/{{PYTHON_FILE}}.py {{ CLI_ARGS }}
 exit 0
-    """
-    )
-else:
-    config.SLURM_FILE_PATH = "_start_experiment_locally"
-    os.makedirs(config.SLURM_FILE_PATH, exist_ok=True)
-    slurm_common = Template("{{PYTHON_FILE}}.py {{ CLI_ARGS }}")
+"""
+)
 
+bash_mode_common_template = Template("{{PYTHON_FILE}}.py {{ CLI_ARGS }}")
 
 submit_jobs = Template(
     """#!/bin/bash
@@ -188,168 +186,166 @@ sync_to_taurus = Template(
 )
 
 
+def write_slurm_and_bash_file(OUTPUT_FILE: str, **kwargs):
+    with open(config.SLURM_FILE_PATH + "/" + OUTPUT_FILE + ".slurm", "w") as f:
+        f.write(slurm_common_template.render(**kwargs))
+    with open(config.SLURM_FILE_PATH + "/" + OUTPUT_FILE + ".tmp", "w") as f:
+        f.write(bash_mode_common_template.render(**kwargs))
+
+
 if not os.path.exists(config.SLURM_FILE_PATH):
     os.makedirs(config.SLURM_FILE_PATH)
 
-with open(
-    config.SLURM_FILE_PATH + "/01_create_synthetic_training_data.slurm", "w"
-) as f:
-    START = 0
-    END = int(config.TRAIN_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
-    f.write(
-        slurm_common.render(
-            HPC_WS_DIR=config.HPC_WS_DIR,
-            TITLE=config.TITLE,
-            PYTHON_FILE="01_create_synthetic_training_data",
-            array=True,
-            START=START,
-            END=END,
-            ITERATIONS_PER_BATCH=config.ITERATIONS_PER_BATCH,
-            OFFSET=0,
-            CLI_ARGS=" "
-            + str(BATCH_MODE)
-            + " --INITIAL_BATCH_SAMPLING_METHOD "
-            + str(INITIAL_BATCH_SAMPLING_METHOD)
-            + " --BASE_PARAM_STRING batch_"
-            + config.TITLE
-            + " --INITIAL_BATCH_SAMPLING_ARG "
-            + str(config.INITIAL_BATCH_SAMPLING_ARG)
-            + " --OUTPUT_DIRECTORY "
-            + config.OUTPUT_DIR
-            + " --TOTAL_BUDGET "
-            + str(config.TOTAL_BUDGET)
-            + " --NR_LEARNING_SAMPLES "
-            + str(config.ITERATIONS_PER_BATCH)
-            + " --INITIAL_BATCH_SAMPLING_HYBRID_UNCERT "
-            + str(config.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT)
-            + " --INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY "
-            + str(config.INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY)
-            + " --INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST "
-            + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST)
-            + " --INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB "
-            + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB)
-            + ADDITIONAL_TRAINING_STATE_ARGS
-            + " --RANDOM_ID_OFFSET $i"
-            + " --DISTANCE_METRIC "
-            + str(config.DISTANCE_METRIC),
-        )
+
+START = 0
+END = int(config.TRAIN_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
+write_slurm_and_bash_file(
+    OUTPUT_FILE="01_create_synthetic_training_data",
+    HPC_WS_DIR=config.HPC_WS_DIR,
+    TITLE=config.TITLE,
+    PYTHON_FILE="01_create_synthetic_training_data",
+    array=True,
+    START=START,
+    END=END,
+    ITERATIONS_PER_BATCH=config.ITERATIONS_PER_BATCH,
+    OFFSET=0,
+    CLI_ARGS=" "
+    + str(BATCH_MODE)
+    + " --INITIAL_BATCH_SAMPLING_METHOD "
+    + str(INITIAL_BATCH_SAMPLING_METHOD)
+    + " --BASE_PARAM_STRING batch_"
+    + config.TITLE
+    + " --INITIAL_BATCH_SAMPLING_ARG "
+    + str(config.INITIAL_BATCH_SAMPLING_ARG)
+    + " --OUTPUT_DIRECTORY "
+    + config.OUTPUT_DIR
+    + " --TOTAL_BUDGET "
+    + str(config.TOTAL_BUDGET)
+    + " --NR_LEARNING_SAMPLES "
+    + str(config.ITERATIONS_PER_BATCH)
+    + " --INITIAL_BATCH_SAMPLING_HYBRID_UNCERT "
+    + str(config.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT)
+    + " --INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY "
+    + str(config.INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY)
+    + " --INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST "
+    + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST)
+    + " --INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB "
+    + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB)
+    + ADDITIONAL_TRAINING_STATE_ARGS
+    + " --RANDOM_ID_OFFSET $i"
+    + " --DISTANCE_METRIC "
+    + str(config.DISTANCE_METRIC),
+)
+
+
+if config.WITH_HYPER_SEARCH:
+    write_slurm_and_bash_file(
+        OUTPUT_FILE="02_hyper_search",
+        HPC_WS_DIR=config.HPC_WS_DIR,
+        TITLE=config.TITLE,
+        PYTHON_FILE="02_hyper_search_or_train_imital",
+        array=False,
+        THREADS=24,
+        MEMORY=5250,
+        CLI_ARGS="--DATA_PATH "
+        + config.OUTPUT_DIR
+        + "/batch_"
+        + config.TITLE
+        + " --STATE_ENCODING listwise --TARGET_ENCODING binary --HYPER_SEARCH --N_ITER 100 ",
     )
 
 if config.WITH_HYPER_SEARCH:
-    with open(config.SLURM_FILE_PATH + "/02_hyper_search.slurm", "w") as f:
-        f.write(
-            slurm_common.render(
-                HPC_WS_DIR=config.HPC_WS_DIR,
-                TITLE=config.TITLE,
-                PYTHON_FILE="02_hyper_search_or_train_imital",
-                array=False,
-                THREADS=24,
-                MEMORY=5250,
-                CLI_ARGS="--DATA_PATH "
-                + config.OUTPUT_DIR
-                + "/batch_"
-                + config.TITLE
-                + " --STATE_ENCODING listwise --TARGET_ENCODING binary --HYPER_SEARCH --N_ITER 100 ",
-            )
-        )
+    hypered_appendix = " --HYPER_SEARCHED"
+else:
+    hypered_appendix = ""
+write_slurm_and_bash_file(
+    OUTPUT_FILE="03_train_imital",
+    HPC_WS_DIR=config.HPC_WS_DIR,
+    TITLE=config.TITLE,
+    PYTHON_FILE="03_train_imital",
+    array=False,
+    THREADS=8,
+    MEMORY=5250,
+    CLI_ARGS="--OUTPUT_DIRECTORY "
+    + config.OUTPUT_DIR
+    + "/ --BASE_PARAM_STRING batch_"
+    + config.TITLE
+    + hypered_appendix,
+)
 
-
-with open(config.SLURM_FILE_PATH + "/03_train_imital.slurm", "w") as f:
-    if config.WITH_HYPER_SEARCH:
-        hypered_appendix = " --HYPER_SEARCHED"
-    else:
-        hypered_appendix = ""
-    f.write(
-        slurm_common.render(
-            HPC_WS_DIR=config.HPC_WS_DIR,
-            TITLE=config.TITLE,
-            PYTHON_FILE="03_train_imital",
-            array=False,
-            THREADS=8,
-            MEMORY=5250,
-            CLI_ARGS="--OUTPUT_DIRECTORY "
-            + config.OUTPUT_DIR
-            + "/ --BASE_PARAM_STRING batch_"
-            + config.TITLE
-            + hypered_appendix,
-        )
-    )
 
 if config.WITH_ALIPY:
-    with open(config.SLURM_FILE_PATH + "/04_alipy_init_seeds.slurm", "w") as f:
+    alipy_init_seeds_template = Template(
+        """#!/bin/bash
+    python ../04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASETS {{ DATASETS }} --AMOUNT_OF_RUNS {{ AMOUNT_OF_EVAL_RUNS }} --NON_SLURM --SLURM_FILE_TO_UPDATE {{ SLURM_FILE_TO_UPDATE }}
+    python ../04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASETS {{ DATASETS }} --AMOUNT_OF_RUNS {{ AMOUNT_OF_EVAL_RUNS }} --SLURM_FILE_TO_UPDATE {{ SLURM_FILE_TO_UPDATE }}
+    """
+    )
+
+    # if this file is run, it automatically updates the ARRAY indices for the alipy slurm job based on the result of this python script
+    with open(config.SLURM_FILE_PATH + "/04_alipy_init_seeds.sh", "w") as f:
         START = 0
         END = int(config.TEST_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
         f.write(
-            slurm_common.render(
+            alipy_init_seeds_template.render(
+                OUTPUT_PATH=config.OUTPUT_DIR,
+                DATASETS=",".join(config.EVA_DATASETS),
+                AMOUNT_OF_RUNS=config.TEST_NR_LEARNING_SAMPLES,
+                SLURM_FILE_TO_UPDATE=config.SLURM_FILE_PATH + "/05_alipy_eva.slurm",
+            )
+        )
+
+    with open(config.SLURM_FILE_PATH + "/05_alipy_eva.slurm", "w") as f:
+        START = 0
+        END = int(config.TEST_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
+        f.write(
+            slurm_common_template.render(
                 HPC_WS_DIR=config.HPC_WS_DIR,
                 TITLE=config.TITLE,
-                PYTHON_FILE="ann_eval_data",
+                PYTHON_FILE="04_alipy_init_seeds.py",
                 array=True,
                 START=START,
                 END=END,
-                OFFSET=100000,
-                ITERATIONS_PER_BATCH=config.ITERATIONS_PER_BATCH,
+                THREADS=2,
+                MEMORY=2583,
                 CLI_ARGS=" "
-                + BATCH_MODE
-                + " --INITIAL_BATCH_SAMPLING_METHOD "
-                + INITIAL_BATCH_SAMPLING_METHOD
-                + " --BASE_PARAM_STRING batch_"
-                + config.TITLE
-                + " --INITIAL_BATCH_SAMPLING_ARG "
-                + str(config.INITIAL_BATCH_SAMPLING_ARG)
-                + " --OUTPUT_DIRECTORY "
+                + " --OUTPUT_PATH "
                 + config.OUTPUT_DIR
-                + "/ --TOTAL_BUDGET "
-                + str(config.TOTAL_BUDGET)
-                + " --NR_LEARNING_SAMPLES "
-                + str(config.ITERATIONS_PER_BATCH)
-                + " --INITIAL_BATCH_SAMPLING_HYBRID_UNCERT "
-                + str(config.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT)
-                + " --INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY "
-                + str(config.INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY)
-                + " --INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST "
-                + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST)
-                + " --INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB "
-                + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB)
-                + ADDITIONAL_TRAINING_STATE_ARGS
-                + " --RANDOM_ID_OFFSET $i"
-                + " --DISTANCE_METRIC "
-                + str(config.DISTANCE_METRIC),
+                + "/ --INDEX $SLURM_ARRAY_TASK_ID",
             )
         )
 
 
-if config.SLURM:
-    with open(config.SLURM_FILE_PATH + "/submit_jobs.sh", "w") as f:
-        f.write(
-            submit_jobs.render(
-                HPC_WS_DIR=config.HPC_WS_DIR,
-                SLURM_FILE_PATH=config.SLURM_FILE_PATH,
-                TITLE=config.TITLE,
-                WITH_HYPER_SEARCH=config.WITH_HYPER_SEARCH,
-                WITH_ALIPY=config.WITH_ALIPY,
-            )
+with open(config.SLURM_FILE_PATH + "/submit_slurm_jobs.sh", "w") as f:
+    f.write(
+        submit_jobs.render(
+            HPC_WS_DIR=config.HPC_WS_DIR,
+            SLURM_FILE_PATH=config.SLURM_FILE_PATH,
+            TITLE=config.TITLE,
+            WITH_HYPER_SEARCH=config.WITH_HYPER_SEARCH,
+            WITH_ALIPY=config.WITH_ALIPY,
         )
-else:
-    # open all fake slurms and concat them into a single bash file
-    submit_content = "#!/bin/bash\n"
-    sort_order = {
-        "01_create_synthetic_training_data.slurm": 0,
-        "02_hyper_search.slurm": 1,
-        "03_train_imital.slurm": 2,
-        "04_alipy_init_seeds.slurm": 3,
-        "05_alipy_eva.py": 4,
-    }
-    for csv_file in sorted(
-        list(glob.glob(str(config.SLURM_FILE_PATH) + "/*.slurm")),
-        key=lambda v: sort_order[v.split("/")[-1]],
-    ):
-        with open(csv_file, "r") as f:
-            content = f.read()
-            content = content.replace("$i", "0")
-            submit_content += "python " + content + "\n"
-        os.remove(csv_file)
-    with open(config.SLURM_FILE_PATH + "/submit_jobs.sh", "w") as f:
-        f.write(submit_content)
-st = os.stat(config.SLURM_FILE_PATH + "/submit_jobs.sh")
-os.chmod(config.SLURM_FILE_PATH + "/submit_jobs.sh", st.st_mode | stat.S_IEXEC)
+    )
+
+# open all fake slurms and concat them into a single bash file
+submit_content = "#!/bin/bash\n"
+sort_order = {
+    "01_create_synthetic_training_data.tmp": 0,
+    "02_hyper_search.tmp": 1,
+    "03_train_imital.tmp": 2,
+    "04_alipy_init_seeds.tmp": 3,
+    "05_alipy_eva.tmp": 4,
+}
+for tmp_file in sorted(
+    list(glob.glob(str(config.SLURM_FILE_PATH) + "/*.tmp")),
+    key=lambda v: sort_order[v.split("/")[-1]],
+):
+    with open(tmp_file, "r") as f:
+        content = f.read()
+        content = content.replace("$i", "0")
+        submit_content += "python " + content + "\n"
+    os.remove(tmp_file)
+with open(config.SLURM_FILE_PATH + "/submit_bash_jobs.sh", "w") as f:
+    f.write(submit_content)
+st = os.stat(config.SLURM_FILE_PATH + "/submit_bash_jobs.sh")
+os.chmod(config.SLURM_FILE_PATH + "/submit_bash_jobs.sh", st.st_mode | stat.S_IEXEC)
