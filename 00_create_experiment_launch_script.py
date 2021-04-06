@@ -10,13 +10,6 @@ from jinja2 import Template
 1. 01_create_synthetic_training_data.py creates synthetic training data
 (optional: 2. 02_hyper_search_or_train_imital.py hyper search)
 3. 03_train_imital.py trains ann using default hyperparams or the ones from step 2
-
-variant a: (old variant - deprecated (code is in archived))
-4. classics.py  random + uncertainty baselines data
-5. ann_eval_data.py eva data for the from step 3 trained ANN
-6. plots.py creates some basic plots using the data from 4. and 5.
-
-variant b: (new ALiPy variant)
 4. 04_alipy_init_seeds.py creaets a CSV containing all the needed data for step 5
 5. 05_alipy_eva.py actually is intended to run in a batch mode wit the provided data and csv file from step 4
 6. 06_sync_and_run_experiment.sh -> updates taurus, starts experiment there --> only those, where the data is not present yet! should be able to detect if we are already at step 4 and that only some data has to be run again etc.
@@ -29,7 +22,7 @@ parser.add_argument("--TITLE")
 parser.add_argument("--TEST_NR_LEARNING_SAMPLES", default=1000, type=int)
 parser.add_argument("--TRAIN_NR_LEARNING_SAMPLES", default=1000, type=int)
 parser.add_argument("--ITERATIONS_PER_BATCH", default=10, type=int)
-parser.add_argument("--SLURM_FILE_PATH", default="_experiment_slurm_files")
+parser.add_argument("--EXPERIMENT_LAUNCH_SCRIPTS", default="_experiment_launch_scripts")
 parser.add_argument("--HPC_WS_DIR", default="/lustre/ssd/ws/s5968580-IL_TD2")
 parser.add_argument(
     "--OUTPUT_DIR", default="/lustre/ssd/ws/s5968580-IL_TD2/single_vs_batch"
@@ -138,7 +131,7 @@ if config.DISTANCE_METRIC == "cosine":
 if config.STATE_INCLUDE_NR_FEATURES:
     config.TITLE += "_nrf"
 
-config.SLURM_FILE_PATH = config.SLURM_FILE_PATH + "/" + config.TITLE
+config.EXPERIMENT_LAUNCH_SCRIPTS = config.EXPERIMENT_LAUNCH_SCRIPTS + "/" + config.TITLE
 
 slurm_common_template = Template(
     """#!/bin/bash{% if array %}{% set THREADS = 1 %}{% set MEMORY = 2583 %}{% endif %}
@@ -169,12 +162,10 @@ bash_mode_common_template = Template("{{PYTHON_FILE}}.py {{ CLI_ARGS }}")
 
 submit_jobs = Template(
     """#!/bin/bash
-01_create_synthetic_training_data_id=$(sbatch --parsable {{HPC_WS_DIR}}/imitating-weakal/{{SLURM_FILE_PATH}}/01_create_synthetic_training_data.slurm)
-{%if WITH_HYPER_SEARCH %}hyper_search_id=$(sbatch --parsable --dependency=afterok:$01_create_synthetic_training_data_id {{HPC_WS_DIR}}/imitating-weakal/{{SLURM_FILE_PATH}}/02_hyper_search.slurm){% endif %}
-03_train_imital_id=$(sbatch --parsable --dependency=afterok:$01_create_synthetic_training_data_id{%if WITH_HYPER_SEARCH %}:$hyper_search_id{% endif %} {{HPC_WS_DIR}}/imitating-weakal/{{SLURM_FILE_PATH}}/03_train_imital.slurm)
-{%if WITH_TUD_EVAL %}create_ann_eval_id=$(sbatch --parsable --dependency=afterok:$01_create_synthetic_training_data_id:$03_train_imital_id{%if WITH_HYPER_SEARCH %}:$hyper_search_id{% endif %} {{HPC_WS_DIR}}/imitating-weakal//{{SLURM_FILE_PATH}}/ann_eval_data.slurm){% endif %}
-{%if WITH_CLASSICS %}classics_id=$(sbatch --parsable {{HPC_WS_DIR}}/imitating-weakal//{{SLURM_FILE_PATH}}/classics.slurm){% endif %}
-{%if WITH_PLOTS %}plots_id=$(sbatch --parsable --dependency=afterok:$01_create_synthetic_training_data_id{%if WITH_TUD_EVAL %}:$create_ann_eval_id{% endif %}{%if WITH_CLASSICS %}:$classics_id{% endif %} {{HPC_WS_DIR}}/imitating-weakal//{{SLURM_FILE_PATH}}/plots.slurm){% endif %}
+01_create_synthetic_training_data_id=$(sbatch --parsable {{HPC_WS_DIR}}/imitating-weakal/{{EXPERIMENT_LAUNCH_SCRIPTS}}/01_create_synthetic_training_data.slurm)
+{%if WITH_HYPER_SEARCH %}02_hyper_search_id=$(sbatch --parsable --dependency=afterok:$01_create_synthetic_training_data_id {{HPC_WS_DIR}}/imitating-weakal/{{EXPERIMENT_LAUNCH_SCRIPTS}}/02_hyper_search.slurm){% endif %}
+03_train_imital_id=$(sbatch --parsable --dependency=afterok:$01_create_synthetic_training_data_id{%if WITH_HYPER_SEARCH %}:$02_hyper_search_id{% endif %} {{HPC_WS_DIR}}/imitating-weakal/{{EXPERIMENT_LAUNCH_SCRIPTS}}/03_train_imital.slurm)
+05_alipy_eva=$(sbatch --parsable --dependency=afterok:$01_create_synthetic_training_data_id:$03_train_imital_id{ {{HPC_WS_DIR}}/imitating-weakal/{{EXPERIMENT_LAUNCH_SCRIPTS}}/05_alipy_eva.slurm)
 exit 0
 """
 )
@@ -187,14 +178,16 @@ sync_to_taurus = Template(
 
 
 def write_slurm_and_bash_file(OUTPUT_FILE: str, **kwargs):
-    with open(config.SLURM_FILE_PATH + "/" + OUTPUT_FILE + ".slurm", "w") as f:
+    with open(
+        config.EXPERIMENT_LAUNCH_SCRIPTS + "/" + OUTPUT_FILE + ".slurm", "w"
+    ) as f:
         f.write(slurm_common_template.render(**kwargs))
-    with open(config.SLURM_FILE_PATH + "/" + OUTPUT_FILE + ".tmp", "w") as f:
+    with open(config.EXPERIMENT_LAUNCH_SCRIPTS + "/" + OUTPUT_FILE + ".tmp", "w") as f:
         f.write(bash_mode_common_template.render(**kwargs))
 
 
-if not os.path.exists(config.SLURM_FILE_PATH):
-    os.makedirs(config.SLURM_FILE_PATH)
+if not os.path.exists(config.EXPERIMENT_LAUNCH_SCRIPTS):
+    os.makedirs(config.EXPERIMENT_LAUNCH_SCRIPTS)
 
 
 START = 0
@@ -277,13 +270,14 @@ write_slurm_and_bash_file(
 if config.WITH_ALIPY:
     alipy_init_seeds_template = Template(
         """#!/bin/bash
+        # run locally!
     python ../04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASETS {{ DATASETS }} --AMOUNT_OF_RUNS {{ AMOUNT_OF_EVAL_RUNS }} --NON_SLURM --SLURM_FILE_TO_UPDATE {{ SLURM_FILE_TO_UPDATE }}
     python ../04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASETS {{ DATASETS }} --AMOUNT_OF_RUNS {{ AMOUNT_OF_EVAL_RUNS }} --SLURM_FILE_TO_UPDATE {{ SLURM_FILE_TO_UPDATE }}
     """
     )
 
     # if this file is run, it automatically updates the ARRAY indices for the alipy slurm job based on the result of this python script
-    with open(config.SLURM_FILE_PATH + "/04_alipy_init_seeds.sh", "w") as f:
+    with open(config.EXPERIMENT_LAUNCH_SCRIPTS + "/04_alipy_init_seeds.sh", "w") as f:
         START = 0
         END = int(config.TEST_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
         f.write(
@@ -291,36 +285,33 @@ if config.WITH_ALIPY:
                 OUTPUT_PATH=config.OUTPUT_DIR,
                 DATASETS=",".join(config.EVA_DATASETS),
                 AMOUNT_OF_RUNS=config.TEST_NR_LEARNING_SAMPLES,
-                SLURM_FILE_TO_UPDATE=config.SLURM_FILE_PATH + "/05_alipy_eva.slurm",
+                SLURM_FILE_TO_UPDATE=config.EXPERIMENT_LAUNCH_SCRIPTS
+                + "/05_alipy_eva.slurm",
             )
         )
 
-    with open(config.SLURM_FILE_PATH + "/05_alipy_eva.slurm", "w") as f:
-        START = 0
-        END = int(config.TEST_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
-        f.write(
-            slurm_common_template.render(
-                HPC_WS_DIR=config.HPC_WS_DIR,
-                TITLE=config.TITLE,
-                PYTHON_FILE="04_alipy_init_seeds.py",
-                array=True,
-                START=START,
-                END=END,
-                THREADS=2,
-                MEMORY=2583,
-                CLI_ARGS=" "
-                + " --OUTPUT_PATH "
-                + config.OUTPUT_DIR
-                + "/ --INDEX $SLURM_ARRAY_TASK_ID",
-            )
-        )
+    write_slurm_and_bash_file(
+        OUTPUT_FILE="05_alipy_eva",
+        HPC_WS_DIR=config.HPC_WS_DIR,
+        TITLE=config.TITLE,
+        PYTHON_FILE="05_alipy_eva.py",
+        array=True,
+        START="X",
+        END="X",
+        THREADS=2,
+        MEMORY=2583,
+        CLI_ARGS=" "
+        + " --OUTPUT_PATH "
+        + config.OUTPUT_DIR
+        + "/ --INDEX $SLURM_ARRAY_TASK_ID",
+    )
 
 
-with open(config.SLURM_FILE_PATH + "/submit_slurm_jobs.sh", "w") as f:
+with open(config.EXPERIMENT_LAUNCH_SCRIPTS + "/submit_slurm_jobs.sh", "w") as f:
     f.write(
         submit_jobs.render(
             HPC_WS_DIR=config.HPC_WS_DIR,
-            SLURM_FILE_PATH=config.SLURM_FILE_PATH,
+            EXPERIMENT_LAUNCH_SCRIPTS=config.EXPERIMENT_LAUNCH_SCRIPTS,
             TITLE=config.TITLE,
             WITH_HYPER_SEARCH=config.WITH_HYPER_SEARCH,
             WITH_ALIPY=config.WITH_ALIPY,
@@ -337,15 +328,30 @@ sort_order = {
     "05_alipy_eva.tmp": 4,
 }
 for tmp_file in sorted(
-    list(glob.glob(str(config.SLURM_FILE_PATH) + "/*.tmp")),
+    list(glob.glob(str(config.EXPERIMENT_LAUNCH_SCRIPTS) + "/*.tmp")),
     key=lambda v: sort_order[v.split("/")[-1]],
 ):
     with open(tmp_file, "r") as f:
         content = f.read()
         content = content.replace("$i", "0")
-        submit_content += "python " + content + "\n"
+
+        if tmp_file.endswith("05_alipy_eva.tmp"):
+            submit_content += "python 05_ali_bash_parallel_runner_script.py --N_PARALLEL_JOBS 4 --N_TASKS XXX"
+        else:
+            submit_content += "python " + content + "\n"
     os.remove(tmp_file)
-with open(config.SLURM_FILE_PATH + "/submit_bash_jobs.sh", "w") as f:
+with open(config.EXPERIMENT_LAUNCH_SCRIPTS + "/submit_bash_jobs.sh", "w") as f:
     f.write(submit_content)
-st = os.stat(config.SLURM_FILE_PATH + "/submit_bash_jobs.sh")
-os.chmod(config.SLURM_FILE_PATH + "/submit_bash_jobs.sh", st.st_mode | stat.S_IEXEC)
+st = os.stat(config.EXPERIMENT_LAUNCH_SCRIPTS + "/submit_bash_jobs.sh")
+os.chmod(
+    config.EXPERIMENT_LAUNCH_SCRIPTS + "/submit_bash_jobs.sh", st.st_mode | stat.S_IEXEC
+)
+
+with open(
+    config.EXPERIMENT_LAUNCH_SCRIPTS + "/06_sync_and_run_experiment.sh", "w"
+) as f:
+    f.write(
+        """
+
+    """
+    )
