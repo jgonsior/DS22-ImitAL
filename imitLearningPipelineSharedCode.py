@@ -11,6 +11,45 @@ from joblib import Parallel, delayed
 from active_learning.config.config import get_active_config
 
 
+dataset_id_mapping = {
+    0: ("synthetic", 50),
+    1: ("BREAST", 50),
+    2: ("DIABETES", 50),
+    3: ("FERTILITY", 50),
+    4: ("GERMAN", 50),
+    5: ("HABERMAN", 50),
+    6: ("HEART", 50),
+    7: ("ILPD", 50),
+    8: ("IONOSPHERE", 50),
+    9: ("PIMA", 50),
+    10: ("PLANNING", 50),
+    11: ("australian", 50),
+    12: ("dwtc", 50),
+    13: ("emnist-byclass-test", 1000),
+    14: ("glass", 50),
+    15: ("olivetti", 50),
+    16: ("cifar10", 1000),
+    17: (
+        "synthetic_euc_cos_test",
+        50,
+    ),
+    18: ("wine", 50),
+    19: ("adult", 50),
+    20: ("abalone", 50),
+    21: ("adult", 1000),
+    22: ("emnist-byclass-test", 50),
+    23: ("cifar10", 50),
+    24: ("adult", 100),
+    25: ("emnist-byclass-test", 100),
+    26: ("cifar10", 100),
+    27: ("zoo", 50),
+    28: ("parkinsons", 50),
+    29: ("flag", 50),
+}
+
+non_slurm_strategy_ids = [20]
+
+
 def get_config():
     config, parser = get_active_config(
         [

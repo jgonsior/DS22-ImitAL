@@ -213,44 +213,6 @@ def load_uci_dataset(RANDOM_SEED, DATASET_NAME):
     return X.to_numpy(), Y["label"].to_numpy(), synthetic_creation_args
 
 
-list_of_dataset_load_functions = {
-    0: (generate_synthetic_dataset, {"DATASET_NAME": "synthetic"}, 50),
-    1: (load_uci_dataset, {"DATASET_NAME": "BREAST"}, 50),
-    2: (load_uci_dataset, {"DATASET_NAME": "DIABETES"}, 50),
-    3: (load_uci_dataset, {"DATASET_NAME": "FERTILITY"}, 50),
-    4: (load_uci_dataset, {"DATASET_NAME": "GERMAN"}, 50),
-    5: (load_uci_dataset, {"DATASET_NAME": "HABERMAN"}, 50),
-    6: (load_uci_dataset, {"DATASET_NAME": "HEART"}, 50),
-    7: (load_uci_dataset, {"DATASET_NAME": "ILPD"}, 50),
-    8: (load_uci_dataset, {"DATASET_NAME": "IONOSPHERE"}, 50),
-    9: (load_uci_dataset, {"DATASET_NAME": "PIMA"}, 50),
-    10: (load_uci_dataset, {"DATASET_NAME": "PLANNING"}, 50),
-    11: (load_uci_dataset, {"DATASET_NAME": "australian"}, 50),
-    12: (load_uci_dataset, {"DATASET_NAME": "dwtc"}, 50),
-    13: (load_uci_dataset, {"DATASET_NAME": "emnist-byclass-test"}, 1000),
-    14: (load_uci_dataset, {"DATASET_NAME": "glass"}, 50),
-    15: (load_uci_dataset, {"DATASET_NAME": "olivetti"}, 50),
-    16: (load_uci_dataset, {"DATASET_NAME": "cifar10"}, 1000),
-    17: (
-        generate_synthetic_dataset_euc_cos_test_,
-        {"DATASET_NAME": "synthetic_euc_cos_test"},
-        50,
-    ),
-    18: (load_uci_dataset, {"DATASET_NAME": "wine"}, 50),
-    19: (load_uci_dataset, {"DATASET_NAME": "adult"}, 50),
-    20: (load_uci_dataset, {"DATASET_NAME": "abalone"}, 50),
-    21: (load_uci_dataset, {"DATASET_NAME": "adult"}, 1000),
-    22: (load_uci_dataset, {"DATASET_NAME": "emnist-byclass-test"}, 50),
-    23: (load_uci_dataset, {"DATASET_NAME": "cifar10"}, 50),
-    24: (load_uci_dataset, {"DATASET_NAME": "adult"}, 100),
-    25: (load_uci_dataset, {"DATASET_NAME": "emnist-byclass-test"}, 100),
-    26: (load_uci_dataset, {"DATASET_NAME": "cifar10"}, 100),
-    27: (load_uci_dataset, {"DATASET_NAME": "zoo"}, 50),
-    28: (load_uci_dataset, {"DATASET_NAME": "parkinsons"}, 50),
-    29: (load_uci_dataset, {"DATASET_NAME": "flag"}, 50),
-}
-
-
 # specify which dataset to load
 print("dataset: ", list_of_dataset_load_functions[dataset_id][1]["DATASET_NAME"])
 print("random_seed: ", dataset_random_seed)

@@ -48,8 +48,8 @@ parser.add_argument("--TRAIN_STATE_DISTANCES_LAB", action="store_true")
 parser.add_argument("--STATE_INCLUDE_NR_FEATURES", action="store_true")
 parser.add_argument("--DISTANCE_METRIC", default="euclidean")
 parser.add_argument("--TOTAL_BUDGET", type=int, default=50)
-parser.add_argument("--EVA_DATASETS", nargs="*", default=["synthetic"])
-
+parser.add_argument("--EVA_DATASET_IDS", nargs="*", default=[0])
+parser.add_argument("--EVA_STRATEGY_IDS", nargs="*", default=[0, 5, 10])
 
 # FIXME wenn HYBRID -> HYBRID namen so ändern, dass die Werte von oben an den titel angefügt werden
 
@@ -206,7 +206,7 @@ write_slurm_and_bash_file(
     + str(BATCH_MODE)
     + " --INITIAL_BATCH_SAMPLING_METHOD "
     + str(INITIAL_BATCH_SAMPLING_METHOD)
-    + " --BASE_PARAM_STRING batch_"
+    + " --BASE_PARAM_STRING "
     + config.TITLE
     + " --INITIAL_BATCH_SAMPLING_ARG "
     + str(config.INITIAL_BATCH_SAMPLING_ARG)
@@ -242,7 +242,6 @@ if config.WITH_HYPER_SEARCH:
         MEMORY=5250,
         CLI_ARGS="--DATA_PATH "
         + config.OUTPUT_DIR
-        + "/batch_"
         + config.TITLE
         + " --STATE_ENCODING listwise --TARGET_ENCODING binary --HYPER_SEARCH --N_ITER 100 ",
     )
@@ -261,7 +260,7 @@ write_slurm_and_bash_file(
     MEMORY=5250,
     CLI_ARGS="--OUTPUT_DIRECTORY "
     + config.OUTPUT_DIR
-    + "/ --BASE_PARAM_STRING batch_"
+    + "/ --BASE_PARAM_STRING "
     + config.TITLE
     + hypered_appendix,
 )
@@ -270,9 +269,9 @@ write_slurm_and_bash_file(
 if config.WITH_ALIPY:
     alipy_init_seeds_template = Template(
         """#!/bin/bash
-        # run locally!
-    python ../04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASETS {{ DATASETS }} --AMOUNT_OF_RUNS {{ AMOUNT_OF_EVAL_RUNS }} --NON_SLURM --SLURM_FILE_TO_UPDATE {{ SLURM_FILE_TO_UPDATE }}
-    python ../04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASETS {{ DATASETS }} --AMOUNT_OF_RUNS {{ AMOUNT_OF_EVAL_RUNS }} --SLURM_FILE_TO_UPDATE {{ SLURM_FILE_TO_UPDATE }}
+# run locally!
+python 04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASET_IDS {{ DATASET_IDS }} --STRATEGY_IDS {{ STRATEGY_IDS }} --AMOUNT_OF_RUNS {{ AMOUNT_OF_EVAL_RUNS }} --NON_SLURM --SLURM_FILE_TO_UPDATE {{ SLURM_FILE_TO_UPDATE }}
+python 04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASET_IDS {{ DATASET_IDS }} --STRATEGY_IDS {{ STRATEGY_IDS }}  --AMOUNT_OF_RUNS {{ AMOUNT_OF_EVAL_RUNS }} --SLURM_FILE_TO_UPDATE {{ SLURM_FILE_TO_UPDATE }}
     """
     )
 
@@ -282,13 +281,20 @@ if config.WITH_ALIPY:
         END = int(config.TEST_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
         f.write(
             alipy_init_seeds_template.render(
-                OUTPUT_PATH=config.OUTPUT_DIR,
-                DATASETS=",".join(config.EVA_DATASETS),
-                AMOUNT_OF_RUNS=config.TEST_NR_LEARNING_SAMPLES,
+                OUTPUT_PATH=config.OUTPUT_DIR + "/" + config.TITLE,
+                DATASET_IDS=",".join([str(id) for id in config.EVA_DATASET_IDS]),
+                STRATEGY_IDS=",".join([str(id) for id in config.EVA_STRATEGY_IDS]),
+                AMOUNT_OF_EVAL_RUNS=config.TEST_NR_LEARNING_SAMPLES,
                 SLURM_FILE_TO_UPDATE=config.EXPERIMENT_LAUNCH_SCRIPTS
                 + "/05_alipy_eva.slurm",
             )
         )
+    st = os.stat(config.EXPERIMENT_LAUNCH_SCRIPTS + "/04_alipy_init_seeds.sh")
+
+    os.chmod(
+        config.EXPERIMENT_LAUNCH_SCRIPTS + "/04_alipy_init_seeds.sh",
+        st.st_mode | stat.S_IEXEC,
+    )
 
     write_slurm_and_bash_file(
         OUTPUT_FILE="05_alipy_eva",
@@ -303,6 +309,8 @@ if config.WITH_ALIPY:
         CLI_ARGS=" "
         + " --OUTPUT_PATH "
         + config.OUTPUT_DIR
+        + "/"
+        + config.TITLE
         + "/ --INDEX $SLURM_ARRAY_TASK_ID",
     )
 
@@ -351,12 +359,21 @@ with open(
     config.EXPERIMENT_LAUNCH_SCRIPTS + "/06_sync_and_run_experiment.sh", "w"
 ) as f:
     f.write(
-        """
-    # 6. 06_sync_and_run_experiment.sh
-    # check if data can be downloaded from taurus
-    # updates taurus
-    # start experiment there
--> 06 downloaded zuerst von taurus die neuen results (backup von den alten vorher),  startet dann schritt 4, und pushed das zeugs dann hoch (rsync)!
-
+        Template(
+            """
+# 6. 06_sync_and_run_experiment.sh
+# check if data can be downloaded from taurus
+# updates taurus
+# start experiment there
+{{ EXPERIMENT_LAUNCH_SCRIPTS }}/04_alipy_init_seeds.sh
+{{ EXPERIMENT_LAUNCH_SCRIPTS }}/submit_bash_jobs.sh
     """
+        ).render(EXPERIMENT_LAUNCH_SCRIPTS=config.EXPERIMENT_LAUNCH_SCRIPTS)
     )
+
+st = os.stat(config.EXPERIMENT_LAUNCH_SCRIPTS + "/06_sync_and_run_experiment.sh")
+
+os.chmod(
+    config.EXPERIMENT_LAUNCH_SCRIPTS + "/06_sync_and_run_experiment.sh",
+    st.st_mode | stat.S_IEXEC,
+)
