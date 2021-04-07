@@ -1,3 +1,7 @@
+from active_learning.dataStorage import DataStorage
+from active_learning.datasets.uci import load_uci
+from active_learning.datasets.dwtc import load_dwtc
+from active_learning.datasets.synthetic import load_synthetic
 import argparse
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler, RobustScaler
 
@@ -23,6 +27,10 @@ from alipy.data_manipulate.al_split import split
 from alipy.experiment.al_experiment import AlExperiment
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import roc_auc_score, auc
+from imitLearningPipelineSharedCode import non_slurm_strategy_ids, dataset_id_mapping
+from active_learning.logger.logger import init_logger
+
+init_logger("tmp.log")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--DATASETS_PATH", default="../datasets")
@@ -31,213 +39,57 @@ parser.add_argument(
     "--INDEX", type=int, default=1, help="Specifies which dataset to use etc."
 )
 parser.add_argument("--OUTPUT_PATH", default="../datasets/ali")
+parser.add_argument("--RANDOM_SEEDS_INPUT_FILE")
 
 config = parser.parse_args()
 
 if len(sys.argv[:-1]) == 0:
     parser.print_help()
     parser.exit()
+
+
 # first open job file to get the real random_seed from it
 random_seed_df = pd.read_csv(
-    config.OUTPUT_PATH + "/random_seeds.csv",
+    config.RANDOM_SEEDS_INPUT_FILE,
     header=0,
     index_col=0,
     nrows=config.INDEX + 1,
 )
-dataset_id, strategy_id, dataset_random_seed = random_seed_df.loc[config.INDEX]
+DATASET_ID, STRATEGY_ID, DATASET_RANDOM_SEED = random_seed_df.loc[config.INDEX]
 
-np.random.seed(dataset_random_seed)
-random.seed(dataset_random_seed)
+
+np.random.seed(DATASET_RANDOM_SEED)
+random.seed(DATASET_RANDOM_SEED)
 BATCH_SIZE = 5
-
-
-def generate_synthetic_dataset(RANDOM_SEED, **kwargs):
-    no_valid_synthetic_arguments_found = True
-    while no_valid_synthetic_arguments_found:
-        #  N_SAMPLES = random.randint(500, 20000)
-        # N_SAMPLES = 1000000
-        N_SAMPLES = random.randint(100, 5000)
-
-        N_FEATURES = random.randint(2, 100)
-
-        N_INFORMATIVE, N_REDUNDANT, N_REPEATED = [
-            int(N_FEATURES * i)
-            for i in np.random.dirichlet(np.ones(3), size=1).tolist()[0]
-        ]
-
-        N_CLASSES = random.randint(2, 10)
-        N_CLUSTERS_PER_CLASS = random.randint(
-            1, min(max(1, int(2 ** N_INFORMATIVE / N_CLASSES)), 10)
-        )
-
-        if N_CLASSES * N_CLUSTERS_PER_CLASS > 2 ** N_INFORMATIVE:
-            continue
-        no_valid_synthetic_arguments_found = False
-
-        WEIGHTS = np.random.dirichlet(np.ones(N_CLASSES), size=1).tolist()[
-            0
-        ]  # list of weights, len(WEIGHTS) = N_CLASSES, sum(WEIGHTS)=1
-
-        FLIP_Y = (
-            np.random.pareto(2.0) + 1
-        ) * 0.01  # amount of noise, larger values make it harder
-
-        CLASS_SEP = random.uniform(
-            0, 10
-        )  # larger values spread out the clusters and make it easier
-        HYPERCUBE = False  # if false random polytope
-        SCALE = 0.01  # features should be between 0 and 1 now
-
-        synthetic_creation_args = {
-            "n_samples": N_SAMPLES,
-            "n_features": N_FEATURES,
-            "n_informative": N_INFORMATIVE,
-            "n_redundant": N_REDUNDANT,
-            "n_repeated": N_REPEATED,
-            "n_classes": N_CLASSES,
-            "n_clusters_per_class": N_CLUSTERS_PER_CLASS,
-            "weights": WEIGHTS,
-            "flip_y": FLIP_Y,
-            "class_sep": CLASS_SEP,
-            "hypercube": HYPERCUBE,
-            "scale": SCALE,
-            "random_state": RANDOM_SEED,
-        }
-
-    X, y = make_classification(**synthetic_creation_args)
-    return X, y, synthetic_creation_args
-
-
-def generate_synthetic_dataset_euc_cos_test_(RANDOM_SEED, **kwargs):
-    no_valid_synthetic_arguments_found = True
-    while no_valid_synthetic_arguments_found:
-        #  N_SAMPLES = random.randint(500, 20000)
-        # N_SAMPLES = 1000000
-        N_SAMPLES = random.randint(100, 5000)
-
-        N_FEATURES = (RANDOM_SEED + 1) * 250 + 5000  # random.randint(2, 100)
-        print(N_FEATURES)
-
-        N_INFORMATIVE, N_REDUNDANT, N_REPEATED = [
-            int(N_FEATURES * i)
-            for i in np.random.dirichlet(np.ones(3), size=1).tolist()[0]
-        ]
-        N_CLASSES = random.randint(2, 10)
-
-        if N_FEATURES > 1000:
-            N_CLUSTERS_PER_CLASS = 10
-        else:
-            maximum = int(2 ** N_INFORMATIVE / N_CLASSES)
-            N_CLUSTERS_PER_CLASS = random.randint(1, min(max(1, maximum), 10))
-
-        if N_CLASSES * N_CLUSTERS_PER_CLASS > 2 ** N_INFORMATIVE:
-            continue
-        no_valid_synthetic_arguments_found = False
-
-        WEIGHTS = np.random.dirichlet(np.ones(N_CLASSES), size=1).tolist()[
-            0
-        ]  # list of weights, len(WEIGHTS) = N_CLASSES, sum(WEIGHTS)=1
-
-        FLIP_Y = (
-            np.random.pareto(2.0) + 1
-        ) * 0.01  # amount of noise, larger values make it harder
-
-        CLASS_SEP = random.uniform(
-            0, 10
-        )  # larger values spread out the clusters and make it easier
-        HYPERCUBE = False  # if false random polytope
-        SCALE = 0.01  # features should be between 0 and 1 now
-
-        synthetic_creation_args = {
-            "n_samples": N_SAMPLES,
-            "n_features": N_FEATURES,
-            "n_informative": N_INFORMATIVE,
-            "n_redundant": N_REDUNDANT,
-            "n_repeated": N_REPEATED,
-            "n_classes": N_CLASSES,
-            "n_clusters_per_class": N_CLUSTERS_PER_CLASS,
-            "weights": WEIGHTS,
-            "flip_y": FLIP_Y,
-            "class_sep": CLASS_SEP,
-            "hypercube": HYPERCUBE,
-            "scale": SCALE,
-            "random_state": RANDOM_SEED,
-        }
-
-    X, y = make_classification(**synthetic_creation_args)
-    return X, y, synthetic_creation_args
-
-
-def load_uci_dataset(RANDOM_SEED, DATASET_NAME):
-    print("Loading: " + DATASET_NAME)
-    df = pd.read_csv(config.DATASETS_PATH + "/uci_cleaned/" + DATASET_NAME + ".csv")
-
-    df.rename({"LABEL": "label"}, axis="columns", inplace=True)
-    feature_columns = df.columns.to_list()
-    feature_columns.remove("label")
-    print(df.label.value_counts())
-    synthetic_creation_args = {
-        "n_samples": len(df),
-        "n_features": len(feature_columns),
-        "n_informative": 0,
-        "n_redundant": 0,
-        "n_repeated": 0,
-        "n_classes": len(df["label"].unique()),
-        "n_clusters_per_class": 0,
-        "weights": 0,
-        "flip_y": 0,
-        "class_sep": 0,
-        "hypercube": 0,
-        "scale": 0,
-        "random_state": RANDOM_SEED,
-    }
-
-    if DATASET_NAME not in ["olivetti", "lfw_people", "rcv1", "kddcup99"]:
-        # feature normalization
-        scaler = RobustScaler()
-        df[feature_columns] = scaler.fit_transform(df[feature_columns])
-
-        # scale back to [0,1]
-        scaler = MinMaxScaler()
-        df[feature_columns] = scaler.fit_transform(df[feature_columns])
-
-    # split dataframe into test, train_labeled, train_unlabeled
-    X = df
-    Y = pd.DataFrame(data=X["label"], columns=["label"], index=X.index)
-    del X["label"]
-
-    if DATASET_NAME not in ["olivetti", "lfw_people", "rcv1", "kddcup99"]:
-        lb = LabelEncoder()
-        Y["label"] = lb.fit_transform(Y["label"])
-
-    return X.to_numpy(), Y["label"].to_numpy(), synthetic_creation_args
-
+DATASET_NAME = dataset_id_mapping[DATASET_ID][0]
 
 # specify which dataset to load
-print("dataset: ", list_of_dataset_load_functions[dataset_id][1]["DATASET_NAME"])
-print("random_seed: ", dataset_random_seed)
+print("dataset: ", DATASET_NAME)
+print("random_seed: ", DATASET_RANDOM_SEED)
 
-dataset_load_function = list_of_dataset_load_functions[dataset_id]
+if DATASET_NAME == "synthetic":
+    df, synthetic_creation_args = load_synthetic(
+        DATASET_RANDOM_SEED,
+        NEW_SYNTHETIC_PARAMS=True,
+        VARIABLE_DATASET=True,
+        AMOUNT_OF_FEATURES=20,
+        HYPERCUBE=True,
+        GENERATE_NOISE=True,
+    )
+elif DATASET_NAME == "dwtc":
+    df, synthetic_creation_args = load_dwtc(
+        DATASETS_PATH=config.DATASETS_PATH, RANDOM_SEED=DATASET_RANDOM_SEED
+    )
+else:
+    df, synthetic_creation_args = load_uci(
+        DATASETS_PATH=config.DATASETS_PATH,
+        RANDOM_SEED=DATASET_RANDOM_SEED,
+        DATASET_NAME=DATASET_NAME,
+    )
 
-X, y, synthetic_creation_args = dataset_load_function[0](
-    RANDOM_SEED=dataset_random_seed, **dataset_load_function[1]
-)
-
-
-# was geschieht hier?!
-#  if len(y) * 0.5 < dataset_load_function[2] * 5:
-#      print(len(y))
-#      print(dataset_load_function[2] * 5)
-#      print(len(y) * 0.5 / 5)
-#      dataset_load_function = (
-#          dataset_load_function[0],
-#          dataset_load_function[1],
-#          len(y) * 0.5 / 5,
-#      )
-#      exit(-1)
-print(len(y))
-# 18*5 -> 90
-# 182/2: 91
+data_storage = DataStorage(df, TEST_FRACTION=0)
+X = data_storage.X
+Y = data_storage.exp_Y
 
 
 class ANNQuerySingle:
@@ -727,24 +579,6 @@ class ANNQueryBatch(ANNQuerySingle):
         return batch_indices[sorting]
 
 
-class Uncertainty:
-    def __init__(self, X=None, Y=None, **kwargs):
-        self.X = X
-        self.Y = Y
-
-    def select(self, labeled_index, unlabeled_index, model, batch_size=1, **kwargs):
-        Y_temp_proba = model.predict_proba(self.X[unlabeled_index])
-        margin = np.partition(-Y_temp_proba, 1, axis=1)
-        result = -np.abs(margin[:, 0] - margin[:, 1])
-
-        # sort indices_of_cluster by argsort
-        argsort = np.argsort(-result)
-        query_indices = np.array(unlabeled_index)[argsort]
-
-        # return smallest probabilities
-        return query_indices[:batch_size]
-
-
 query_strategies = {
     #  (
     #      ANNQuerySingle,
@@ -1025,9 +859,9 @@ def run_parallel(query_strategy):
     print(f1_auc)
     for r2 in r:
         res = r2.get_result()
-        res["dataset_id"] = dataset_id
-        res["strategy_id"] = str(strategy_id)
-        res["dataset_random_seed"] = dataset_random_seed
+        res["dataset_id"] = DATASET_ID
+        res["strategy_id"] = str(STRATEGY_ID)
+        res["dataset_random_seed"] = DATASET_RANDOM_SEED
         res["strategy"] = str(query_strategy[0]) + str(query_strategy[1])
         res["duration"] = end - start
         res["f1_auc"] = f1_auc
@@ -1040,7 +874,7 @@ def run_parallel(query_strategy):
             w.writerow(res)
 
 
-run_parallel(query_strategies[strategy_id])
+run_parallel(query_strategies[STRATEGY_ID])
 #  for query_strategy in query_strategies:
 #  run_parallel((query_strategy))
 

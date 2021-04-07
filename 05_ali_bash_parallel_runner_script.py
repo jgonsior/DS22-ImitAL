@@ -7,6 +7,8 @@ import sys
 parser = argparse.ArgumentParser()
 parser.add_argument("--N_TASKS", type=int)
 parser.add_argument("--N_PARALLEL_JOBS", default=20, type=int)
+parser.add_argument("--OUTPUT_PATH")
+
 
 config = parser.parse_args()
 
@@ -17,8 +19,13 @@ if len(sys.argv[:-1]) == 0:
 
 def run_code(i):
     cli = (
-        "python 05_alipy_eva.py --OUTPUT_PATH ../datasets/ali_non_slurm --INDEX "
+        "python 05_alipy_eva.py --OUTPUT_PATH "
+        + config.OUTPUT_PATH
+        + " --INDEX "
         + str(i)
+        + " --RANDOM_SEEDS_INPUT_FILE "
+        + config.OUTPUT_PATH
+        + "/05_random_seeds__bash.csv"
     )
     print("#" * 100)
     print(i)

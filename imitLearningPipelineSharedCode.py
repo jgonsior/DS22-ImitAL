@@ -47,7 +47,7 @@ dataset_id_mapping = {
     29: ("flag", 50),
 }
 
-non_slurm_strategy_ids = [20]
+non_slurm_strategy_ids = [0, 20]
 
 
 def get_config():

@@ -346,7 +346,13 @@ for tmp_file in sorted(
         content = content.replace("$i", "0")
 
         if tmp_file.endswith("05_alipy_eva.tmp"):
-            submit_content += "python 05_ali_bash_parallel_runner_script.py --N_PARALLEL_JOBS 4 --N_TASKS XXX"
+            submit_content += (
+                "python 05_ali_bash_parallel_runner_script.py --OUTPUT_PATH "
+                + config.OUTPUT_DIR
+                + "/"
+                + config.TITLE
+                + " --N_PARALLEL_JOBS 4 --N_TASKS XXX"
+            )
         else:
             submit_content += "python " + content + "\n"
     os.remove(tmp_file)

@@ -27,6 +27,7 @@ ipykernel = "*"
 data-science-types = "*"
 tensorflow = "*"
 scikeras = "*"
+prettytable = "*"
 
 [requires]
 python_version = "3.8"
