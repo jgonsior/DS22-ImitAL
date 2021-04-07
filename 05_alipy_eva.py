@@ -1,10 +1,15 @@
+from active_learning.query_sampling_strategies.TrainedImitALQuerySampler import (
+    TrainedImitALBatchSampler,
+    TrainedImitALSampler,
+    TrainedImitALSingleSampler,
+)
 from active_learning.dataStorage import DataStorage
 from active_learning.datasets.uci import load_uci
 from active_learning.datasets.dwtc import load_dwtc
 from active_learning.datasets.synthetic import load_synthetic
 import argparse
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler, RobustScaler
-
+import json
 import csv
 import math
 import multiprocessing
@@ -13,7 +18,6 @@ import random
 import sys
 from timeit import default_timer as timer
 from operator import itemgetter
-import dill
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
@@ -90,6 +94,99 @@ else:
 data_storage = DataStorage(df, TEST_FRACTION=0)
 X = data_storage.X
 Y = data_storage.exp_Y
+
+
+class ALiPYImitALSingle:
+    trained_imitAL_sampler: TrainedImitALSampler
+
+    def __init__(self, X=None, Y=None, **kwargs):
+        # load NN params from json file
+        with open(
+            os.path.dirname(kwargs["NN_BINARY_PATH"])
+            + "/01_dataset_creation_stats.csv_params.json",
+            "r",
+        ) as f:
+            content = str(f.read())
+            dataset_stats = json.loads(content)
+
+        print(dataset_stats)
+
+        self.trained_imitAL_sampler = TrainedImitALSingleSampler(
+            PRE_SAMPLING_METHOD=dataset_stats["INITIAL_BATCH_SAMPLING_METHOD"],
+            PRE_SAMPLING_ARG=dataset_stats["INITIAL_BATCH_SAMPLING_ARG"],
+            AMOUNT_OF_PEAKED_OBJECTS=dataset_stats["AMOUNT_OF_PEAKED_OBJECTS"],
+            DISTANCE_METRIC=dataset_stats["DISTANCE_METRIC"],
+            STATE_ARGSECOND_PROBAS=dataset_stats["STATE_ARGSECOND_PROBAS"],
+            STATE_ARGTHIRD_PROBAS=dataset_stats["STATE_ARGTHIRD_PROBAS"],
+            STATE_DIFF_PROBAS=dataset_stats["STATE_DIFF_PROBAS"],
+            STATE_PREDICTED_CLASS=dataset_stats["STATE_PREDICTED_CLASS"],
+            STATE_DISTANCES_LAB=dataset_stats["STATE_DISTANCES_LAB"],
+            STATE_DISTANCES_UNLAB=dataset_stats["STATE_DISTANCES_UNLAB"],
+            STATE_INCLUDE_NR_FEATURES=dataset_stats["STATE_INCLUDE_NR_FEATURES"],
+            NN_BINARY_PATH=kwargs["NN_BINARY_PATH"],
+        )
+
+    def select(self, labeled_index, unlabeled_index, model, batch_size=1, **kwargs):
+        labeled_index = self.X[labeled_index]
+
+        max_sum = 0
+
+        for i in range(0, kwargs["HYPER_SAMPLING_SEARCH_ITERATIONS"]):
+
+            # if there are less than 20 samples left we  still have to show the ann 20 samples because of the fixed input size
+            # so we just "pad" it with random indices
+            if len(unlabeled_index) <= 20:
+                padding = np.random.choice(unlabeled_index, 20 - len(unlabeled_index))
+                possible_samples_indices = np.concatenate((unlabeled_index, padding))
+                break
+            random_sample_index = unlabeled_index.random_sample(
+                20
+            )  # self._fast_random_choice_list(unlabeled_index, 20)
+
+            random_sample = self.X[random_sample_index]
+            # calculate distance to each other
+            total_distance = np.sum(
+                self._pairwise_distances_subsampling(random_sample, random_sample)
+            )
+
+            total_distance += np.sum(
+                self._pairwise_distances_subsampling(labeled_index, random_sample)
+            )
+            if total_distance > max_sum:
+                max_sum = total_distance
+                possible_samples_indices = random_sample_index
+
+        X_query = self.X[possible_samples_indices]
+
+        X_state = self.calculate_state(
+            X_query,
+            STATE_ARGSECOND_PROBAS=True,
+            STATE_DIFF_PROBAS=False,
+            STATE_ARGTHIRD_PROBAS=True,
+            STATE_DISTANCES_LAB=True,
+            STATE_DISTANCES_UNLAB=True,
+            STATE_PREDICTED_CLASS=False,
+            model=model,
+            labeled_index=labeled_index,
+            train_unlabeled_X=self.X[unlabeled_index],
+            TRUE_DISTANCES=kwargs["TRUE_DISTANCES"],
+        )
+        X_state = np.reshape(X_state, (1, len(X_state)))
+        Y_pred = self.sampling_classifier.predict(X_state)
+        sorting = Y_pred
+        # use the optimal values
+        zero_to_one_values_and_index = list(zip(sorting, possible_samples_indices))
+        ordered_list_of_possible_sample_indices = sorted(
+            zero_to_one_values_and_index, key=lambda tup: tup[0], reverse=True
+        )
+
+        return [v for k, v in ordered_list_of_possible_sample_indices[:batch_size]]
+
+
+test = ALiPYImitALSingle(
+    X=X, Y=Y, NN_BINARY_PATH=config.OUTPUT_PATH + "/03_imital_trained_ann.model"
+)
+exit(-1)
 
 
 class ANNQuerySingle:
@@ -583,7 +680,7 @@ query_strategies = {
     #  (
     #      ANNQuerySingle,
     #      {
-    #          "NN_BINARY_PATH": "../datasets/taurus_10_10/MORE_DATA/03_imital_trained_ann.pickle",
+    #          "NN_BINARY_PATH": "../datasets/taurus_10_10/MORE_DATA/03_imital_trained_ann.model",
     #          "HYPER_SAMPLING_SEARCH_ITERATIONS": 100,
     #          "TRUE_DISTANCES": True,
     #      },
@@ -591,7 +688,7 @@ query_strategies = {
     #  (
     #      ANNQuerySingle,
     #      {
-    #          "NN_BINARY_PATH": "../datasets/taurus_10_10/MORE_DATA/03_imital_trained_ann.pickle",
+    #          "NN_BINARY_PATH": "../datasets/taurus_10_10/MORE_DATA/03_imital_trained_ann.model",
     #          "HYPER_SAMPLING_SEARCH_ITERATIONS": 100,
     #          "TRUE_DISTANCES": False,
     #      },
@@ -763,10 +860,6 @@ query_strategies = {
             "STATE_INCLUDE_NR_FEATURES": False,
         },
     ),
-    1: (
-        Uncertainty,
-        {},
-    ),
     2: ("QueryInstanceQBC", {}),
     3: ("QueryInstanceUncertainty", {"measure": "least_confident"}),
     4: ("QueryInstanceUncertainty", {"measure": "margin"}),
@@ -782,9 +875,9 @@ query_strategies = {
     #  6: ("QueryInstanceUncertainty", {"measure": "distance_to_boundary"}),
 }
 
-shuffling = np.random.permutation(len(y))
+shuffling = np.random.permutation(len(Y))
 X = X[shuffling]
-y = y[shuffling]
+Y = Y[shuffling]
 
 scaler = RobustScaler()
 X = scaler.fit_transform(X)
@@ -794,14 +887,14 @@ scaler = MinMaxScaler()
 X = scaler.fit_transform(X)
 
 test_ratio = 0.5
-indices = [i for i in range(0, len(y))]
-train_idx = indices[: math.floor(len(y) * (1 - test_ratio))]
-test_idx = indices[math.floor(len(y) * (1 - test_ratio)) :]
+indices = [i for i in range(0, len(Y))]
+train_idx = indices[: math.floor(len(Y) * (1 - test_ratio))]
+test_idx = indices[math.floor(len(Y) * (1 - test_ratio)) :]
 unlabel_idx = train_idx.copy()
 label_idx = []
-#  print(y)
+#  print(Y)
 #  print(y[train_idx])
-for label in np.unique(y):
+for label in np.unique(Y):
     if label not in y[train_idx]:
         print(np.where(y[test_idx] == label))
     init_labeled_index = np.where(y[train_idx] == label)[0][0]

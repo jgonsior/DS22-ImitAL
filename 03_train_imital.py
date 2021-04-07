@@ -50,14 +50,14 @@ else:
 
 # prevent retraining!
 if os.path.isfile(
-    PARENT_OUTPUT_DIRECTORY + base_param_string + "/03_imital_trained_ann.pickle"
+    PARENT_OUTPUT_DIRECTORY + base_param_string + "/03_imital_trained_ann.model"
 ):
     exit(0)
 
 
 run_python_experiment(
     "Train ANN",
-    PARENT_OUTPUT_DIRECTORY + base_param_string + "/03_imital_trained_ann.pickle",
+    PARENT_OUTPUT_DIRECTORY + base_param_string + "/03_imital_trained_ann.model",
     CLI_COMMAND="python 02_hyper_search_or_train_imital.py",
     CLI_ARGUMENTS={
         "DATA_PATH": config.OUTPUT_DIRECTORY + base_param_string,
@@ -65,7 +65,7 @@ run_python_experiment(
         "TARGET_ENCODING": "binary",
         "SAVE_DESTINATION": config.OUTPUT_DIRECTORY
         + base_param_string
-        + "/03_imital_trained_ann.pickle",
+        + "/03_imital_trained_ann.model",
         "REGULAR_DROPOUT_RATE": ANN_HYPER_PARAMS["REGULAR_DROPOUT_RATE"],
         "OPTIMIZER": ANN_HYPER_PARAMS["OPTIMIZER"],
         "NR_HIDDEN_NEURONS": ANN_HYPER_PARAMS["NR_HIDDEN_NEURONS"],

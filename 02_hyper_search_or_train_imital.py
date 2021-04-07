@@ -5,7 +5,6 @@ import random
 import sys
 from typing import List
 
-import dill
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -206,49 +205,7 @@ def get_clf(
             )
         )
         model.add(keras.layers.Dropout(regular_dropout_rate))
-    model.add(keras.layers.Dense(output_size, activation="sigmoid"))
-    return model
-
-
-def build_nn(
-    X,
-    activation="relu",
-    regular_dropout_rate=0.2,
-    optimizer="Adam",
-    nr_hidden_layers=3,
-    nr_hidden_neurons=20,
-    kernel_initializer="glorot_uniform",
-    loss="MeanSquaredError",
-    epochs=1,
-    batch_size=1,
-):
-    model = Sequential()
-
-    model.add(
-        Dense(
-            units=X.shape[1],
-            input_shape=X.shape[1:],
-            activation=activation,
-        )
-    )
-
-    for _ in range(0, nr_hidden_layers):
-        model.add(
-            Dense(
-                units=nr_hidden_neurons,
-                activation=activation,
-                kernel_initializer=kernel_initializer,
-            )
-        )
-        model.add(Dropout(regular_dropout_rate))
-    model.add(Dense(len(Y.columns), activation="sigmoid"))
-
-    model.compile(
-        loss=loss,
-        optimizer=optimizer,
-        metrics=["MeanSquaredError", "accuracy"],  # , tau_loss, spearman_loss],
-    )
-
+    model.add(keras.layers.Dense(output_size, activation="softmax"))
     return model
 
 
@@ -359,8 +316,9 @@ if config.HYPER_SEARCH:
     #  print(fitted_model.best_params_)
     #  print(fitted_model.cv_results_)
     #
-    with open(config.DATA_PATH + "/best_model.pickle", "wb") as handle:
-        dill.dump(fitted_model, handle)
+    fitted_model.model_.save("/best_model.model")
+    # with open(config.DATA_PATH + "/best_model.model", "wb") as handle:
+    #    pickle.dump(fitted_model, handle)
 
     with open(config.DATA_PATH + "/hyper_results.txt", "w") as handle:
         handle.write(str(fitted_model.best_score_))
@@ -370,7 +328,7 @@ if config.HYPER_SEARCH:
 
 
 else:
-    model = KerasRegressor(
+    reg = KerasRegressor(
         model=get_clf,
         input_size=X.shape[1:],
         output_size=len(Y.columns),
@@ -390,19 +348,10 @@ else:
         ],
         #  random_state=config.RANDOM_SEED,
     )
-    print(X)
-    print(Y)
 
-    fitted_model = model.fit(
-        X=X,
-        y=Y,
-    )
+    reg.fit(X, Y)
+
     if config.SAVE_DESTINATION:
-        with open(config.SAVE_DESTINATION, "wb") as handle:
-            dill.dump(fitted_model, handle)
-
-        with open(config.SAVE_DESTINATION, "rb") as handle:
-            new_model = dill.load(handle)
-
-            #  Y_pred2 = new_model.predict(X_test)
-            #  print("Y_pred_random:\t", _evaluate_top_k(Y_test, Y_pred2))
+        reg.model_.save(config.SAVE_DESTINATION)
+        # with open(config.SAVE_DESTINATION, "wb") as handle:
+        #    dill.dump(fitted_model, handle)
