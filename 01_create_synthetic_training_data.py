@@ -13,7 +13,9 @@ from imitLearningPipelineSharedCode import get_config, run_parallel_experiment
 OUTPUT_FILE = PARENT_OUTPUT_DIRECTORY + base_param_string
 run_parallel_experiment(
     "Creating dataset",
-    OUTPUT_FILE=PARENT_OUTPUT_DIRECTORY + base_param_string + "/dataset_creation.csv",
+    OUTPUT_FILE=PARENT_OUTPUT_DIRECTORY
+    + base_param_string
+    + "/01_dataset_creation_stats.csv",
     CLI_COMMAND="python synthetic_datasets_imitation_training.py",
     CLI_ARGUMENTS={
         "DATASETS_PATH": "../datasets",

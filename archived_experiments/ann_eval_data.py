@@ -52,7 +52,7 @@ for DATASET_NAME in [
         CLI_ARGUMENTS={
             "NN_BINARY": config.OUTPUT_DIRECTORY
             + train_base_param_string
-            + "/trained_ann.pickle",
+            + "/03_imital_trained_ann.pickle",
             "OUTPUT_DIRECTORY": EVALUATION_FILE_TRAINED_NN_PATH,
             "SAMPLING": "trained_nn",
             **ann_arguments,

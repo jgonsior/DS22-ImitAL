@@ -6,7 +6,7 @@ import sys
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--N_TASKS", type=int)
-parser.add_argument("--N_PARALLLEL_JOBS", default=20, type=int)
+parser.add_argument("--N_PARALLEL_JOBS", default=20, type=int)
 
 config = parser.parse_args()
 

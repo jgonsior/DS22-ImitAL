@@ -1,9 +1,5 @@
 import json
-
-import numpy as np
-import pandas as pd
-from tabulate import tabulate
-
+import os
 from imitLearningPipelineSharedCode import get_config, run_python_experiment
 
 (
@@ -50,9 +46,18 @@ else:
             "ANN_BATCH_SIZE": 128,
             "ACTIVATION": "elu",
         }
+
+
+# prevent retraining!
+if os.path.isfile(
+    PARENT_OUTPUT_DIRECTORY + base_param_string + "/03_imital_trained_ann.pickle"
+):
+    exit(0)
+
+
 run_python_experiment(
     "Train ANN",
-    PARENT_OUTPUT_DIRECTORY + base_param_string + "/trained_ann.pickle",
+    PARENT_OUTPUT_DIRECTORY + base_param_string + "/03_imital_trained_ann.pickle",
     CLI_COMMAND="python 02_hyper_search_or_train_imital.py",
     CLI_ARGUMENTS={
         "DATA_PATH": config.OUTPUT_DIRECTORY + base_param_string,
@@ -60,7 +65,7 @@ run_python_experiment(
         "TARGET_ENCODING": "binary",
         "SAVE_DESTINATION": config.OUTPUT_DIRECTORY
         + base_param_string
-        + "/trained_ann.pickle",
+        + "/03_imital_trained_ann.pickle",
         "REGULAR_DROPOUT_RATE": ANN_HYPER_PARAMS["REGULAR_DROPOUT_RATE"],
         "OPTIMIZER": ANN_HYPER_PARAMS["OPTIMIZER"],
         "NR_HIDDEN_NEURONS": ANN_HYPER_PARAMS["NR_HIDDEN_NEURONS"],

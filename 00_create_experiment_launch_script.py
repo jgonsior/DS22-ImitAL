@@ -270,8 +270,8 @@ if config.WITH_ALIPY:
     alipy_init_seeds_template = Template(
         """#!/bin/bash
 # run locally!
-python 04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASET_IDS {{ DATASET_IDS }} --STRATEGY_IDS {{ STRATEGY_IDS }} --AMOUNT_OF_RUNS {{ AMOUNT_OF_EVAL_RUNS }} --NON_SLURM --SLURM_FILE_TO_UPDATE {{ SLURM_FILE_TO_UPDATE }}
-python 04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASET_IDS {{ DATASET_IDS }} --STRATEGY_IDS {{ STRATEGY_IDS }}  --AMOUNT_OF_RUNS {{ AMOUNT_OF_EVAL_RUNS }} --SLURM_FILE_TO_UPDATE {{ SLURM_FILE_TO_UPDATE }}
+python 04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASET_IDS {{ DATASET_IDS }} --STRATEGY_IDS {{ STRATEGY_IDS }} --AMOUNT_OF_RUNS {{ AMOUNT_OF_EVAL_RUNS }} --NON_SLURM --SLURM_FILE_TO_UPDATE {{ EXPERIMENT_LAUNCH_SCRIPTS }}/06_run_code_locally_as_bash.sh
+python 04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASET_IDS {{ DATASET_IDS }} --STRATEGY_IDS {{ STRATEGY_IDS }}  --AMOUNT_OF_RUNS {{ AMOUNT_OF_EVAL_RUNS }} --SLURM_FILE_TO_UPDATE {{ EXPERIMENT_LAUNCH_SCRIPTS }}/{{ SLURM_FILE_TO_UPDATE }}
     """
     )
 
@@ -285,8 +285,8 @@ python 04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASET_IDS {{ D
                 DATASET_IDS=",".join([str(id) for id in config.EVA_DATASET_IDS]),
                 STRATEGY_IDS=",".join([str(id) for id in config.EVA_STRATEGY_IDS]),
                 AMOUNT_OF_EVAL_RUNS=config.TEST_NR_LEARNING_SAMPLES,
-                SLURM_FILE_TO_UPDATE=config.EXPERIMENT_LAUNCH_SCRIPTS
-                + "/05_alipy_eva.slurm",
+                EXPERIMENT_LAUNCH_SCRIPTS=config.EXPERIMENT_LAUNCH_SCRIPTS,
+                SLURM_FILE_TO_UPDATE="05_alipy_eva.slurm",
             )
         )
     st = os.stat(config.EXPERIMENT_LAUNCH_SCRIPTS + "/04_alipy_init_seeds.sh")
@@ -302,8 +302,8 @@ python 04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASET_IDS {{ D
         TITLE=config.TITLE,
         PYTHON_FILE="05_alipy_eva.py",
         array=True,
-        START="X",
-        END="X",
+        START="0",
+        END="XXX",
         THREADS=2,
         MEMORY=2583,
         CLI_ARGS=" "
@@ -315,7 +315,9 @@ python 04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASET_IDS {{ D
     )
 
 
-with open(config.EXPERIMENT_LAUNCH_SCRIPTS + "/submit_slurm_jobs.sh", "w") as f:
+with open(
+    config.EXPERIMENT_LAUNCH_SCRIPTS + "/06_start_slurm_jobs.sh_jobs.sh", "w"
+) as f:
     f.write(
         submit_jobs.render(
             HPC_WS_DIR=config.HPC_WS_DIR,
@@ -348,15 +350,18 @@ for tmp_file in sorted(
         else:
             submit_content += "python " + content + "\n"
     os.remove(tmp_file)
-with open(config.EXPERIMENT_LAUNCH_SCRIPTS + "/submit_bash_jobs.sh", "w") as f:
+with open(
+    config.EXPERIMENT_LAUNCH_SCRIPTS + "/06_run_code_locally_as_bash.sh", "w"
+) as f:
     f.write(submit_content)
-st = os.stat(config.EXPERIMENT_LAUNCH_SCRIPTS + "/submit_bash_jobs.sh")
+st = os.stat(config.EXPERIMENT_LAUNCH_SCRIPTS + "/06_run_code_locally_as_bash.sh")
 os.chmod(
-    config.EXPERIMENT_LAUNCH_SCRIPTS + "/submit_bash_jobs.sh", st.st_mode | stat.S_IEXEC
+    config.EXPERIMENT_LAUNCH_SCRIPTS + "/06_run_code_locally_as_bash.sh",
+    st.st_mode | stat.S_IEXEC,
 )
 
 with open(
-    config.EXPERIMENT_LAUNCH_SCRIPTS + "/06_sync_and_run_experiment.sh", "w"
+    config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment.sh", "w"
 ) as f:
     f.write(
         Template(
@@ -366,14 +371,12 @@ with open(
 # updates taurus
 # start experiment there
 {{ EXPERIMENT_LAUNCH_SCRIPTS }}/04_alipy_init_seeds.sh
-{{ EXPERIMENT_LAUNCH_SCRIPTS }}/submit_bash_jobs.sh
+{{ EXPERIMENT_LAUNCH_SCRIPTS }}/06_run_code_locally_as_bash.sh
     """
         ).render(EXPERIMENT_LAUNCH_SCRIPTS=config.EXPERIMENT_LAUNCH_SCRIPTS)
     )
-
-st = os.stat(config.EXPERIMENT_LAUNCH_SCRIPTS + "/06_sync_and_run_experiment.sh")
-
+st = os.stat(config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment.sh")
 os.chmod(
-    config.EXPERIMENT_LAUNCH_SCRIPTS + "/06_sync_and_run_experiment.sh",
+    config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment.sh",
     st.st_mode | stat.S_IEXEC,
 )

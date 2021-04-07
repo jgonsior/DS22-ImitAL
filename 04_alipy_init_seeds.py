@@ -1,5 +1,6 @@
 import argparse
 import os
+from random import random
 import sys
 import pandas as pd
 import itertools
@@ -83,8 +84,8 @@ for dataset_id, strategy_id, dataset_random_seed in itertools.product(
 random_seed_df = pd.DataFrame(
     data=missing_ids, columns=["dataset_id", "strategy_id", "dataset_random_seed"]
 )
-print(len(random_seed_df))
 os.makedirs(config.OUTPUT_PATH, exist_ok=True)
+
 output_file = "05_random_seeds_"
 if config.NON_SLURM:
     output_file += "_bash.csv"
@@ -92,3 +93,13 @@ else:
     output_file += "_slurm.csv"
 
 random_seed_df.to_csv(config.OUTPUT_PATH + "/" + output_file, header=True)
+
+
+# update slurm/bash file
+
+print(config.SLURM_FILE_TO_UPDATE)
+with open(config.SLURM_FILE_TO_UPDATE, "r") as f:
+    new_content = f.read().replace("XXX", str(len(random_seed_df)))
+
+with open(config.SLURM_FILE_TO_UPDATE, "w") as f:
+    f.write(new_content)

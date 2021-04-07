@@ -749,7 +749,7 @@ query_strategies = {
     #  (
     #      ANNQuerySingle,
     #      {
-    #          "NN_BINARY_PATH": "../datasets/taurus_10_10/MORE_DATA/trained_ann.pickle",
+    #          "NN_BINARY_PATH": "../datasets/taurus_10_10/MORE_DATA/03_imital_trained_ann.pickle",
     #          "HYPER_SAMPLING_SEARCH_ITERATIONS": 100,
     #          "TRUE_DISTANCES": True,
     #      },
@@ -757,7 +757,7 @@ query_strategies = {
     #  (
     #      ANNQuerySingle,
     #      {
-    #          "NN_BINARY_PATH": "../datasets/taurus_10_10/MORE_DATA/trained_ann.pickle",
+    #          "NN_BINARY_PATH": "../datasets/taurus_10_10/MORE_DATA/03_imital_trained_ann.pickle",
     #          "HYPER_SAMPLING_SEARCH_ITERATIONS": 100,
     #          "TRUE_DISTANCES": False,
     #      },

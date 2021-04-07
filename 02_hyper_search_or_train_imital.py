@@ -67,8 +67,8 @@ if config.RANDOM_SEED != -1 and config.RANDOM_SEED != -2:
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 DATA_PATH = config.DATA_PATH
-states = pd.read_csv(DATA_PATH + "/states.csv")
-optimal_policies = pd.read_csv(DATA_PATH + "/opt_pol.csv")
+states = pd.read_csv(DATA_PATH + "/01_state_encodings_X.csv")
+optimal_policies = pd.read_csv(DATA_PATH + "/01_expert_actions_Y.csv")
 
 #  states = states[0:100]
 #  optimal_policies = optimal_policies[0:100]
