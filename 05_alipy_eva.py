@@ -15,7 +15,7 @@ from active_learning.datasets.dwtc import load_dwtc
 from active_learning.datasets.synthetic import load_synthetic
 from active_learning.datasets.uci import load_uci
 from active_learning.logger.logger import init_logger
-from imitLearningPipelineSharedCode import  dataset_id_mapping, strategy_id_mapping
+from imitLearningPipelineSharedCode import dataset_id_mapping, strategy_id_mapping
 
 
 init_logger("tmp.log")
@@ -28,7 +28,7 @@ parser.add_argument(
 )
 parser.add_argument("--OUTPUT_PATH", default="../datasets/ali")
 parser.add_argument("--RANDOM_SEEDS_INPUT_FILE")
-parser.add_argument(("--BATCH_SIZE", type=int, default=5)
+parser.add_argument("--BATCH_SIZE", type=int, default=5)
 
 config = parser.parse_args()
 
