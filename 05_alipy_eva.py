@@ -11,7 +11,7 @@ import sys
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import MinMaxScaler, RobustScaler
 from timeit import default_timer as timer
-
+from sklearn.metrics import auc
 from active_learning.dataStorage import DataStorage
 from active_learning.datasets.dwtc import load_dwtc
 from active_learning.datasets.synthetic import load_synthetic
@@ -131,8 +131,8 @@ al = AlExperiment(
     #  model=MLPClassifier(),
     model=RandomForestClassifier(n_jobs=multiprocessing.cpu_count()),
     stopping_criteria="num_of_queries",
-    num_of_queries=dataset_id_mapping[DATASET_ID][1],
-    stopping_value=dataset_id_mapping[DATASET_ID][1],
+    num_of_queries=dataset_id_mapping[DATASET_ID][1] / config.BATCH_SIZE,
+    stopping_value=dataset_id_mapping[DATASET_ID][1] / config.BATCH_SIZE,
     batch_size=config.BATCH_SIZE,
     train_idx=train_idx,
     test_idx=test_idx,
@@ -163,20 +163,21 @@ for state in stateio:
 f1_auc = auc([i for i in range(0, len(metric_values))], metric_values) / (
     len(metric_values) - 1
 )
-print(f1_auc)
 
-for r2 in r:
-    res = r2.get_result()
-    res["dataset_id"] = DATASET_ID
-    res["strategy_id"] = str(STRATEGY_ID)
-    res["dataset_random_seed"] = DATASET_RANDOM_SEED
-    res["strategy"] = str(QUERY_STRATEGY[0]) + str(QUERY_STRATEGY[1])
-    res["duration"] = end - start
-    res["f1_auc"] = f1_auc
-    res = {**res, **synthetic_creation_args}
-    with open(config.OUTPUT_PATH + "/05_alipy_results.csv", "a") as f:
-        w = csv.DictWriter(f, fieldnames=res.keys())
-        if len(open(config.OUTPUT_PATH + "/05_alipy_results.csv").readlines()) == 0:
-            print("write header")
-            w.writeheader()
-        w.writerow(res)
+res = {}
+res["dataset_id"] = DATASET_ID
+res["strategy_id"] = str(STRATEGY_ID)
+res["dataset_random_seed"] = DATASET_RANDOM_SEED
+res["strategy"] = str(QUERY_STRATEGY[0]) + str(QUERY_STRATEGY[1])
+res["duration"] = end - start
+res["f1_auc"] = f1_auc
+res = {**res, **synthetic_creation_args}
+with open(config.OUTPUT_PATH + "/05_alipy_results.csv", "a") as f:
+    w = csv.DictWriter(f, fieldnames=res.keys())
+    if len(open(config.OUTPUT_PATH + "/05_alipy_results.csv").readlines()) == 0:
+        print("write header")
+        w.writeheader()
+    w.writerow(res)
+
+
+# @TODO final test if REALLY the data is being labelled we wanted to be labelled

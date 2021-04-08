@@ -11,7 +11,7 @@ from active_learning.config.config import get_active_config
 
 
 dataset_id_mapping = {
-    0: ("synthetic", 50),
+    0: ("synthetic", 20),
     1: ("BREAST", 50),
     2: ("DIABETES", 50),
     3: ("FERTILITY", 50),
