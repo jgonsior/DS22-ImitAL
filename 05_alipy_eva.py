@@ -6,11 +6,7 @@ import numpy as np
 import pandas as pd
 import random
 import sys
-from alipy.experiment.al_experiment import AlExperiment
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import roc_auc_score, auc
-from sklearn.preprocessing import LabelEncoder
-from sklearn.preprocessing import Labencoder, MinMaxScaler, RobustScaler
 from sklearn.preprocessing import MinMaxScaler, RobustScaler
 from timeit import default_timer as timer
 
@@ -19,7 +15,8 @@ from active_learning.datasets.dwtc import load_dwtc
 from active_learning.datasets.synthetic import load_synthetic
 from active_learning.datasets.uci import load_uci
 from active_learning.logger.logger import init_logger
-from imitLearningPipelineSharedCode import non_slurm_strategy_ids, dataset_id_mapping
+from imitLearningPipelineSharedCode import ALiPYImitALSingle, dataset_id_mapping
+
 
 init_logger("tmp.log")
 

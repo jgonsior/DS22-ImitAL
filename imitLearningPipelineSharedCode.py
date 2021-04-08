@@ -1,41 +1,13 @@
-import argparse
-import argparse
-import csv
 import json
-import json
-import math
-import multiprocessing
 import numpy as np
 import os
-import os
 import pandas as pd
-import pandas as pd
-import random
-import sys
 import time
-from alipy.data_manipulate.al_split import split
-from alipy.experiment.al_experiment import AlExperiment
 from joblib import Parallel, delayed
-from joblib import Parallel, delayed
-from operator import itemgetter
 from pathlib import Path
-from sklearn.datasets import make_classification
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import pairwise_distances
-from sklearn.metrics import roc_auc_score, auc
-from sklearn.neural_network import MLPClassifier
-from sklearn.preprocessing import LabelEncoder
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler, RobustScaler
-from sklearn.preprocessing import MinMaxScaler, RobustScaler
-from timeit import default_timer as timer
 from typing import Any, Callable, Dict, List
 
 from active_learning.config.config import get_active_config
-from active_learning.dataStorage import DataStorage
-from active_learning.datasets.dwtc import load_dwtc
-from active_learning.datasets.synthetic import load_synthetic
-from active_learning.datasets.uci import load_uci
-from active_learning.logger.logger import init_logger
 from active_learning.query_sampling_strategies.ImitationLearningBaseQuerySampler import (
     InputState,
     OutputState,
@@ -46,7 +18,6 @@ from active_learning.query_sampling_strategies.TrainedImitALQuerySampler import 
     TrainedImitALSampler,
     TrainedImitALSingleSampler,
 )
-from imitLearningPipelineSharedCode import non_slurm_strategy_ids, dataset_id_mapping
 
 dataset_id_mapping = {
     0: ("synthetic", 50),
@@ -98,10 +69,10 @@ strategy_id_mapping = {
     9: ("QueryInstanceBMDR", {}),  # cvxpy
     10: ("QueryInstanceSPAL", {}),  # cvxpy
     # 11: ("QueryInstanceUncertainty", {"measure": "distance_to_boundary"}), only works with SVM
-    12:
+    # 12:
 }
 # non_slurm_strategy_ids = [8,0,10]
-non_slurm_strategy_ids = [0,1,2]
+non_slurm_strategy_ids = [0, 1, 2]
 
 
 def get_config():
@@ -341,8 +312,6 @@ def run_parallel_experiment(
     return
 
 
-
-
 class ALiPYImitALSingle:
     trained_imitAL_sampler: TrainedImitALSampler
     X: np.ndarray
@@ -407,4 +376,3 @@ class ALiPYImitALSingle:
             )
         ]
         # return [v for k, v in ordered_list_of_possible_sample_indices[:batch_size]]
-
