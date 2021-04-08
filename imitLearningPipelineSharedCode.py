@@ -63,7 +63,7 @@ strategy_id_mapping = {
     12: (ALiPY_ImitAL_Query_Strategy, {"NN_BINARy_PATH": "?"}),
 }
 # non_slurm_strategy_ids = [8,0,10]
-non_slurm_strategy_ids = [0, 1, 2]
+non_slurm_strategy_ids = [0, 1, 2, 12]
 
 
 def get_config():

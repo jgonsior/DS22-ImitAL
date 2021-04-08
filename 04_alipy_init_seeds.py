@@ -31,9 +31,9 @@ config.STRATEGY_IDS = [int(item) for item in config.STRATEGY_IDS.split(",")]
 # it contains in a second column the dataset we are dealing with about, and in a third column the id of the AL strategy to use
 # the file baseline_comparison.py expects as the parameter "RANDOM_SEED_INDEX" the index for which the random seeds from random_ids.csv should be read
 
-if os.path.isfile(config.OUTPUT_PATH + "/result.csv"):
+if os.path.isfile(config.OUTPUT_PATH + "/05_alipy_results.csv"):
     result_df = pd.read_csv(
-        config.OUTPUT_PATH + "/result.csv",
+        config.OUTPUT_PATH + "/05_alipy_results.csv",
         index_col=None,
         usecols=["dataset_id", "strategy_id", "dataset_random_seed"],
     )
@@ -100,7 +100,25 @@ random_seed_df.to_csv(config.OUTPUT_PATH + "/" + output_file, header=True)
 
 print(config.SLURM_FILE_TO_UPDATE)
 with open(config.SLURM_FILE_TO_UPDATE, "r") as f:
-    new_content = f.read().replace("XXX", str(len(random_seed_df)))
+    # replace stuff initially
+    # new_content = f.read().replace("XXX", str(len(random_seed_df)))
+    if config.SLURM_FILE_TO_UPDATE.endswith(".sh"):
+        replace_token = "--N_TASKS "
+    else:
+        replace_token = "--array 0-"
+    new_content = f.read()
+    replace_token_position = new_content.find(replace_token)
+    end_position = new_content[replace_token_position:].find("\n")
+    if end_position == -1:
+        end_position = len(new_content)
+    else:
+        end_position += replace_token_position
+
+    to_be_replaced = new_content[replace_token_position:end_position]
+
+    new_content = new_content.replace(
+        to_be_replaced, replace_token + str(len(random_seed_df))
+    )
 
 with open(config.SLURM_FILE_TO_UPDATE, "w") as f:
     f.write(new_content)

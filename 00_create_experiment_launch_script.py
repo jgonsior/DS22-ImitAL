@@ -49,7 +49,7 @@ parser.add_argument("--STATE_INCLUDE_NR_FEATURES", action="store_true")
 parser.add_argument("--DISTANCE_METRIC", default="euclidean")
 parser.add_argument("--TOTAL_BUDGET", type=int, default=50)
 parser.add_argument("--EVA_DATASET_IDS", nargs="*", default=[0])
-parser.add_argument("--EVA_STRATEGY_IDS", nargs="*", default=[0, 5, 10])
+parser.add_argument("--EVA_STRATEGY_IDS", nargs="*", default=[0, 1, 2, 12])
 
 # FIXME wenn HYBRID -> HYBRID namen so ändern, dass die Werte von oben an den titel angefügt werden
 

@@ -53,10 +53,6 @@ np.random.seed(DATASET_RANDOM_SEED)
 random.seed(DATASET_RANDOM_SEED)
 DATASET_NAME = dataset_id_mapping[DATASET_ID][0]
 
-# specify which dataset to load
-print("dataset: ", DATASET_NAME)
-print("random_seed: ", DATASET_RANDOM_SEED)
-
 if DATASET_NAME == "synthetic":
     df, synthetic_creation_args = load_synthetic(
         DATASET_RANDOM_SEED,
@@ -99,8 +95,7 @@ train_idx = indices[: math.floor(len(Y) * (1 - test_ratio))]
 test_idx = indices[math.floor(len(Y) * (1 - test_ratio)) :]
 unlabel_idx = train_idx.copy()
 label_idx = []
-#  print(Y)
-#  print(y[train_idx])
+
 for label in np.unique(Y):
     if label not in Y[train_idx]:
         print(np.where(Y[test_idx] == label))
