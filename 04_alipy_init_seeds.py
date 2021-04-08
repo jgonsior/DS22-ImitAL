@@ -87,7 +87,7 @@ random_seed_df = pd.DataFrame(
 )
 os.makedirs(config.OUTPUT_PATH, exist_ok=True)
 
-output_file = "05_random_seeds_"
+output_file = "04_random_seeds_"
 if config.NON_SLURM:
     output_file += "_bash.csv"
 else:

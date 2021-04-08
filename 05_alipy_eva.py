@@ -1,3 +1,5 @@
+from ALiPy.alipy.experiment.al_experiment import AlExperiment
+from ALiPy_imitAL_Query_Strategy import ALiPY_ImitAL_Query_Strategy
 import argparse
 import csv
 import math
@@ -79,14 +81,6 @@ data_storage = DataStorage(df, TEST_FRACTION=0)
 X = data_storage.X
 Y = data_storage.exp_Y
 
-test = ALiPYImitALSingle(
-    X=X,
-    Y=Y,
-    NN_BINARY_PATH=config.OUTPUT_PATH + "/03_imital_trained_ann.model",
-    data_storage=data_storage,
-)
-
-
 shuffling = np.random.permutation(len(Y))
 X = X[shuffling]
 Y = Y[shuffling]
@@ -98,6 +92,7 @@ X = scaler.fit_transform(X)
 scaler = MinMaxScaler()
 X = scaler.fit_transform(X)
 
+# fancy ALiPy train/test split
 test_ratio = 0.5
 indices = [i for i in range(0, len(Y))]
 train_idx = indices[: math.floor(len(Y) * (1 - test_ratio))]
@@ -107,83 +102,81 @@ label_idx = []
 #  print(Y)
 #  print(y[train_idx])
 for label in np.unique(Y):
-    if label not in y[train_idx]:
-        print(np.where(y[test_idx] == label))
-    init_labeled_index = np.where(y[train_idx] == label)[0][0]
+    if label not in Y[train_idx]:
+        print(np.where(Y[test_idx] == label))
+    init_labeled_index = np.where(Y[train_idx] == label)[0][0]
     label_idx.append(init_labeled_index)
     unlabel_idx.remove(init_labeled_index)
 
-train_idx = [np.array(train_idx)]
-test_idx = [np.array(test_idx)]
-label_idx = [np.array(label_idx)]
-unlabel_idx = [np.array(unlabel_idx)]
+train_idx = [np.array(train_idx)]  # type: ignore
+test_idx = [np.array(test_idx)]  # type: ignore
+label_idx = [np.array(label_idx)]  # type: ignore
+unlabel_idx = [np.array(unlabel_idx)]  # type: ignore
 
+# update data_storage!
 
-def run_parallel(query_strategy):
-    print(query_strategy)
+QUERY_STRATEGY = strategy_id_mapping[STRATEGY_ID]
 
-    al = AlExperiment(
-        X,
-        y,
-        #  model=MLPClassifier(),
-        model=RandomForestClassifier(n_jobs=multiprocessing.cpu_count()),
-        stopping_criteria="num_of_queries",
-        num_of_queries=dataset_load_function[2],
-        stopping_value=dataset_load_function[2],
-        batch_size=BATCH_SIZE,
-        train_idx=train_idx,
-        test_idx=test_idx,
-        label_idx=label_idx,
-        unlabel_idx=unlabel_idx,
-    )
+test = ALiPY_ImitAL_Query_Strategy(
+    X=X,
+    Y=Y,
+    NN_BINARY_PATH=config.OUTPUT_PATH + "/03_imital_trained_ann.model",
+    data_storage=data_storage,
+)
+print(QUERY_STRATEGY)
 
-    al.set_query_strategy(
-        strategy=query_strategy[0], **query_strategy[1]
-    )  # , measure="least_confident")
+al = AlExperiment(
+    X,
+    Y,
+    #  model=MLPClassifier(),
+    model=RandomForestClassifier(n_jobs=multiprocessing.cpu_count()),
+    stopping_criteria="num_of_queries",
+    num_of_queries=dataset_id_mapping[DATASET_ID][1],
+    stopping_value=dataset_id_mapping[DATASET_ID][1],
+    batch_size=config.BATCH_SIZE,
+    train_idx=train_idx,
+    test_idx=test_idx,
+    label_idx=label_idx,
+    unlabel_idx=unlabel_idx,
+)
 
-    #  al.set_performance_metric("accuracy_score")
-    al.set_performance_metric("f1_score")
+al.set_query_strategy(strategy=QUERY_STRATEGY[0], **QUERY_STRATEGY[1])
 
-    start = timer()
-    al.start_query(multi_thread=False)
-    end = timer()
+#  al.set_performance_metric("accuracy_score")
+al.set_performance_metric("f1_score")
 
-    trained_model = al._model
+start = timer()
+al.start_query(multi_thread=False)
+end = timer()
 
-    r = al.get_experiment_result()
+trained_model = al._model
 
-    stateio = r[0]
-    metric_values = []
-    if stateio.initial_point is not None:
-        metric_values.append(stateio.initial_point)
-    for state in stateio:
-        metric_values.append(state.get_value("performance"))
-    f1_auc = auc([i for i in range(0, len(metric_values))], metric_values) / (
-        len(metric_values) - 1
-    )
-    print(f1_auc)
-    for r2 in r:
-        res = r2.get_result()
-        res["dataset_id"] = DATASET_ID
-        res["strategy_id"] = str(STRATEGY_ID)
-        res["dataset_random_seed"] = DATASET_RANDOM_SEED
-        res["strategy"] = str(query_strategy[0]) + str(query_strategy[1])
-        res["duration"] = end - start
-        res["f1_auc"] = f1_auc
-        res = {**res, **synthetic_creation_args}
-        with open(config.OUTPUT_PATH + "/result.csv", "a") as f:
-            w = csv.DictWriter(f, fieldnames=res.keys())
-            if len(open(config.OUTPUT_PATH + "/result.csv").readlines()) == 0:
-                print("write header")
-                w.writeheader()
-            w.writerow(res)
+r = al.get_experiment_result()
 
+stateio = r[0]
+metric_values = []
+if stateio.initial_point is not None:
+    metric_values.append(stateio.initial_point)
+for state in stateio:
+    metric_values.append(state.get_value("performance"))
 
-run_parallel(query_strategies[STRATEGY_ID])
-#  for query_strategy in query_strategies:
-#  run_parallel((query_strategy))
+f1_auc = auc([i for i in range(0, len(metric_values))], metric_values) / (
+    len(metric_values) - 1
+)
+print(f1_auc)
 
-# with Parallel(n_jobs=config.N_JOBS, backend="threading") as parallel:
-#    output = parallel(
-#        delayed(run_parallel)(query_strategy) for query_strategy in query_strategies
-#    )
+for r2 in r:
+    res = r2.get_result()
+    res["dataset_id"] = DATASET_ID
+    res["strategy_id"] = str(STRATEGY_ID)
+    res["dataset_random_seed"] = DATASET_RANDOM_SEED
+    res["strategy"] = str(QUERY_STRATEGY[0]) + str(QUERY_STRATEGY[1])
+    res["duration"] = end - start
+    res["f1_auc"] = f1_auc
+    res = {**res, **synthetic_creation_args}
+    with open(config.OUTPUT_PATH + "/05_alipy_results.csv", "a") as f:
+        w = csv.DictWriter(f, fieldnames=res.keys())
+        if len(open(config.OUTPUT_PATH + "/05_alipy_results.csv").readlines()) == 0:
+            print("write header")
+            w.writeheader()
+        w.writerow(res)

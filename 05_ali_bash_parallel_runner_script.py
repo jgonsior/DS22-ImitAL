@@ -25,7 +25,7 @@ def run_code(i):
         + str(i)
         + " --RANDOM_SEEDS_INPUT_FILE "
         + config.OUTPUT_PATH
-        + "/05_random_seeds__bash.csv"
+        + "/04_random_seeds__bash.csv"
     )
     print("#" * 100)
     print(i)

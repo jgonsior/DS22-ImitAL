@@ -51,7 +51,9 @@ else:
 
 # prevent retraining!
 if os.path.isfile(
-    PARENT_OUTPUT_DIRECTORY + base_param_string + "/03_imital_trained_ann.model"
+    PARENT_OUTPUT_DIRECTORY
+    + base_param_string
+    + "/03_imital_trained_ann.model/saved_model.pb"
 ):
     exit(0)
 
