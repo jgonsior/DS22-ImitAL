@@ -1,3 +1,8 @@
+from active_learning.query_sampling_strategies.ImitationLearningBaseQuerySampler import (
+    InputState,
+    OutputState,
+    PreSampledIndices,
+)
 from active_learning.query_sampling_strategies.TrainedImitALQuerySampler import (
     TrainedImitALBatchSampler,
     TrainedImitALSampler,
@@ -98,8 +103,13 @@ Y = data_storage.exp_Y
 
 class ALiPYImitALSingle:
     trained_imitAL_sampler: TrainedImitALSampler
+    X: np.ndarray
+    Y: np.ndarray
 
-    def __init__(self, X=None, Y=None, **kwargs):
+    def __init__(self, X: np.ndarray, Y: np.ndarray, **kwargs):
+        self.X = X
+        self.Y = Y
+
         # load NN params from json file
         with open(
             os.path.dirname(kwargs["NN_BINARY_PATH"])
@@ -126,554 +136,43 @@ class ALiPYImitALSingle:
             NN_BINARY_PATH=kwargs["NN_BINARY_PATH"],
         )
 
+        self.trained_imitAL_sampler.data_storage = kwargs["data_storage"]
+
     def select(self, labeled_index, unlabeled_index, model, batch_size=1, **kwargs):
-        labeled_index = self.X[labeled_index]
+        self.trained_imitAL_sampler.data_storage.labeled_mask = labeled_index
+        self.trained_imitAL_sampler.data_storage.unlabeled_mask = unlabeled_index
 
-        max_sum = 0
+        # @TODO: check if data_storage index and Y etc. is updated accordingly!!
 
-        for i in range(0, kwargs["HYPER_SAMPLING_SEARCH_ITERATIONS"]):
-
-            # if there are less than 20 samples left we  still have to show the ann 20 samples because of the fixed input size
-            # so we just "pad" it with random indices
-            if len(unlabeled_index) <= 20:
-                padding = np.random.choice(unlabeled_index, 20 - len(unlabeled_index))
-                possible_samples_indices = np.concatenate((unlabeled_index, padding))
-                break
-            random_sample_index = unlabeled_index.random_sample(
-                20
-            )  # self._fast_random_choice_list(unlabeled_index, 20)
-
-            random_sample = self.X[random_sample_index]
-            # calculate distance to each other
-            total_distance = np.sum(
-                self._pairwise_distances_subsampling(random_sample, random_sample)
-            )
-
-            total_distance += np.sum(
-                self._pairwise_distances_subsampling(labeled_index, random_sample)
-            )
-            if total_distance > max_sum:
-                max_sum = total_distance
-                possible_samples_indices = random_sample_index
-
-        X_query = self.X[possible_samples_indices]
-
-        X_state = self.calculate_state(
-            X_query,
-            STATE_ARGSECOND_PROBAS=True,
-            STATE_DIFF_PROBAS=False,
-            STATE_ARGTHIRD_PROBAS=True,
-            STATE_DISTANCES_LAB=True,
-            STATE_DISTANCES_UNLAB=True,
-            STATE_PREDICTED_CLASS=False,
-            model=model,
-            labeled_index=labeled_index,
-            train_unlabeled_X=self.X[unlabeled_index],
-            TRUE_DISTANCES=kwargs["TRUE_DISTANCES"],
-        )
-        X_state = np.reshape(X_state, (1, len(X_state)))
-        Y_pred = self.sampling_classifier.predict(X_state)
-        sorting = Y_pred
-        # use the optimal values
-        zero_to_one_values_and_index = list(zip(sorting, possible_samples_indices))
-        ordered_list_of_possible_sample_indices = sorted(
-            zero_to_one_values_and_index, key=lambda tup: tup[0], reverse=True
+        # update data_storage with labeled_index and unlabeled_index
+        pre_sampled_X_querie_indices: PreSampledIndices = (
+            self.trained_imitAL_sampler.pre_sample_potential_X_queries()
         )
 
-        return [v for k, v in ordered_list_of_possible_sample_indices[:batch_size]]
+        # when using a pre-trained model this does nothing
+        self.trained_imitAL_sampler.calculateImitationLearningData(
+            pre_sampled_X_querie_indices
+        )
+
+        X_input_state: InputState = self.trained_imitAL_sampler.encode_input_state(
+            pre_sampled_X_querie_indices
+        )
+        Y_output_state: OutputState = self.trained_imitAL_sampler.applyNN(X_input_state)
+        return [
+            v
+            for v in self.trained_imitAL_sampler.decode_output_state(
+                Y_output_state, pre_sampled_X_querie_indices, batch_size
+            )
+        ]
+        # return [v for k, v in ordered_list_of_possible_sample_indices[:batch_size]]
 
 
 test = ALiPYImitALSingle(
-    X=X, Y=Y, NN_BINARY_PATH=config.OUTPUT_PATH + "/03_imital_trained_ann.model"
+    X=X,
+    Y=Y,
+    NN_BINARY_PATH=config.OUTPUT_PATH + "/03_imital_trained_ann.model",
+    data_storage=data_storage,
 )
-exit(-1)
-
-
-class ANNQuerySingle:
-    def __init__(self, X=None, Y=None, **kwargs):
-        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
-        os.environ["CUDA_VISIBLE_DEVICES"] = ""
-
-        with open(kwargs["NN_BINARY_PATH"], "rb") as handle:
-            model = dill.load(handle)
-
-        self.sampling_classifier = model
-
-        self.X = X
-        self.Y = Y
-        self.DISTANCE_METRIC = kwargs["DISTANCE_METRIC"]
-        self.STATE_INCLUDE_NR_FEATURES = kwargs["STATE_INCLUDE_NR_FEATURES"]
-
-    def _fast_random_choice_numpy(self, elements, size):
-        return elements[random.sample(range(0, len(elements)), size)]
-
-    def _pairwise_distances_subsampling(self, X, Y, sampling_threshold=100):
-        # subsample X or Y for less computational cost
-        # if len(X) > sampling_threshold:
-        #    rand_idx = self._fast_random_choice_numpy(
-        #        np.arange(0, np.shape(X)[0]), sampling_threshold
-        #    )
-        #    X = X[rand_idx]
-
-        return pairwise_distances(
-            X, Y, metric=self.DISTANCE_METRIC
-        )  # , n_jobs=multiprocessing.cpu_count())
-
-    def calculate_state(
-        self,
-        X_query,
-        STATE_ARGSECOND_PROBAS,
-        STATE_DIFF_PROBAS,
-        STATE_ARGTHIRD_PROBAS,
-        STATE_DISTANCES_LAB,
-        STATE_DISTANCES_UNLAB,
-        STATE_PREDICTED_CLASS,
-        model,
-        labeled_index,
-        train_unlabeled_X,
-        TRUE_DISTANCES,
-    ):
-        possible_samples_probas = model.predict_proba(X_query)
-
-        sorted_probas = -np.sort(-possible_samples_probas, axis=1)
-        argmax_probas = sorted_probas[:, 0]
-
-        state_list = argmax_probas.tolist()
-
-        if STATE_ARGSECOND_PROBAS:
-            argsecond_probas = sorted_probas[:, 1]
-            state_list += argsecond_probas.tolist()
-        if STATE_DIFF_PROBAS:
-            state_list += (argmax_probas - sorted_probas[:, 1]).tolist()
-        if STATE_ARGTHIRD_PROBAS:
-            if np.shape(sorted_probas)[1] < 3:
-                state_list += [0 for _ in range(0, len(X_query))]
-            else:
-                state_list += sorted_probas[:, 2].tolist()
-        if STATE_PREDICTED_CLASS:
-            state_list += model.predict(X_query).tolist()
-
-        if TRUE_DISTANCES:
-            if STATE_DISTANCES_LAB:
-                # calculate average distance to labeled and average distance to unlabeled samples
-                average_distance_labeled = (
-                    np.sum(
-                        self._pairwise_distances_subsampling(labeled_index, X_query),
-                        axis=0,
-                    )
-                    / len(labeled_index)
-                )
-                state_list += average_distance_labeled.tolist()
-
-            if STATE_DISTANCES_UNLAB:
-                # calculate average distance to labeled and average distance to unlabeled samples
-                average_distance_unlabeled = (
-                    np.sum(
-                        self._pairwise_distances_subsampling(
-                            train_unlabeled_X, X_query
-                        ),
-                        axis=0,
-                    )
-                    / len(train_unlabeled_X)
-                )
-                state_list += average_distance_unlabeled.tolist()
-        else:
-            state_list += np.zeros(len(X_query) * 2).tolist()
-
-        if self.STATE_INCLUDE_NR_FEATURES:
-            state_list = [self.X.shape[1]] + state_list
-        return np.array(state_list)
-
-    def select(self, labeled_index, unlabeled_index, model, batch_size=1, **kwargs):
-        labeled_index = self.X[labeled_index]
-
-        max_sum = 0
-
-        for i in range(0, kwargs["HYPER_SAMPLING_SEARCH_ITERATIONS"]):
-
-            # if there are less than 20 samples left we  still have to show the ann 20 samples because of the fixed input size
-            # so we just "pad" it with random indices
-            if len(unlabeled_index) <= 20:
-                padding = np.random.choice(unlabeled_index, 20 - len(unlabeled_index))
-                possible_samples_indices = np.concatenate((unlabeled_index, padding))
-                break
-            random_sample_index = unlabeled_index.random_sample(
-                20
-            )  # self._fast_random_choice_list(unlabeled_index, 20)
-
-            random_sample = self.X[random_sample_index]
-            # calculate distance to each other
-            total_distance = np.sum(
-                self._pairwise_distances_subsampling(random_sample, random_sample)
-            )
-
-            total_distance += np.sum(
-                self._pairwise_distances_subsampling(labeled_index, random_sample)
-            )
-            if total_distance > max_sum:
-                max_sum = total_distance
-                possible_samples_indices = random_sample_index
-
-        X_query = self.X[possible_samples_indices]
-
-        X_state = self.calculate_state(
-            X_query,
-            STATE_ARGSECOND_PROBAS=True,
-            STATE_DIFF_PROBAS=False,
-            STATE_ARGTHIRD_PROBAS=True,
-            STATE_DISTANCES_LAB=True,
-            STATE_DISTANCES_UNLAB=True,
-            STATE_PREDICTED_CLASS=False,
-            model=model,
-            labeled_index=labeled_index,
-            train_unlabeled_X=self.X[unlabeled_index],
-            TRUE_DISTANCES=kwargs["TRUE_DISTANCES"],
-        )
-        X_state = np.reshape(X_state, (1, len(X_state)))
-        Y_pred = self.sampling_classifier.predict(X_state)
-        sorting = Y_pred
-        # use the optimal values
-        zero_to_one_values_and_index = list(zip(sorting, possible_samples_indices))
-        ordered_list_of_possible_sample_indices = sorted(
-            zero_to_one_values_and_index, key=lambda tup: tup[0], reverse=True
-        )
-
-        return [v for k, v in ordered_list_of_possible_sample_indices[:batch_size]]
-
-
-class ANNQueryBatch(ANNQuerySingle):
-    STATE_UNCERTAINTIES = True
-    STATE_DISTANCES = True
-    STATE_DISTANCES_LAB = False
-    STATE_PREDICTED_UNITY = False
-    NR_QUERIES_PER_ITERATION = BATCH_SIZE
-    # INITIAL_BATCH_SAMPLING_ARG = 750
-    #  INITIAL_BATCH_SAMPLING_METHOD = "hybrid"
-    #  INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST = 0.4
-    INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB = 0
-    INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY = 0
-    #  INITIAL_BATCH_SAMPLING_HYBRID_UNCERT = 0.4
-
-    def __init__(self, X=None, Y=None, **kwargs):
-        super().__init__(X, Y, **kwargs)
-        self.N_CLASSES = len(np.unique(self.Y))
-        self.DISTANCE_METRIC = kwargs["DISTANCE_METRIC"]
-        self.STATE_INCLUDE_NR_FEATURES = kwargs["STATE_INCLUDE_NR_FEATURES"]
-        self.INITIAL_BATCH_SAMPLING_ARG = kwargs["INITIAL_BATCH_SAMPLING_ARG"]
-        self.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT = kwargs[
-            "INITIAL_BATCH_SAMPLING_HYBRID_UNCERT"
-        ]
-        self.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST = kwargs[
-            "INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST"
-        ]
-        self.INITIAL_BATCH_SAMPLING_METHOD = kwargs["INITIAL_BATCH_SAMPLING_METHOD"]
-
-    def _calculate_furthest_metric(self, batch_indices):
-        return np.sum(
-            pairwise_distances(self.X[batch_indices], metric=self.DISTANCE_METRIC)
-        )
-
-    def _calculate_furthest_lab_metric(self, batch_indices):
-        return np.sum(
-            pairwise_distances(
-                self.X[batch_indices],
-                self.X[self.labeled_index],
-                metric=self.DISTANCE_METRIC,
-            )
-        )
-
-    def _calculate_uncertainty_metric(self, batch_indices):
-        Y_proba = self.Y_probas[batch_indices]
-        margin = np.partition(-Y_proba, 1, axis=1)
-        return np.sum(-np.abs(margin[:, 0] - margin[:, 1]))
-
-    def _calculate_predicted_unity(self, unlabeled_sample_indices):
-        Y_pred = self.Y_pred[unlabeled_sample_indices]
-        Y_pred_sorted = sorted(Y_pred)
-        count, unique = np.unique(Y_pred_sorted, return_counts=True)
-        Y_enc = []
-        for i, (c, u) in enumerate(
-            sorted(zip(count, unique), key=lambda t: t[1], reverse=True)
-        ):
-            Y_enc += [i + 1 for _ in range(0, u)]
-
-        Y_enc = np.array(Y_enc)
-        counts, unique = np.unique(Y_enc, return_counts=True)
-        disagreement_score = sum([c * u for c, u in zip(counts, unique)])
-        return disagreement_score
-
-    def _get_normalized_unity_encoding_mapping(self):
-        # adopted from https://stackoverflow.com/a/44209393
-        def partitions(n, I=1):
-            yield (n,)
-            for i in range(I, n // 2 + 1):
-                for p in partitions(n - i, i):
-                    yield (i,) + p
-
-        N_CLASSES = self.N_CLASSES
-
-        if N_CLASSES >= BATCH_SIZE:
-            N_CLASSES = BATCH_SIZE
-        possible_lengths = set()
-
-        for possible_partition in partitions(BATCH_SIZE):
-            if len(possible_partition) <= N_CLASSES:
-                possible_lengths.add(
-                    sum(
-                        [
-                            c * u
-                            for c, u in zip(
-                                sorted(possible_partition, reverse=True),
-                                range(1, len(possible_partition) + 1),
-                            )
-                        ]
-                    )
-                )
-        mapping = {}
-        for i, possible_length in enumerate(sorted(possible_lengths)):
-            mapping[possible_length] = i / (len(possible_lengths) - 1)
-        return mapping
-
-    def calculate_state(self, batch_indices, model):
-        state_list = []
-        if self.STATE_UNCERTAINTIES:
-            # normalize by batch size
-            state_list += [
-                (self.NR_QUERIES_PER_ITERATION + self._calculate_uncertainty_metric(a))
-                / self.NR_QUERIES_PER_ITERATION
-                for a in batch_indices
-            ]
-
-        if self.STATE_DISTANCES:
-            # normalize based on the assumption, that the whole vector space got first normalized to -1 to +1, then we can calculate the maximum possible distance like this:
-
-            if self.DISTANCE_METRIC == "euclidean":
-                normalization_denominator = (
-                    2 * math.sqrt(np.shape(self.X)[1]) * self.NR_QUERIES_PER_ITERATION
-                )
-            elif self.DISTANCE_METRIC == "cosine":
-                normalization_denominator = self.NR_QUERIES_PER_ITERATION
-
-            state_list += [
-                self._calculate_furthest_metric(a) / normalization_denominator
-                for a in batch_indices
-            ]
-        if self.STATE_DISTANCES_LAB:
-            if self.DISTANCE_METRIC == "euclidean":
-                normalization_denominator = (
-                    2 * math.sqrt(np.shape(self.X)[1]) * self.NR_QUERIES_PER_ITERATION
-                )
-            elif self.DISTANCE_METRIC == "cosine":
-                normalization_denominator = self.NR_QUERIES_PER_ITERATION
-
-            state_list += [
-                self._calculate_furthest_lab_metric(a) / normalization_denominator
-                for a in batch_indices
-            ]
-        if self.STATE_PREDICTED_UNITY:
-            pred_unity_mapping = self._get_normalized_unity_encoding_mapping()
-            # normalize in a super complicated fashion due to the encoding
-            state_list += [
-                pred_unity_mapping[self._calculate_predicted_unity(a)]
-                for a in batch_indices
-            ]
-
-        if self.STATE_INCLUDE_NR_FEATURES:
-            state_list = [self.X.shape[1]] + state_list
-        return np.array(state_list)
-
-    def sample_unlabeled_X(
-        self,
-        SAMPLE_SIZE,
-        INITIAL_BATCH_SAMPLING_METHOD,
-        INITIAL_BATCH_SAMPLING_ARG,
-        labeled_index,
-        unlabeled_index,
-    ):
-        index_batches = []
-        if len(unlabeled_index) <= self.NR_QUERIES_PER_ITERATION:
-            padding = np.random.choice(
-                unlabeled_index, self.NR_QUERIES_PER_ITERATION - len(unlabeled_index)
-            )
-            possible_samples_indices = np.concatenate((unlabeled_index, padding))
-            index_batches = [
-                np.array(possible_samples_indices) for _ in range(0, SAMPLE_SIZE)
-            ]
-        else:
-            if INITIAL_BATCH_SAMPLING_METHOD == "random":
-                for _ in range(0, SAMPLE_SIZE):
-                    index_batches.append(
-                        np.random.choice(
-                            unlabeled_index,
-                            size=self.NR_QUERIES_PER_ITERATION,
-                            replace=False,
-                        )
-                    )
-            elif (
-                INITIAL_BATCH_SAMPLING_METHOD == "furthest"
-                or INITIAL_BATCH_SAMPLING_METHOD == "furthest_lab"
-                or INITIAL_BATCH_SAMPLING_METHOD == "uncertainty"
-                or INITIAL_BATCH_SAMPLING_METHOD == "predicted_unity"
-            ):
-                possible_batches = [
-                    np.random.choice(
-                        unlabeled_index,
-                        size=self.NR_QUERIES_PER_ITERATION,
-                        replace=False,
-                    )
-                    for x in range(0, INITIAL_BATCH_SAMPLING_ARG)
-                ]
-
-                if INITIAL_BATCH_SAMPLING_METHOD == "furthest":
-                    metric_function = self._calculate_furthest_metric
-                elif INITIAL_BATCH_SAMPLING_METHOD == "furthest_lab":
-                    metric_function = self._calculate_furthest_lab_metric
-                elif INITIAL_BATCH_SAMPLING_METHOD == "uncertainty":
-                    metric_function = self._calculate_uncertainty_metric
-                elif INITIAL_BATCH_SAMPLING_METHOD == "predicted_unity":
-                    metric_function = self._calculate_predicted_unity
-                metric_values = [metric_function(a) for a in possible_batches]
-
-                # take n samples based on the sorting metric, the rest randomly
-                index_batches = [
-                    x
-                    for _, x in sorted(
-                        zip(metric_values, possible_batches),
-                        key=lambda t: t[0],
-                        reverse=True,
-                    )
-                ][:SAMPLE_SIZE]
-            elif INITIAL_BATCH_SAMPLING_METHOD == "hybrid":
-                possible_batches = [
-                    np.random.choice(
-                        unlabeled_index,
-                        size=self.NR_QUERIES_PER_ITERATION,
-                        replace=False,
-                    )
-                    for x in range(0, INITIAL_BATCH_SAMPLING_ARG)
-                ]
-
-                furthest_index_batches = [
-                    x
-                    for _, x in sorted(
-                        zip(
-                            [
-                                self._calculate_furthest_metric(a)
-                                for a in possible_batches
-                            ],
-                            possible_batches,
-                        ),
-                        key=lambda t: t[0],
-                        reverse=True,
-                    )
-                ][
-                    : math.floor(
-                        SAMPLE_SIZE * self.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST
-                    )
-                ]
-
-                furthest_lab_index_batches = [
-                    x
-                    for _, x in sorted(
-                        zip(
-                            [
-                                self._calculate_furthest_lab_metric(a)
-                                for a in possible_batches
-                            ],
-                            possible_batches,
-                        ),
-                        key=lambda t: t[0],
-                        reverse=True,
-                    )
-                ][
-                    : math.floor(
-                        SAMPLE_SIZE * self.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB
-                    )
-                ]
-
-                uncertainty_index_batches = [
-                    x
-                    for _, x in sorted(
-                        zip(
-                            [
-                                self._calculate_uncertainty_metric(a)
-                                for a in possible_batches
-                            ],
-                            possible_batches,
-                        ),
-                        key=lambda t: t[0],
-                        reverse=True,
-                    )
-                ][: math.floor(SAMPLE_SIZE * self.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT)]
-
-                predicted_unity_index_batches = [
-                    x
-                    for _, x in sorted(
-                        zip(
-                            [
-                                self._calculate_predicted_unity(a)
-                                for a in possible_batches
-                            ],
-                            possible_batches,
-                        ),
-                        key=lambda t: t[0],
-                        reverse=True,
-                    )
-                ][
-                    : math.floor(
-                        SAMPLE_SIZE * self.INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY
-                    )
-                ]
-
-                index_batches = [
-                    tuple(i.tolist())
-                    for i in (
-                        furthest_index_batches
-                        + furthest_lab_index_batches
-                        + uncertainty_index_batches
-                        + predicted_unity_index_batches
-                    )
-                ]
-                index_batches = set(index_batches)
-
-                # add some random batches as padding
-                index_batches = [np.array(list(i)) for i in index_batches] + [
-                    np.array(i)
-                    for i in random.sample(
-                        set([tuple(i.tolist()) for i in possible_batches]).difference(
-                            index_batches
-                        ),
-                        SAMPLE_SIZE - len(index_batches),
-                    )
-                ]
-            else:
-                print(
-                    "NON EXISTENT INITIAL_SAMPLING_METHOD: "
-                    + INITIAL_BATCH_SAMPLING_METHOD
-                )
-                raise ()
-        return index_batches
-
-    def select(self, labeled_index, unlabeled_index, model, batch_size=1, **kwargs):
-        self.labeled_index = labeled_index
-        self.unlabeled_index = unlabeled_index
-        self.clf = model
-        self.Y_probas = self.clf.predict_proba(self.X)
-        self.Y_pred = self.clf.predict(self.X)
-        batch_indices = self.sample_unlabeled_X(
-            self.sampling_classifier.n_outputs_,
-            INITIAL_BATCH_SAMPLING_ARG=self.INITIAL_BATCH_SAMPLING_ARG,
-            INITIAL_BATCH_SAMPLING_METHOD=self.INITIAL_BATCH_SAMPLING_METHOD,
-            labeled_index=labeled_index,
-            unlabeled_index=unlabeled_index,
-        )
-        X_state = self.calculate_state(batch_indices, model=model)
-
-        X_state = np.reshape(X_state, (1, len(X_state)))
-        Y_pred = self.sampling_classifier.predict(X_state)
-        sorting = Y_pred.argmax()
-
-        return batch_indices[sorting]
 
 
 query_strategies = {
