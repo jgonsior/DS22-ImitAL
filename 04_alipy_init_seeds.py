@@ -1,9 +1,10 @@
 import argparse
-import os
-from random import random
-import sys
-import pandas as pd
 import itertools
+import os
+import pandas as pd
+import sys
+from random import random
+
 from imitLearningPipelineSharedCode import non_slurm_strategy_ids
 
 parser = argparse.ArgumentParser()

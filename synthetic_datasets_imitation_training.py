@@ -1,44 +1,43 @@
+import argparse
+import numpy as np
+import os
+import pandas as pd
+import random
+from sklearn.metrics import accuracy_score
+from timeit import default_timer as timer
+from typing import List
+
+from active_learning.BaseOracle import BaseOracle
+from active_learning.activeLearner import ActiveLearner
+from active_learning.al_cycle_wrapper import eval_al
+from active_learning.callbacks import MetricCallback, test_acc_metric, test_f1_metric
+from active_learning.callbacks.PrintLoggingStatisticsCallback import (
+    PrintLoggingStatisticsCallback,
+)
+from active_learning.config import get_active_config
+from active_learning.dataStorage import DataStorage
+from active_learning.datasets import load_synthetic
+from active_learning.learner import get_classifier
+from active_learning.logger import init_logger, log_it
 from active_learning.merge_weak_supervision_label_strategies.MajorityVoteLabelMergeStrategy import (
     MajorityVoteLabelMergeStrategy,
 )
+from active_learning.oracles import FakeExperimentOracle
 from active_learning.query_sampling_strategies import ImitationLearner
-from active_learning.weak_supervision.BaseWeakSupervision import BaseWeakSupervision
 from active_learning.query_sampling_strategies.BatchStateEncoding import (
     TrainImitALBatch,
 )
 from active_learning.query_sampling_strategies.ImitationLearner import TrainImitALSingle
-from active_learning.weak_supervision import SyntheticLabelingFunctions
+from active_learning.query_sampling_strategies.ImitationLearningBaseQuerySampler import (
+    ImitationLearningBaseQuerySampler,
+)
 from active_learning.query_sampling_strategies.TrainedImitALQuerySampler import (
     TrainedImitALBatchSampler,
     TrainedImitALSingleSampler,
 )
-from active_learning.query_sampling_strategies.ImitationLearningBaseQuerySampler import (
-    ImitationLearningBaseQuerySampler,
-)
-from typing import List
-from active_learning.BaseOracle import BaseOracle
-from active_learning.callbacks.PrintLoggingStatisticsCallback import (
-    PrintLoggingStatisticsCallback,
-)
-import argparse
-import os
-import random
-from timeit import default_timer as timer
-
-import numpy as np
-import pandas as pd
-from sklearn.metrics import accuracy_score
-
-from active_learning.activeLearner import ActiveLearner
-from active_learning.al_cycle_wrapper import eval_al
-from active_learning.callbacks import MetricCallback, test_acc_metric, test_f1_metric
-from active_learning.config import get_active_config
-from active_learning.datasets import load_synthetic
-from active_learning.dataStorage import DataStorage
-from active_learning.learner import get_classifier
-from active_learning.logger import init_logger, log_it
-from active_learning.oracles import FakeExperimentOracle
 from active_learning.stopping_criterias import ALCyclesStoppingCriteria
+from active_learning.weak_supervision import SyntheticLabelingFunctions
+from active_learning.weak_supervision.BaseWeakSupervision import BaseWeakSupervision
 
 config: argparse.Namespace = get_active_config()  # type: ignore
 

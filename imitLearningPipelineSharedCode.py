@@ -1,15 +1,52 @@
 import argparse
+import argparse
+import csv
 import json
+import json
+import math
+import multiprocessing
+import numpy as np
 import os
+import os
+import pandas as pd
+import pandas as pd
+import random
+import sys
 import time
+from alipy.data_manipulate.al_split import split
+from alipy.experiment.al_experiment import AlExperiment
+from joblib import Parallel, delayed
+from joblib import Parallel, delayed
+from operator import itemgetter
 from pathlib import Path
+from sklearn.datasets import make_classification
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import pairwise_distances
+from sklearn.metrics import roc_auc_score, auc
+from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler, RobustScaler
+from sklearn.preprocessing import MinMaxScaler, RobustScaler
+from timeit import default_timer as timer
 from typing import Any, Callable, Dict, List
 
-import pandas as pd
-from joblib import Parallel, delayed
-
 from active_learning.config.config import get_active_config
-
+from active_learning.dataStorage import DataStorage
+from active_learning.datasets.dwtc import load_dwtc
+from active_learning.datasets.synthetic import load_synthetic
+from active_learning.datasets.uci import load_uci
+from active_learning.logger.logger import init_logger
+from active_learning.query_sampling_strategies.ImitationLearningBaseQuerySampler import (
+    InputState,
+    OutputState,
+    PreSampledIndices,
+)
+from active_learning.query_sampling_strategies.TrainedImitALQuerySampler import (
+    TrainedImitALBatchSampler,
+    TrainedImitALSampler,
+    TrainedImitALSingleSampler,
+)
+from imitLearningPipelineSharedCode import non_slurm_strategy_ids, dataset_id_mapping
 
 dataset_id_mapping = {
     0: ("synthetic", 50),
@@ -47,7 +84,24 @@ dataset_id_mapping = {
     29: ("flag", 50),
 }
 
-non_slurm_strategy_ids = [0, 20]
+strategy_id_mapping = {
+    0: ("QueryInstanceRandom", {}),
+    1: ("QueryInstanceUncertainty", {"measure": "least_confident"}),
+    2: ("QueryInstanceUncertainty", {"measure": "margin"}),
+    3: ("QueryInstanceUncertainty", {"measure": "entropy"}),
+    4: ("QueryInstanceQBC", {}),
+    5: ("QureyExpectedErrorReduction", {}),
+    6: ("QueryInstanceGraphDensity", {}),
+    7: ("QueryInstanceQUIRE", {}),
+    # the following are only for db4701
+    8: ("QueryInstanceLAL", {}),  # memory
+    9: ("QueryInstanceBMDR", {}),  # cvxpy
+    10: ("QueryInstanceSPAL", {}),  # cvxpy
+    # 11: ("QueryInstanceUncertainty", {"measure": "distance_to_boundary"}), only works with SVM
+    12:
+}
+# non_slurm_strategy_ids = [8,0,10]
+non_slurm_strategy_ids = [0,1,2]
 
 
 def get_config():
@@ -285,3 +339,72 @@ def run_parallel_experiment(
         OUTPUT_FILE_LENGTH=OUTPUT_FILE_LENGTH,
     )
     return
+
+
+
+
+class ALiPYImitALSingle:
+    trained_imitAL_sampler: TrainedImitALSampler
+    X: np.ndarray
+    Y: np.ndarray
+
+    def __init__(self, X: np.ndarray, Y: np.ndarray, **kwargs):
+        self.X = X
+        self.Y = Y
+
+        # load NN params from json file
+        with open(
+            os.path.dirname(kwargs["NN_BINARY_PATH"])
+            + "/01_dataset_creation_stats.csv_params.json",
+            "r",
+        ) as f:
+            content = str(f.read())
+            dataset_stats = json.loads(content)
+
+        print(dataset_stats)
+
+        self.trained_imitAL_sampler = TrainedImitALSingleSampler(
+            PRE_SAMPLING_METHOD=dataset_stats["INITIAL_BATCH_SAMPLING_METHOD"],
+            PRE_SAMPLING_ARG=dataset_stats["INITIAL_BATCH_SAMPLING_ARG"],
+            AMOUNT_OF_PEAKED_OBJECTS=dataset_stats["AMOUNT_OF_PEAKED_OBJECTS"],
+            DISTANCE_METRIC=dataset_stats["DISTANCE_METRIC"],
+            STATE_ARGSECOND_PROBAS=dataset_stats["STATE_ARGSECOND_PROBAS"],
+            STATE_ARGTHIRD_PROBAS=dataset_stats["STATE_ARGTHIRD_PROBAS"],
+            STATE_DIFF_PROBAS=dataset_stats["STATE_DIFF_PROBAS"],
+            STATE_PREDICTED_CLASS=dataset_stats["STATE_PREDICTED_CLASS"],
+            STATE_DISTANCES_LAB=dataset_stats["STATE_DISTANCES_LAB"],
+            STATE_DISTANCES_UNLAB=dataset_stats["STATE_DISTANCES_UNLAB"],
+            STATE_INCLUDE_NR_FEATURES=dataset_stats["STATE_INCLUDE_NR_FEATURES"],
+            NN_BINARY_PATH=kwargs["NN_BINARY_PATH"],
+        )
+
+        self.trained_imitAL_sampler.data_storage = kwargs["data_storage"]
+
+    def select(self, labeled_index, unlabeled_index, model, batch_size=1, **kwargs):
+        self.trained_imitAL_sampler.data_storage.labeled_mask = labeled_index
+        self.trained_imitAL_sampler.data_storage.unlabeled_mask = unlabeled_index
+
+        # @TODO: check if data_storage index and Y etc. is updated accordingly!!
+
+        # update data_storage with labeled_index and unlabeled_index
+        pre_sampled_X_querie_indices: PreSampledIndices = (
+            self.trained_imitAL_sampler.pre_sample_potential_X_queries()
+        )
+
+        # when using a pre-trained model this does nothing
+        self.trained_imitAL_sampler.calculateImitationLearningData(
+            pre_sampled_X_querie_indices
+        )
+
+        X_input_state: InputState = self.trained_imitAL_sampler.encode_input_state(
+            pre_sampled_X_querie_indices
+        )
+        Y_output_state: OutputState = self.trained_imitAL_sampler.applyNN(X_input_state)
+        return [
+            v
+            for v in self.trained_imitAL_sampler.decode_output_state(
+                Y_output_state, pre_sampled_X_querie_indices, batch_size
+            )
+        ]
+        # return [v for k, v in ordered_list_of_possible_sample_indices[:batch_size]]
+

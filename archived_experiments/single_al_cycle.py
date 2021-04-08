@@ -1,8 +1,7 @@
 import argparse
+import numpy as np
 import os
 import random
-
-import numpy as np
 
 from active_learning.al_cycle_wrapper import train_and_eval_dataset
 from active_learning.config import get_active_config

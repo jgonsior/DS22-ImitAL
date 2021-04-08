@@ -1,43 +1,25 @@
-from active_learning.query_sampling_strategies.ImitationLearningBaseQuerySampler import (
-    InputState,
-    OutputState,
-    PreSampledIndices,
-)
-from active_learning.query_sampling_strategies.TrainedImitALQuerySampler import (
-    TrainedImitALBatchSampler,
-    TrainedImitALSampler,
-    TrainedImitALSingleSampler,
-)
-from active_learning.dataStorage import DataStorage
-from active_learning.datasets.uci import load_uci
-from active_learning.datasets.dwtc import load_dwtc
-from active_learning.datasets.synthetic import load_synthetic
 import argparse
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler, RobustScaler
-import json
 import csv
 import math
 import multiprocessing
-import os
-import random
-import sys
-from timeit import default_timer as timer
-from operator import itemgetter
 import numpy as np
 import pandas as pd
-from joblib import Parallel, delayed
-from sklearn.datasets import make_classification
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import pairwise_distances
-from sklearn.neural_network import MLPClassifier
-from sklearn.preprocessing import MinMaxScaler, RobustScaler
-
-from alipy.data_manipulate.al_split import split
+import random
+import sys
 from alipy.experiment.al_experiment import AlExperiment
-from sklearn.preprocessing import LabelEncoder
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_auc_score, auc
-from imitLearningPipelineSharedCode import non_slurm_strategy_ids, dataset_id_mapping
+from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import Labencoder, MinMaxScaler, RobustScaler
+from sklearn.preprocessing import MinMaxScaler, RobustScaler
+from timeit import default_timer as timer
+
+from active_learning.dataStorage import DataStorage
+from active_learning.datasets.dwtc import load_dwtc
+from active_learning.datasets.synthetic import load_synthetic
+from active_learning.datasets.uci import load_uci
 from active_learning.logger.logger import init_logger
+from imitLearningPipelineSharedCode import non_slurm_strategy_ids, dataset_id_mapping
 
 init_logger("tmp.log")
 
@@ -100,73 +82,6 @@ data_storage = DataStorage(df, TEST_FRACTION=0)
 X = data_storage.X
 Y = data_storage.exp_Y
 
-
-class ALiPYImitALSingle:
-    trained_imitAL_sampler: TrainedImitALSampler
-    X: np.ndarray
-    Y: np.ndarray
-
-    def __init__(self, X: np.ndarray, Y: np.ndarray, **kwargs):
-        self.X = X
-        self.Y = Y
-
-        # load NN params from json file
-        with open(
-            os.path.dirname(kwargs["NN_BINARY_PATH"])
-            + "/01_dataset_creation_stats.csv_params.json",
-            "r",
-        ) as f:
-            content = str(f.read())
-            dataset_stats = json.loads(content)
-
-        print(dataset_stats)
-
-        self.trained_imitAL_sampler = TrainedImitALSingleSampler(
-            PRE_SAMPLING_METHOD=dataset_stats["INITIAL_BATCH_SAMPLING_METHOD"],
-            PRE_SAMPLING_ARG=dataset_stats["INITIAL_BATCH_SAMPLING_ARG"],
-            AMOUNT_OF_PEAKED_OBJECTS=dataset_stats["AMOUNT_OF_PEAKED_OBJECTS"],
-            DISTANCE_METRIC=dataset_stats["DISTANCE_METRIC"],
-            STATE_ARGSECOND_PROBAS=dataset_stats["STATE_ARGSECOND_PROBAS"],
-            STATE_ARGTHIRD_PROBAS=dataset_stats["STATE_ARGTHIRD_PROBAS"],
-            STATE_DIFF_PROBAS=dataset_stats["STATE_DIFF_PROBAS"],
-            STATE_PREDICTED_CLASS=dataset_stats["STATE_PREDICTED_CLASS"],
-            STATE_DISTANCES_LAB=dataset_stats["STATE_DISTANCES_LAB"],
-            STATE_DISTANCES_UNLAB=dataset_stats["STATE_DISTANCES_UNLAB"],
-            STATE_INCLUDE_NR_FEATURES=dataset_stats["STATE_INCLUDE_NR_FEATURES"],
-            NN_BINARY_PATH=kwargs["NN_BINARY_PATH"],
-        )
-
-        self.trained_imitAL_sampler.data_storage = kwargs["data_storage"]
-
-    def select(self, labeled_index, unlabeled_index, model, batch_size=1, **kwargs):
-        self.trained_imitAL_sampler.data_storage.labeled_mask = labeled_index
-        self.trained_imitAL_sampler.data_storage.unlabeled_mask = unlabeled_index
-
-        # @TODO: check if data_storage index and Y etc. is updated accordingly!!
-
-        # update data_storage with labeled_index and unlabeled_index
-        pre_sampled_X_querie_indices: PreSampledIndices = (
-            self.trained_imitAL_sampler.pre_sample_potential_X_queries()
-        )
-
-        # when using a pre-trained model this does nothing
-        self.trained_imitAL_sampler.calculateImitationLearningData(
-            pre_sampled_X_querie_indices
-        )
-
-        X_input_state: InputState = self.trained_imitAL_sampler.encode_input_state(
-            pre_sampled_X_querie_indices
-        )
-        Y_output_state: OutputState = self.trained_imitAL_sampler.applyNN(X_input_state)
-        return [
-            v
-            for v in self.trained_imitAL_sampler.decode_output_state(
-                Y_output_state, pre_sampled_X_querie_indices, batch_size
-            )
-        ]
-        # return [v for k, v in ordered_list_of_possible_sample_indices[:batch_size]]
-
-
 test = ALiPYImitALSingle(
     X=X,
     Y=Y,
@@ -174,205 +89,6 @@ test = ALiPYImitALSingle(
     data_storage=data_storage,
 )
 
-
-query_strategies = {
-    #  (
-    #      ANNQuerySingle,
-    #      {
-    #          "NN_BINARY_PATH": "../datasets/taurus_10_10/MORE_DATA/03_imital_trained_ann.model",
-    #          "HYPER_SAMPLING_SEARCH_ITERATIONS": 100,
-    #          "TRUE_DISTANCES": True,
-    #      },
-    #  ),
-    #  (
-    #      ANNQuerySingle,
-    #      {
-    #          "NN_BINARY_PATH": "../datasets/taurus_10_10/MORE_DATA/03_imital_trained_ann.model",
-    #          "HYPER_SAMPLING_SEARCH_ITERATIONS": 100,
-    #          "TRUE_DISTANCES": False,
-    #      },
-    #  ),
-    35: (
-        ANNQueryBatch,
-        {
-            "NN_BINARY_PATH": config.OUTPUT_PATH + "/batch.pickle",
-            "DISTANCE_METRIC": "cosine",
-            "STATE_INCLUDE_NR_FEATURES": False,
-            "INITIAL_BATCH_SAMPLING_ARG": 1,
-            "INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST": 0,
-            "INITIAL_BATCH_SAMPLING_HYBRID_UNCERT": 0,
-            "INITIAL_BATCH_SAMPLING_METHOD": "random",
-        },
-    ),
-    34: (
-        ANNQueryBatch,
-        {
-            "NN_BINARY_PATH": config.OUTPUT_PATH + "/batch.pickle",
-            "DISTANCE_METRIC": "euclidean",
-            "STATE_INCLUDE_NR_FEATURES": False,
-            "INITIAL_BATCH_SAMPLING_ARG": 1,
-            "INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST": 0,
-            "INITIAL_BATCH_SAMPLING_HYBRID_UNCERT": 0,
-            "INITIAL_BATCH_SAMPLING_METHOD": "random",
-        },
-    ),
-    32: (
-        ANNQuerySingle,
-        {
-            "NN_BINARY_PATH": config.OUTPUT_PATH + "/single_10.pickle",
-            "HYPER_SAMPLING_SEARCH_ITERATIONS": 1,
-            "TRUE_DISTANCES": True,
-            "DISTANCE_METRIC": "euclidean",
-            "STATE_INCLUDE_NR_FEATURES": False,
-        },
-    ),
-    33: (
-        ANNQuerySingle,
-        {
-            "NN_BINARY_PATH": config.OUTPUT_PATH + "/single_10.pickle",
-            "HYPER_SAMPLING_SEARCH_ITERATIONS": 1,
-            "TRUE_DISTANCES": True,
-            "DISTANCE_METRIC": "cosine",
-            "STATE_INCLUDE_NR_FEATURES": False,
-        },
-    ),
-    24: (
-        ANNQuerySingle,
-        {
-            "NN_BINARY_PATH": config.OUTPUT_PATH + "/single_10.pickle",
-            "HYPER_SAMPLING_SEARCH_ITERATIONS": 10,
-            "TRUE_DISTANCES": True,
-            "DISTANCE_METRIC": "cosine",
-            "STATE_INCLUDE_NR_FEATURES": False,
-        },
-    ),
-    23: (
-        ANNQuerySingle,
-        {
-            "NN_BINARY_PATH": config.OUTPUT_PATH + "/single_10.pickle",
-            "HYPER_SAMPLING_SEARCH_ITERATIONS": 10,
-            "TRUE_DISTANCES": True,
-            "DISTANCE_METRIC": "cosine",
-            "STATE_INCLUDE_NR_FEATURES": False,
-        },
-    ),
-    22: (
-        ANNQuerySingle,
-        {
-            "NN_BINARY_PATH": config.OUTPUT_PATH
-            + "/single_10_cos_nrf_100features.pickle",
-            "HYPER_SAMPLING_SEARCH_ITERATIONS": 10,
-            "TRUE_DISTANCES": True,
-            "DISTANCE_METRIC": "cosine",
-            "STATE_INCLUDE_NR_FEATURES": True,
-        },
-    ),
-    21: (
-        ANNQueryBatch,
-        {
-            "NN_BINARY_PATH": config.OUTPUT_PATH + "/batch_nrf.pickle",
-            "DISTANCE_METRIC": "euclidean",
-            "STATE_INCLUDE_NR_FEATURES": True,
-        },
-    ),
-    20: (
-        ANNQuerySingle,
-        {
-            "NN_BINARY_PATH": config.OUTPUT_PATH + "/single_10_nrf.pickle",
-            "HYPER_SAMPLING_SEARCH_ITERATIONS": 10,
-            "TRUE_DISTANCES": True,
-            "DISTANCE_METRIC": "euclidean",
-            "STATE_INCLUDE_NR_FEATURES": True,
-        },
-    ),
-    19: (
-        ANNQueryBatch,
-        {
-            "NN_BINARY_PATH": config.OUTPUT_PATH + "/batch_cos.pickle",
-            "DISTANCE_METRIC": "cosine",
-            "STATE_INCLUDE_NR_FEATURES": False,
-        },
-    ),
-    18: (
-        ANNQuerySingle,
-        {
-            "NN_BINARY_PATH": config.OUTPUT_PATH + "/single_10_cos.pickle",
-            "HYPER_SAMPLING_SEARCH_ITERATIONS": 10,
-            "TRUE_DISTANCES": True,
-            "DISTANCE_METRIC": "cosine",
-            "STATE_INCLUDE_NR_FEATURES": False,
-        },
-    ),
-    17: (
-        ANNQueryBatch,
-        {
-            "NN_BINARY_PATH": config.OUTPUT_PATH + "/batch_cos_nrf.pickle",
-            "DISTANCE_METRIC": "cosine",
-            "STATE_INCLUDE_NR_FEATURES": True,
-        },
-    ),
-    16: (
-        ANNQuerySingle,
-        {
-            "NN_BINARY_PATH": config.OUTPUT_PATH + "/single_10_cos_nrf.pickle",
-            "HYPER_SAMPLING_SEARCH_ITERATIONS": 10,
-            "TRUE_DISTANCES": True,
-            "DISTANCE_METRIC": "cosine",
-            "STATE_INCLUDE_NR_FEATURES": True,
-        },
-    ),
-    15: (
-        ANNQuerySingle,
-        {
-            "NN_BINARY_PATH": config.OUTPUT_PATH + "/single_10.pickle",
-            "HYPER_SAMPLING_SEARCH_ITERATIONS": 10,
-            "TRUE_DISTANCES": True,
-            "DISTANCE_METRIC": "euclidean",
-            "STATE_INCLUDE_NR_FEATURES": False,
-        },
-    ),
-    14: (
-        ANNQuerySingle,
-        {
-            "NN_BINARY_PATH": config.OUTPUT_PATH + "/single.pickle",
-            "HYPER_SAMPLING_SEARCH_ITERATIONS": 200,
-            "TRUE_DISTANCES": True,
-            "DISTANCE_METRIC": "euclidean",
-            "STATE_INCLUDE_NR_FEATURES": False,
-        },
-    ),
-    13: (
-        ANNQueryBatch,
-        {
-            "NN_BINARY_PATH": config.OUTPUT_PATH + "/batch.pickle",
-            "DISTANCE_METRIC": "cosine",
-            "STATE_INCLUDE_NR_FEATURES": False,
-        },
-    ),
-    0: (
-        ANNQuerySingle,
-        {
-            "NN_BINARY_PATH": config.OUTPUT_PATH + "/single.pickle",
-            "HYPER_SAMPLING_SEARCH_ITERATIONS": 10,
-            "TRUE_DISTANCES": True,
-            "DISTANCE_METRIC": "euclidean",
-            "STATE_INCLUDE_NR_FEATURES": False,
-        },
-    ),
-    2: ("QueryInstanceQBC", {}),
-    3: ("QueryInstanceUncertainty", {"measure": "least_confident"}),
-    4: ("QueryInstanceUncertainty", {"measure": "margin"}),
-    5: ("QueryInstanceUncertainty", {"measure": "entropy"}),
-    6: ("QueryInstanceRandom", {}),
-    7: ("QureyExpectedErrorReduction", {}),
-    8: ("QueryInstanceGraphDensity", {}),
-    9: ("QueryInstanceQUIRE", {}),
-    # the following are only for db4701
-    10: ("QueryInstanceLAL", {}),  # memory
-    11: ("QueryInstanceBMDR", {}),  # cvxpy
-    12: ("QueryInstanceSPAL", {}),  # cvxpy
-    #  6: ("QueryInstanceUncertainty", {"measure": "distance_to_boundary"}),
-}
 
 shuffling = np.random.permutation(len(Y))
 X = X[shuffling]

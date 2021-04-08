@@ -1,12 +1,10 @@
 import argparse
 import json
+import numpy as np
 import os
+import pandas as pd
 import random
 import sys
-from typing import List
-
-import numpy as np
-import pandas as pd
 import tensorflow as tf
 
 # Tfrom keras.layers import Dense, Dropout
@@ -17,6 +15,7 @@ from sklearn.metrics import accuracy_score, make_scorer
 from sklearn.model_selection import RandomizedSearchCV
 from tensorflow import keras
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from typing import List
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--DATA_PATH", default="../datasets/")

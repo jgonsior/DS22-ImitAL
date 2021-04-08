@@ -1,7 +1,6 @@
 import glob
-import os
-
 import numpy as np
+import os
 import pandas as pd
 from keras.datasets import cifar10
 from sklearn.datasets import (
