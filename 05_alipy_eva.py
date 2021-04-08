@@ -1,3 +1,4 @@
+from typing import Tuple
 from ALiPy.alipy.experiment.al_experiment import AlExperiment
 from ALiPy_imitAL_Query_Strategy import ALiPY_ImitAL_Query_Strategy
 import argparse
@@ -110,7 +111,13 @@ unlabel_idx = [np.array(unlabel_idx)]  # type: ignore
 
 # update data_storage!
 
-QUERY_STRATEGY = strategy_id_mapping[STRATEGY_ID]
+QUERY_STRATEGY: Tuple = strategy_id_mapping[STRATEGY_ID]
+# update NN_BINARY_PATH
+if "NN_BINARY_PATH" in QUERY_STRATEGY[1].keys():
+    QUERY_STRATEGY[1]["NN_BINARY_PATH"] = (
+        config.OUTPUT_PATH + "/03_imital_trained_ann.model"
+    )
+    QUERY_STRATEGY[1]["data_storage"] = data_storage
 
 test = ALiPY_ImitAL_Query_Strategy(
     X=X,

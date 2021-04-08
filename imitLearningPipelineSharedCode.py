@@ -60,7 +60,7 @@ strategy_id_mapping = {
     9: ("QueryInstanceBMDR", {}),  # cvxpy
     10: ("QueryInstanceSPAL", {}),  # cvxpy
     # 11: ("QueryInstanceUncertainty", {"measure": "distance_to_boundary"}), only works with SVM
-    12: (ALiPY_ImitAL_Query_Strategy, {"NN_BINARy_PATH": "?"}),
+    12: (ALiPY_ImitAL_Query_Strategy, {"NN_BINARY_PATH": "?"}),
 }
 # non_slurm_strategy_ids = [8,0,10]
 non_slurm_strategy_ids = [0, 1, 2, 12]

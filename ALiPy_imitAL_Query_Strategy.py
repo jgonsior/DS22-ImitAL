@@ -53,6 +53,7 @@ class ALiPY_ImitAL_Query_Strategy:
         self.trained_imitAL_sampler.data_storage = kwargs["data_storage"]
 
     def select(self, labeled_index, unlabeled_index, model, batch_size=1, **kwargs):
+        self.learner = model
         self.trained_imitAL_sampler.data_storage.labeled_mask = labeled_index
         self.trained_imitAL_sampler.data_storage.unlabeled_mask = unlabeled_index
 
