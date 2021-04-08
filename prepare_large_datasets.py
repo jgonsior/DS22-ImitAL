@@ -1,17 +1,16 @@
 import glob
-import csv
-import os
 import numpy as np
+import os
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler, RobustScaler
-from sklearn.datasets import (
-    fetch_olivetti_faces,
-    fetch_20newsgroups_vectorized,
-    fetch_lfw_people,
-    fetch_rcv1,
-    fetch_kddcup99,
-)
 from keras.datasets import cifar10
+from sklearn.datasets import (
+    fetch_20newsgroups_vectorized,
+    fetch_kddcup99,
+    fetch_lfw_people,
+    fetch_olivetti_faces,
+    fetch_rcv1,
+)
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler, RobustScaler
 
 # load the datasets
 

@@ -171,7 +171,6 @@ paper/
 plots/
 *.db
 
-Pipfile.lock
 log.txt
 node_modules/
 
@@ -179,3 +178,7 @@ pickles/
 old_results.pickle
 training_data/
 *.csv
+.vscode/settings.json
+.vscode/launch.json
+typings/
+_*/
