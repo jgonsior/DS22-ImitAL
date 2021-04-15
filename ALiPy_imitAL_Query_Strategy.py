@@ -73,6 +73,17 @@ class ALiPY_ImitAL_Query_Strategy:
             pre_sampled_X_querie_indices
         )
         Y_output_state: OutputState = self.trained_imitAL_sampler.applyNN(X_input_state)
+
+        print()
+        print(pre_sampled_X_querie_indices)
+        print(X_input_state)  # @TODO: X_inut is NOT normalized??!
+        # @TODO x_input_state_encoding is only .2f, not .4f ???
+        print(Y_output_state)
+        print(
+            self.trained_imitAL_sampler.decode_output_state(
+                Y_output_state, pre_sampled_X_querie_indices, batch_size
+            )
+        )
         return [
             v
             for v in self.trained_imitAL_sampler.decode_output_state(

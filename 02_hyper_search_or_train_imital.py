@@ -6,6 +6,7 @@ import pandas as pd
 import random
 import sys
 import tensorflow as tf
+import joblib
 
 # Tfrom keras.layers import Dense, Dropout
 # from keras.models import Sequential
@@ -16,6 +17,7 @@ from sklearn.model_selection import RandomizedSearchCV
 from tensorflow import keras
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from typing import List
+from sklearn.preprocessing import MinMaxScaler
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--DATA_PATH", default="../datasets/")
@@ -71,11 +73,6 @@ optimal_policies = pd.read_csv(DATA_PATH + "/01_expert_actions_Y.csv")
 #  states = states[0:100]
 #  optimal_policies = optimal_policies[0:100]
 
-#  states = states[states.columns.drop(list(states.filter(regex="avg_dist")))]
-#  states = states[states.columns.drop(list(states.filter(regex="diff")))]
-#  print(states)
-#  exit(-1)
-
 AMOUNT_OF_PEAKED_OBJECTS = len(optimal_policies.columns)
 
 
@@ -110,11 +107,8 @@ def _evaluate_top_k(Y_true, Y_pred):
                 Y_pred_binarized[str(i) + "_true_peaked_normalised_acc"].to_numpy(),
             )
         )
-    #  print(accs)
     return np.mean(np.array(accs))
 
-
-#  print(config.TARGET_ENCODING)
 
 if config.TARGET_ENCODING == "regression":
     # congrats, default values
@@ -125,13 +119,10 @@ else:
     print("Not a valid TARGET_ENCODING")
     exit(-1)
 
-#  print(config.STATE_ENCODING)
 if config.STATE_ENCODING == "listwise":
     # congrats, the states are already in the correct form
     pass
 elif config.STATE_ENCODING == "pointwise":
-    #  print(states)
-    #  states_new =
     states.to_csv(DATA_PATH + "/states_pointwise.csv", index=False)
     exit(-1)
 elif config.STATE_ENCODING == "pairwise":
@@ -142,26 +133,14 @@ else:
     print("Not a valid STATE_ENCODING")
     exit(-1)
 
-#  print(states)
-#  print(optimal_policies)
-#  exit(-1)
-# test out pointwise LTR method
-# test out pairwise LTR method, RankNet, RankSVM, RankBoost
-# test out super complex listwise LTR method (LambdaMART, ApproxNDCG, List{NET, MLE}
-
-
-# train/test/val split, verschiedene encodings und hyperparameterkombis für das ANN ausprobieren
-
-
-# normalise batch stuff
-# uncertainty:  -5 bis 0
-# distance:     1 bis 24?!
-
-#  X_train, X_test, Y_train, Y_test = train_test_split(
-#      states, optimal_policies, test_size=0.33
-#  )
 X = states
 Y = optimal_policies
+
+scaler = MinMaxScaler()
+scaler.fit(X)
+X = scaler.transform(X)
+
+# normalize states
 
 
 def tau_loss(Y_true, Y_pred):
@@ -307,19 +286,13 @@ if config.HYPER_SEARCH:
     #  print(np.shape(X))
     #  print(np.shape(Y))
 
-    #  with parallel_backend("threading", n_jobs=len(os.sched_getaffinity(0))):
     fitted_model = gridsearch.fit(X, Y)
-    #  Y_pred = fitted_model.predict(X_test)
-    #
-    #  print(fitted_model.best_score_)
-    #  print(fitted_model.best_params_)
-    #  print(fitted_model.cv_results_)
-    #
-    fitted_model.model_.save("/best_model.model")
-    # with open(config.DATA_PATH + "/best_model.model", "wb") as handle:
-    #    pickle.dump(fitted_model, handle)
 
-    with open(config.DATA_PATH + "/hyper_results.txt", "w") as handle:
+    fitted_model.model_.save(config.DATA_PATH + "/02_best_model.model")
+
+    joblib.dump(scaler, config.DATA_PATH + "/02_scaler.gz")
+
+    with open(config.DATA_PATH + "/02_hyper_results.txt", "w") as handle:
         handle.write(str(fitted_model.best_score_))
         handle.write(str(fitted_model.cv_results_))
         handle.write("\n" * 5)
@@ -352,5 +325,4 @@ else:
 
     if config.SAVE_DESTINATION:
         reg.model_.save(config.SAVE_DESTINATION)
-        # with open(config.SAVE_DESTINATION, "wb") as handle:
-        #    dill.dump(fitted_model, handle)
+        joblib.dump(scaler, config.SAVE_DESTINATION + "_scaler.gz")

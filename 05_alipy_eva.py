@@ -109,6 +109,26 @@ test_idx = [np.array(test_idx)]  # type: ignore
 label_idx = [np.array(label_idx)]  # type: ignore
 unlabel_idx = [np.array(unlabel_idx)]  # type: ignore
 
+data_storage.exp_Y = None  # type: ignore
+data_storage.human_expert_Y = None  # type: ignore
+data_storage.Y_merged_final = None  # type: ignore
+# @TODO: previous could be important later for some state encodings??!
+
+data_storage.labeled_mask = label_idx[0]  # type: ignore
+data_storage.unlabeled_mask = unlabel_idx[0]  # type: ignore
+data_storage.test_mask = test_idx[0]  # type: ignore
+
+print("Unlabeled before the experiment are: " + str(unlabel_idx))
+print("Labeled before are " + str(label_idx))
+print("train_idx" + str(train_idx))
+print("test_idx" + str(test_idx))
+
+
+print("unl ", data_storage.unlabeled_mask)
+print("lab ", data_storage.labeled_mask)
+print("tes ", data_storage.test_mask)
+
+
 # update data_storage!
 
 QUERY_STRATEGY: Tuple = strategy_id_mapping[STRATEGY_ID]
@@ -154,6 +174,25 @@ end = timer()
 trained_model = al._model
 
 r = al.get_experiment_result()
+
+for i in range(0, int(dataset_id_mapping[DATASET_ID][1] / config.BATCH_SIZE)):
+    print()
+    print()
+    print((str(i) + " ") * 10)
+
+    train_idx, test_idx, label_idx, unlabel_idx = r[0].get_workspace(i)
+    print("Unlabeled before the experiment are: " + str(unlabel_idx))
+    print("Labeled before are " + str(label_idx))
+    print("train_idx" + str(train_idx))
+    print("test_idx" + str(test_idx))
+
+
+print("unl ", data_storage.unlabeled_mask)
+print("lab ", data_storage.labeled_mask)
+print("tes ", data_storage.test_mask)
+
+
+exit(-1)
 
 stateio = r[0]
 metric_values = []

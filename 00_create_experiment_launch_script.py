@@ -344,6 +344,11 @@ for tmp_file in sorted(
     with open(tmp_file, "r") as f:
         content = f.read()
         content = content.replace("$i", "0")
+        if tmp_file.endswith("01_create_synthetic_training_data.tmp"):
+            content = content.replace(
+                "--NR_LEARNING_SAMPLES 10",
+                "--NR_LEARNING_SAMPLES " + str(config.TRAIN_NR_LEARNING_SAMPLES),
+            )
 
         if tmp_file.endswith("05_alipy_eva.tmp"):
             submit_content += (
