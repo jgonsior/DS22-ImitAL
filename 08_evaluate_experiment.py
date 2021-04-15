@@ -94,75 +94,29 @@ def duration_plot(df: pd.DataFrame, OUTPUT_PATH: str):
             _show_on_single_plot(axs)
 
     plt.figure(figsize=set_matplotlib_size(width, fraction=0.5))
-    from numpy import median
-    from matplotlib.ticker import ScalarFormatter, AutoMinorLocator
 
     df_dur = df.groupby(["strategy", "dataset_id"])["duration"].mean().to_frame()
     df_dur = df_dur.reset_index()
 
-    # print(df_dur.loc[df_dur['strategy']=='Rand'])
-    # print(df_dur.loc[df_dur['strategy']=='NN Single'])
-    # print(df_dur.loc[df_dur['strategy']=='MM'])
-
-    df_dur2 = df.groupby(["strategy"])["duration"].mean().to_frame()
-
     timout_duration = 604800
     # timout_duration = 259200
 
-    # timeout
-    df_dur = df_dur.append(
-        {"strategy": "LAL", "dataset_id": "13", "duration": timout_duration},
-        ignore_index=True,
-    )
-    df_dur = df_dur.append(
-        {"strategy": "EER", "dataset_id": "13", "duration": timout_duration},
-        ignore_index=True,
-    )
-    df_dur = df_dur.append(
-        {"strategy": "QUIRE", "dataset_id": "13", "duration": timout_duration},
-        ignore_index=True,
-    )
-    df_dur = df_dur.append(
-        {"strategy": "BMDR", "dataset_id": "13", "duration": timout_duration},
-        ignore_index=True,
-    )
-    df_dur = df_dur.append(
-        {"strategy": "SPAL", "dataset_id": "13", "duration": timout_duration},
-        ignore_index=True,
-    )
-
-    df_dur = df_dur.append(
-        {"strategy": "BMDR", "dataset_id": "12", "duration": timout_duration},
-        ignore_index=True,
-    )
-    df_dur = df_dur.append(
-        {"strategy": "SPAL", "dataset_id": "12", "duration": timout_duration},
-        ignore_index=True,
-    )
-
-    df_dur = df_dur.append(
-        {"strategy": "EER", "dataset_id": "16", "duration": timout_duration},
-        ignore_index=True,
-    )
-    df_dur = df_dur.append(
-        {"strategy": "QUIRE", "dataset_id": "16", "duration": timout_duration},
-        ignore_index=True,
-    )
-    df_dur = df_dur.append(
-        {"strategy": "BMDR", "dataset_id": "16", "duration": timout_duration},
-        ignore_index=True,
-    )
-    df_dur = df_dur.append(
-        {"strategy": "SPAL", "dataset_id": "16", "duration": timout_duration},
-        ignore_index=True,
-    )
-
-    print(df_dur[df_dur["strategy"] == "SPAL"])
-    print(df_dur[df_dur["strategy"] == "NN Single"])
-
-    # print(df_dur.loc[df_dur['strategy'] =='LAL']['duration'].mean())
-
-    # print(df_dur.loc[df_dur['strategy'] =='Rand']['duration'].mean())
+    # @TODO: use real values after new daatset mapping!
+    timeout_baselines = {
+        "13": ["LAL", "EER", "QUIRE", "BMDR", "SPAL"],
+        "12": ["BMDR", "SPAL"],
+        "16": ["EER", "QUIRE", "BMDR", "SPAL"],
+    }
+    for dataset_id, strategies in timeout_baselines.items():
+        for strategy in strategies:
+            df_dur = df_dur.append(
+                {
+                    "strategy": strategy,
+                    "dataset_id": dataset_id,
+                    "duration": timout_duration,
+                },
+                ignore_index=True,
+            )
 
     df_hist_new = pd.DataFrame(columns=["strategy", "duration"])
     for strategy in df.strategy.unique():
@@ -175,8 +129,6 @@ def duration_plot(df: pd.DataFrame, OUTPUT_PATH: str):
             },
             ignore_index=True,
         )
-
-    # print(df_hist_new)
 
     df_hist_new = df_hist_new.sort_values(by=["duration"])
     g = sns.barplot(
@@ -240,6 +192,25 @@ if config.EXP1_PATH:
     # only extract the experiment results
     for baseline in baseline_names_mapping.keys():
         exp1_df = exp1_df[exp1_df["strategy"] != baseline]
+
+    # merge strategies based on NN_BINARY_PATH
+    full_strategy_names = exp1_df["strategy"].tolist()
+
+    # extract unique NN_BINARY_PATHES
+    unique_nn_binary_pathes = [
+        f[f.find("NN_BINARY_PATH': '") : f.find("', 'data_storage")]
+        for f in full_strategy_names
+    ]
+
+    unique_nn_binary_pathes = [
+        u.replace("NN_BINARY_PATH': '", "").replace("/03_imital_trained_ann.model", "")
+        for u in unique_nn_binary_pathes
+    ]
+
+    mapping = zip(full_strategy_names, unique_nn_binary_pathes)
+    for full, unique in zip(full_strategy_names, unique_nn_binary_pathes):
+        exp1_df["strategy"] = exp1_df["strategy"].replace(full, unique)
+
 else:
     print("Please specify experiment!")
     exit(-1)
