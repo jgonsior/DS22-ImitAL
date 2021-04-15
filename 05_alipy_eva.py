@@ -118,15 +118,15 @@ data_storage.labeled_mask = label_idx[0]  # type: ignore
 data_storage.unlabeled_mask = unlabel_idx[0]  # type: ignore
 data_storage.test_mask = test_idx[0]  # type: ignore
 
-print("Unlabeled before the experiment are: " + str(unlabel_idx))
+""" print("Unlabeled before the experiment are: " + str(unlabel_idx))
 print("Labeled before are " + str(label_idx))
 print("train_idx" + str(train_idx))
 print("test_idx" + str(test_idx))
 
 
-print("unl ", data_storage.unlabeled_mask)
-print("lab ", data_storage.labeled_mask)
-print("tes ", data_storage.test_mask)
+print("ds.unl ", data_storage.unlabeled_mask)
+print("ds.lab ", data_storage.labeled_mask)
+print("ds.tes ", data_storage.test_mask) """
 
 
 # update data_storage!
@@ -175,7 +175,7 @@ trained_model = al._model
 
 r = al.get_experiment_result()
 
-for i in range(0, int(dataset_id_mapping[DATASET_ID][1] / config.BATCH_SIZE)):
+""" for i in range(0, int(dataset_id_mapping[DATASET_ID][1] / config.BATCH_SIZE)):
     print()
     print()
     print((str(i) + " ") * 10)
@@ -187,13 +187,13 @@ for i in range(0, int(dataset_id_mapping[DATASET_ID][1] / config.BATCH_SIZE)):
     print("test_idx" + str(test_idx))
 
 
-print("unl ", data_storage.unlabeled_mask)
-print("lab ", data_storage.labeled_mask)
-print("tes ", data_storage.test_mask)
+print("ds.unl ", data_storage.unlabeled_mask)
+print("ds.lab ", data_storage.labeled_mask)
+print("ds.tes ", data_storage.test_mask)
 
 
 exit(-1)
-
+ """
 stateio = r[0]
 metric_values = []
 if stateio.initial_point is not None:
@@ -219,6 +219,3 @@ with open(config.OUTPUT_PATH + "/05_alipy_results.csv", "a") as f:
         print("write header")
         w.writeheader()
     w.writerow(res)
-
-
-# @TODO final test if REALLY the data is being labelled we wanted to be labelled

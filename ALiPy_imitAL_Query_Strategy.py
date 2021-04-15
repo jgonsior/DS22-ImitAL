@@ -1,3 +1,8 @@
+import json
+import os
+
+import numpy as np
+
 from active_learning.query_sampling_strategies.ImitationLearningBaseQuerySampler import (
     InputState,
     OutputState,
@@ -8,9 +13,6 @@ from active_learning.query_sampling_strategies.TrainedImitALQuerySampler import 
     TrainedImitALSampler,
     TrainedImitALSingleSampler,
 )
-import numpy as np
-import os
-import json
 
 
 class ALiPY_ImitAL_Query_Strategy:
@@ -57,8 +59,6 @@ class ALiPY_ImitAL_Query_Strategy:
         self.trained_imitAL_sampler.data_storage.labeled_mask = labeled_index
         self.trained_imitAL_sampler.data_storage.unlabeled_mask = unlabeled_index
 
-        # @TODO: check if data_storage index and Y etc. is updated accordingly!!
-
         # update data_storage with labeled_index and unlabeled_index
         pre_sampled_X_querie_indices: PreSampledIndices = (
             self.trained_imitAL_sampler.pre_sample_potential_X_queries()
@@ -72,22 +72,13 @@ class ALiPY_ImitAL_Query_Strategy:
         X_input_state: InputState = self.trained_imitAL_sampler.encode_input_state(
             pre_sampled_X_querie_indices
         )
-        Y_output_state: OutputState = self.trained_imitAL_sampler.applyNN(X_input_state)
+        Y_output_state: OutputState = self.trained_imitAL_sampler.applyNN(
+            X_input_state
+        )[0]
 
-        print()
-        print(pre_sampled_X_querie_indices)
-        print(X_input_state)  # @TODO: X_inut is NOT normalized??!
-        # @TODO x_input_state_encoding is only .2f, not .4f ???
-        print(Y_output_state)
-        print(
-            self.trained_imitAL_sampler.decode_output_state(
-                Y_output_state, pre_sampled_X_querie_indices, batch_size
-            )
-        )
         return [
             v
             for v in self.trained_imitAL_sampler.decode_output_state(
                 Y_output_state, pre_sampled_X_querie_indices, batch_size
             )
         ]
-        # return [v for k, v in ordered_list_of_possible_sample_indices[:batch_size]]
