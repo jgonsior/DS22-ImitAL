@@ -18,10 +18,11 @@ from jinja2 import Template
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--TITLE")
+parser.add_argument("--EXP_TITLE")
 parser.add_argument("--TEST_NR_LEARNING_SAMPLES", default=1000, type=int)
 parser.add_argument("--TRAIN_NR_LEARNING_SAMPLES", default=1000, type=int)
 parser.add_argument("--ITERATIONS_PER_BATCH", default=10, type=int)
+parser.add_argument("--N_JOBS", default=4, type=int)
 parser.add_argument("--EXPERIMENT_LAUNCH_SCRIPTS", default="_experiment_launch_scripts")
 parser.add_argument("--HPC_WS_DIR", default="/lustre/ssd/ws/s5968580-IL_TD2")
 parser.add_argument(
@@ -32,7 +33,7 @@ parser.add_argument("--WITH_CLASSICS", action="store_true")
 parser.add_argument("--WITH_PLOTS", action="store_true")
 parser.add_argument("--WITH_TUD_EVAL", action="store_true")
 parser.add_argument("--WITH_ALIPY", action="store_true")
-parser.add_argument("--INITIAL_BATCH_SAMPLING_ARG", type=int, default=200)
+parser.add_argument("--ONLY_ALIPY", action="store_true")
 parser.add_argument("--INITIAL_BATCH_SAMPLING_HYBRID_UNCERT", type=float, default=0.2)
 parser.add_argument("--INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST", type=float, default=0.2)
 parser.add_argument(
@@ -46,14 +47,32 @@ parser.add_argument("--TRAIN_STATE_UNCERTAINTIES", action="store_true")
 parser.add_argument("--TRAIN_STATE_PREDICTED_UNITY", action="store_true")
 parser.add_argument("--TRAIN_STATE_DISTANCES_LAB", action="store_true")
 parser.add_argument("--STATE_INCLUDE_NR_FEATURES", action="store_true")
-parser.add_argument("--DISTANCE_METRIC", default="euclidean")
 parser.add_argument("--TOTAL_BUDGET", type=int, default=50)
 parser.add_argument("--EVA_DATASET_IDS", nargs="*", default=[0])
 parser.add_argument("--EVA_STRATEGY_IDS", nargs="*", default=[0, 1, 2, 12])
 
+
+parser.add_argument("--BATCH_MODE", default="SINGLE")
+parser.add_argument(
+    "--STATE_ARGS",
+    nargs="*",
+    default=[
+        "STATE_ARGSECOND_PROBAS",
+        "STATE_ARGTHIRD_PROBAS",
+        "STATE_DISTANCES_LAB",
+        "STATE_DISTANCES_UNLAB",
+    ],
+)
+parser.add_argument("--DISTANCE_METRIC", default="euclidean")
+parser.add_argument("--INITIAL_BATCH_SAMPLING_METHOD", default="furthest")
+
+parser.add_argument("--INITIAL_BATCH_SAMPLING_ARG", type=int, default=10)
+
+
 # FIXME wenn HYBRID -> HYBRID namen so ändern, dass die Werte von oben an den titel angefügt werden
 
 config = parser.parse_args()
+config.STATE_ARGS = config.STATE_ARGS[0].split(",")
 
 if len(sys.argv[:-1]) == 0:
     parser.print_help()
@@ -64,74 +83,10 @@ if config.WITH_CLASSICS or config.WITH_TUD_EVAL or config.WITH_PLOTS:
     print("config option deprecated")
     exit(-1)
 
-INITIAL_BATCH_SAMPLING_METHOD = config.TITLE
-if config.TITLE == "hybrid":
-    config.TITLE = (
-        "hybrid-"
-        + str(config.INITIAL_BATCH_SAMPLING_ARG)
-        + "#"
-        + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST)
-        + "_"
-        + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB)
-        + "_"
-        + str(config.INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY)
-        + "_"
-        + str(config.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT)
-    )
 
-if config.TITLE == "single":
-    BATCH_MODE = ""
-    INITIAL_BATCH_SAMPLING_METHOD = "furthest"
-    ADDITIONAL_TRAINING_STATE_ARGS = ""
-elif config.TITLE == "single_full":
-    BATCH_MODE = ""
-    INITIAL_BATCH_SAMPLING_METHOD = "furthest"
-    ADDITIONAL_TRAINING_STATE_ARGS = " --STATE_ARGSECOND_PROBAS --STATE_ARGTHIRD_PROBAS --STATE_DISTANCES_LAB --STATE_DISTANCES_UNLAB "
-    config.INITIAL_BATCH_SAMPLING_ARG = 10
-elif config.TITLE == "single_full_f1":
-    BATCH_MODE = ""
-    INITIAL_BATCH_SAMPLING_METHOD = "furthest"
-    ADDITIONAL_TRAINING_STATE_ARGS = " --STATE_ARGSECOND_PROBAS --STATE_ARGTHIRD_PROBAS --STATE_DISTANCES_LAB --STATE_DISTANCES_UNLAB "
-elif config.TITLE == "single_full_10":
-    BATCH_MODE = ""
-    INITIAL_BATCH_SAMPLING_METHOD = "furthest"
-    config.INITIAL_BATCH_SAMPLING_ARG = 10
-    ADDITIONAL_TRAINING_STATE_ARGS = " --STATE_ARGSECOND_PROBAS --STATE_ARGTHIRD_PROBAS --STATE_DISTANCES_LAB --STATE_DISTANCES_UNLAB "
-elif config.TITLE == "single_full_lab":
-    BATCH_MODE = ""
-    INITIAL_BATCH_SAMPLING_METHOD = "furthest"
-    ADDITIONAL_TRAINING_STATE_ARGS = " --STATE_ARGSECOND_PROBAS --STATE_DISTANCES_LAB "
-elif config.TITLE == "single_full_unlab":
-    BATCH_MODE = ""
-    INITIAL_BATCH_SAMPLING_METHOD = "furthest"
-    ADDITIONAL_TRAINING_STATE_ARGS = (
-        " --STATE_ARGSECOND_PROBAS --STATE_DISTANCES_UNLAB "
-    )
-else:
-    BATCH_MODE = "--BATCH_MODE"
-    ADDITIONAL_TRAINING_STATE_ARGS = ""
-    if config.TRAIN_STATE_DISTANCES:
-        ADDITIONAL_TRAINING_STATE_ARGS += " --STATE_DISTANCES"
-        config.TITLE += "_D"
-    if config.TRAIN_STATE_UNCERTAINTIES:
-        ADDITIONAL_TRAINING_STATE_ARGS += " --STATE_UNCERTAINTIES"
-        config.TITLE += "_U"
-    if config.TRAIN_STATE_PREDICTED_UNITY:
-        ADDITIONAL_TRAINING_STATE_ARGS += " --STATE_PREDICTED_UNITY"
-        config.TITLE += "_P"
-    if config.TRAIN_STATE_DISTANCES_LAB:
-        ADDITIONAL_TRAINING_STATE_ARGS += " --STATE_DISTANCES_LAB"
-        config.TITLE += "_DL"
-
-if config.STATE_INCLUDE_NR_FEATURES:
-    ADDITIONAL_TRAINING_STATE_ARGS += " --STATE_INCLUDE_NR_FEATURES"
-
-if config.DISTANCE_METRIC == "cosine":
-    config.TITLE += "_cos"
-if config.STATE_INCLUDE_NR_FEATURES:
-    config.TITLE += "_nrf"
-
-config.EXPERIMENT_LAUNCH_SCRIPTS = config.EXPERIMENT_LAUNCH_SCRIPTS + "/" + config.TITLE
+config.EXPERIMENT_LAUNCH_SCRIPTS = (
+    config.EXPERIMENT_LAUNCH_SCRIPTS + "/" + config.EXP_TITLE
+)
 
 slurm_common_template = Template(
     """#!/bin/bash{% if array %}{% set THREADS = 1 %}{% set MEMORY = 2583 %}{% endif %}
@@ -189,60 +144,61 @@ def write_slurm_and_bash_file(OUTPUT_FILE: str, **kwargs):
 if not os.path.exists(config.EXPERIMENT_LAUNCH_SCRIPTS):
     os.makedirs(config.EXPERIMENT_LAUNCH_SCRIPTS)
 
-
-START = 0
-END = int(config.TRAIN_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
-write_slurm_and_bash_file(
-    OUTPUT_FILE="01_create_synthetic_training_data",
-    HPC_WS_DIR=config.HPC_WS_DIR,
-    TITLE=config.TITLE,
-    PYTHON_FILE="01_create_synthetic_training_data",
-    array=True,
-    START=START,
-    END=END,
-    ITERATIONS_PER_BATCH=config.ITERATIONS_PER_BATCH,
-    OFFSET=0,
-    CLI_ARGS=" "
-    + str(BATCH_MODE)
-    + " --INITIAL_BATCH_SAMPLING_METHOD "
-    + str(INITIAL_BATCH_SAMPLING_METHOD)
-    + " --BASE_PARAM_STRING "
-    + config.TITLE
-    + " --INITIAL_BATCH_SAMPLING_ARG "
-    + str(config.INITIAL_BATCH_SAMPLING_ARG)
-    + " --OUTPUT_DIRECTORY "
-    + config.OUTPUT_DIR
-    + " --TOTAL_BUDGET "
-    + str(config.TOTAL_BUDGET)
-    + " --NR_LEARNING_SAMPLES "
-    + str(config.ITERATIONS_PER_BATCH)
-    + " --INITIAL_BATCH_SAMPLING_HYBRID_UNCERT "
-    + str(config.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT)
-    + " --INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY "
-    + str(config.INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY)
-    + " --INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST "
-    + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST)
-    + " --INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB "
-    + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB)
-    + ADDITIONAL_TRAINING_STATE_ARGS
-    + " --RANDOM_ID_OFFSET $i"
-    + " --DISTANCE_METRIC "
-    + str(config.DISTANCE_METRIC),
-)
+if not config.ONLY_ALIPY:
+    START = 0
+    END = int(config.TRAIN_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
+    write_slurm_and_bash_file(
+        OUTPUT_FILE="01_create_synthetic_training_data",
+        HPC_WS_DIR=config.HPC_WS_DIR,
+        TITLE=config.EXP_TITLE,
+        PYTHON_FILE="01_create_synthetic_training_data",
+        array=True,
+        START=START,
+        END=END,
+        ITERATIONS_PER_BATCH=config.ITERATIONS_PER_BATCH,
+        OFFSET=0,
+        CLI_ARGS=" "
+        + str(config.BATCH_MODE)
+        + " --INITIAL_BATCH_SAMPLING_METHOD "
+        + str(config.INITIAL_BATCH_SAMPLING_METHOD)
+        + " --BASE_PARAM_STRING "
+        + config.EXP_TITLE
+        + " --INITIAL_BATCH_SAMPLING_ARG "
+        + str(config.INITIAL_BATCH_SAMPLING_ARG)
+        + " --OUTPUT_DIRECTORY "
+        + config.OUTPUT_DIR
+        + " --TOTAL_BUDGET "
+        + str(config.TOTAL_BUDGET)
+        + " --NR_LEARNING_SAMPLES "
+        + str(config.ITERATIONS_PER_BATCH)
+        + " --INITIAL_BATCH_SAMPLING_HYBRID_UNCERT "
+        + str(config.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT)
+        + " --INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY "
+        + str(config.INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY)
+        + " --INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST "
+        + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST)
+        + " --INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB "
+        + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB)
+        + " "
+        + " ".join(["--" + sa for sa in config.STATE_ARGS])
+        + " --RANDOM_ID_OFFSET $i"
+        + " --DISTANCE_METRIC "
+        + str(config.DISTANCE_METRIC),
+    )
 
 
 if config.WITH_HYPER_SEARCH:
     write_slurm_and_bash_file(
         OUTPUT_FILE="02_hyper_search",
         HPC_WS_DIR=config.HPC_WS_DIR,
-        TITLE=config.TITLE,
+        TITLE=config.EXP_TITLE,
         PYTHON_FILE="02_hyper_search_or_train_imital",
         array=False,
         THREADS=24,
         MEMORY=5250,
         CLI_ARGS="--DATA_PATH "
         + config.OUTPUT_DIR
-        + config.TITLE
+        + config.EXP_TITLE
         + " --STATE_ENCODING listwise --TARGET_ENCODING binary --HYPER_SEARCH --N_ITER 100 ",
     )
 
@@ -250,20 +206,22 @@ if config.WITH_HYPER_SEARCH:
     hypered_appendix = " --HYPER_SEARCHED"
 else:
     hypered_appendix = ""
-write_slurm_and_bash_file(
-    OUTPUT_FILE="03_train_imital",
-    HPC_WS_DIR=config.HPC_WS_DIR,
-    TITLE=config.TITLE,
-    PYTHON_FILE="03_train_imital",
-    array=False,
-    THREADS=8,
-    MEMORY=5250,
-    CLI_ARGS="--OUTPUT_DIRECTORY "
-    + config.OUTPUT_DIR
-    + "/ --BASE_PARAM_STRING "
-    + config.TITLE
-    + hypered_appendix,
-)
+
+if not config.ONLY_ALIPY:
+    write_slurm_and_bash_file(
+        OUTPUT_FILE="03_train_imital",
+        HPC_WS_DIR=config.HPC_WS_DIR,
+        TITLE=config.EXP_TITLE,
+        PYTHON_FILE="03_train_imital",
+        array=False,
+        THREADS=8,
+        MEMORY=5250,
+        CLI_ARGS="--OUTPUT_DIRECTORY "
+        + config.OUTPUT_DIR
+        + "/ --BASE_PARAM_STRING "
+        + config.EXP_TITLE
+        + hypered_appendix,
+    )
 
 
 if config.WITH_ALIPY:
@@ -281,7 +239,7 @@ python 04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASET_IDS {{ D
         END = int(config.TEST_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
         f.write(
             alipy_init_seeds_template.render(
-                OUTPUT_PATH=config.OUTPUT_DIR + "/" + config.TITLE,
+                OUTPUT_PATH=config.OUTPUT_DIR + "/" + config.EXP_TITLE,
                 DATASET_IDS=",".join([str(id) for id in config.EVA_DATASET_IDS]),
                 STRATEGY_IDS=",".join([str(id) for id in config.EVA_STRATEGY_IDS]),
                 AMOUNT_OF_EVAL_RUNS=config.TEST_NR_LEARNING_SAMPLES,
@@ -299,7 +257,7 @@ python 04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASET_IDS {{ D
     write_slurm_and_bash_file(
         OUTPUT_FILE="05_alipy_eva",
         HPC_WS_DIR=config.HPC_WS_DIR,
-        TITLE=config.TITLE,
+        TITLE=config.EXP_TITLE,
         PYTHON_FILE="05_alipy_eva.py",
         array=True,
         START="0",
@@ -310,7 +268,7 @@ python 04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASET_IDS {{ D
         + " --OUTPUT_PATH "
         + config.OUTPUT_DIR
         + "/"
-        + config.TITLE
+        + config.EXP_TITLE
         + "/ --INDEX $SLURM_ARRAY_TASK_ID",
     )
 
@@ -322,7 +280,7 @@ with open(
         submit_jobs.render(
             HPC_WS_DIR=config.HPC_WS_DIR,
             EXPERIMENT_LAUNCH_SCRIPTS=config.EXPERIMENT_LAUNCH_SCRIPTS,
-            TITLE=config.TITLE,
+            TITLE=config.EXP_TITLE,
             WITH_HYPER_SEARCH=config.WITH_HYPER_SEARCH,
             WITH_ALIPY=config.WITH_ALIPY,
         )
@@ -355,8 +313,10 @@ for tmp_file in sorted(
                 "python 05_ali_bash_parallel_runner_script.py --OUTPUT_PATH "
                 + config.OUTPUT_DIR
                 + "/"
-                + config.TITLE
-                + " --N_PARALLEL_JOBS 4 --N_TASKS XXX"
+                + config.EXP_TITLE
+                + " --N_PARALLEL_JOBS "
+                + str(config.N_JOBS)
+                + " --N_TASKS XXX"
             )
         else:
             submit_content += "python " + content + "\n"

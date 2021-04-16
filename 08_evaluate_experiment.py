@@ -158,6 +158,164 @@ def duration_plot(df: pd.DataFrame, OUTPUT_PATH: str):
     )
 
 
+def plot_evaluation_ranking_table(df):
+    from tabulate import tabulate
+
+    # strategy_results = [['strategy', 'synthetic', 'breast', 'diabetes', 'fertility', 'german', 'haberman', 'heart', 'ilpd', 'ionosphere', 'pima', 'planning', 'australian', 'dwtc', 'emnist']]#,'mean', 'df_mean', 'df_mean2']]
+    # strategy_results[0] = strategy_results[0][:len(df.dataset_id.unique())+1]
+    strategy_results = []
+    strategy_results.append(dataset_names)
+    # results_df.loc['NN Single', 'fertility'] = 2
+
+    def get_ranks(l):
+        uniques = np.unique(l)
+        argssorted = np.flip(np.argsort(uniques))
+        mapping = dict(zip(uniques, argssorted))
+        ranks = [mapping[x] for x in l]
+
+        m2 = {}
+        last_value = -1
+        increase = 0
+        for i, v in enumerate(sorted(ranks)):
+            if last_value == v:
+                increase += 1
+                m2[v] = v
+            else:
+                m2[v] = v + increase
+            last_value = v
+
+        # ranks = [m2[x] for x in ranks]
+        return ranks
+
+    for strategy in df["strategy"].unique():
+        results = [strategy]
+        for dataset in df["dataset_id"].unique():
+            results.append(
+                "{:.40f}".format(
+                    df.loc[
+                        (df["dataset_id"] == dataset) & (df["strategy"] == strategy)
+                    ]["f1_auc"].mean()
+                )
+            )
+
+            # count how often per dataset
+            # results.append("{}".format(len(df.loc[(df['dataset_id']==dataset) & (df['strategy']==strategy)])))
+
+            results = [r if r != "nan" else -0 for r in results]
+
+        # results += [np.mean(np.array(results[1:]).astype(np.float64))]
+
+        # results += [df.loc[df['strategy']==strategy]['performance'].mean()]
+        # results += [np.mean(df.loc[df['strategy']==strategy].groupby('dataset_id')['performance'].mean())]
+
+        strategy_results.append(results)
+
+    # print(strategy_results[10][2])
+    # strategy_results[10][2] = 0.94
+    # print(strategy_results[10])
+
+    results_df = pd.DataFrame(strategy_results[1:], columns=strategy_results[0])
+    results_df = results_df.set_index("strategy")
+    results_df = results_df.replace(-1, np.NaN)
+    results_df = results_df.apply(pd.to_numeric)
+
+    results_df["mean"] = results_df.T.mean(skipna=True)
+
+    # results_df = results_df.fillna(value=-1)
+    # print(results_df)
+
+    ranking_only_table = []
+    transposed_results = list(map(list, zip(*strategy_results)))
+    new_results = [transposed_results[0]]
+    for row in transposed_results[1:]:
+        row_sorting = get_ranks(np.array(row[1:]))
+        row = row[:1] + [
+            "{:.1%} ({})".format(float(a), b) for a, b in zip(row[1:], row_sorting)
+        ]
+        new_results.append(row)
+        ranking_only_table.append(row[:1] + row_sorting)
+
+    row = ["mean %"] + results_df["mean"].to_list()
+    row_sorting = get_ranks(np.array(row[1:]))
+
+    row = row[:1] + [
+        "{:.1%} ({})".format(float(a), b) for a, b in zip(row[1:], row_sorting)
+    ]
+    new_results.append(row)
+
+    ranking_only_table = [transposed_results[0]] + ranking_only_table
+    new_results.append(
+        ["mean (r)"]
+        + [
+            "{:1.2f}".format(sum(r) / len(r))
+            for r in list(map(list, zip(*ranking_only_table[1:])))[1:]
+        ]
+    )
+
+    # sort colmuns manually
+    df2 = pd.DataFrame(new_results[1:], columns=new_results[0])
+    # df2 = df2[['strategy', 'ANNSingle1010EuclidCos', 'ANNSingleCosNrf', 'ANNSingleCos', 'ANNSingleNrf','ANNBatchCosNrf', 'ANNBatchCos',  'NN Single', 'NN Batch', 'MM', 'QBC', 'LC', 'Ent',  'BMDR', 'GD', 'LAL', 'SPAL', 'EER',  'QUIRE', 'Rand']]
+    # df2 = df2[['strategy', 'NN Single', 'NN Batch1', 'NN Batch', 'MM', 'LC', 'QBC', 'BMDR', 'GD',  'Ent', 'LAL', 'SPAL', 'EER', 'QUIRE', 'Rand']]
+    df2 = df2[
+        [
+            "strategy",
+            "NN Single",
+            "NN Batch",
+            "MM",
+            "LC",
+            "BMDR",
+            "QBC",
+            "GD",
+            "Rand",
+            "Ent",
+            "LAL",
+            "SPAL",
+            "EER",
+            "QUIRE",
+        ]
+    ]
+
+    order = (
+        ["strategy"]
+        + sorted([v for v in dataset_to_id.values()], key=lambda v: v.upper())
+        + ["mean %", "mean (r)"]
+    )
+    lol = [df2.columns.values.tolist()] + df2.values.tolist()
+    lol = sorted(lol, key=lambda l: order.index(l[0]))
+
+    with open("../paper/figures/ali_f1auc_table.tex", "w") as f:
+        tex_code = tabulate(lol, headers="firstrow", tablefmt="latex_booktabs")
+        splitted = [
+            "\\fontseries{b}\\selectfont{" + t[1:-1] + "}" if "(0)" in t else t
+            for t in tex_code.split("&")
+        ]
+
+        # for i in range(0,len(df.strategy.unique())):
+        #    splitted = [t.replace("(" + str(i) + ")", "(\\textit{"+str(i)+"})") for t in splitted]
+
+        tex_code = "&".join(splitted)
+        tex_code = tex_code.replace("llllllllllllll", "L{1.4cm}cccccccccccccc")
+        # tex_code = tex_code.replace("llllllllll", "lrrrrrrrrrr")
+        tex_code = tex_code.replace("tabular", "tabularx")
+        tex_code = tex_code.replace("begin{tabularx}", "begin{tabularx}{\linewidth}")
+
+        tex_code = tex_code.replace("mean \%", "\\midrule \n mean \%")
+        tex_code = tex_code.replace(" \\% ", "~~~")
+        tex_code = tex_code.replace("\\% ", " ")
+        tex_code = tex_code.replace("~~~", " \\%")
+        for ind in range(0, 100):
+            tex_code = tex_code.replace(" 0.0 (" + str(ind) + ")", "")
+        #    tex_code = tex_code.replace(" ("+str(ind)+")", '')
+        tex_code = tex_code.replace("1.36", "\\fontseries{b}\\selectfont{1.36}")
+        tex_code = tex_code.replace(" \\\\", "\\\\")
+        tex_code = tex_code.replace("cc", "rr")
+        tex_code = tex_code.replace("strategy", "")
+        f.write(tex_code)
+
+    tabulate(lol, headers="firstrow", tablefmt="html")
+    # tabulate(strategy_results, headers="firstrow", tablefmt="html")
+
+
 config, parser = get_active_config(
     [
         (["--EXP1_PATH"], {}),

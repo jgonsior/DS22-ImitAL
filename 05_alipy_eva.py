@@ -54,6 +54,9 @@ np.random.seed(DATASET_RANDOM_SEED)
 random.seed(DATASET_RANDOM_SEED)
 DATASET_NAME = dataset_id_mapping[DATASET_ID][0]
 
+print(DATASET_NAME)
+print(DATASET_RANDOM_SEED)
+
 if DATASET_NAME == "synthetic":
     df, synthetic_creation_args = load_synthetic(
         DATASET_RANDOM_SEED,
@@ -132,21 +135,22 @@ print("ds.tes ", data_storage.test_mask) """
 # update data_storage!
 
 QUERY_STRATEGY: Tuple = strategy_id_mapping[STRATEGY_ID]
-# update NN_BINARY_PATH
-if "NN_BINARY_PATH" in QUERY_STRATEGY[1].keys():
-    QUERY_STRATEGY[1]["NN_BINARY_PATH"] = (
-        config.OUTPUT_PATH + "/03_imital_trained_ann.model"
-    )
-    QUERY_STRATEGY[1]["data_storage"] = data_storage
 
-test = ALiPY_ImitAL_Query_Strategy(
-    X=X,
-    Y=Y,
-    NN_BINARY_PATH=config.OUTPUT_PATH + "/03_imital_trained_ann.model",
-    data_storage=data_storage,
-)
+
 print(QUERY_STRATEGY)
-
+if STRATEGY_ID == 12:
+    # update NN_BINARY_PATH
+    if "NN_BINARY_PATH" in QUERY_STRATEGY[1].keys():
+        QUERY_STRATEGY[1]["NN_BINARY_PATH"] = (
+            config.OUTPUT_PATH + "/03_imital_trained_ann.model"
+        )
+        QUERY_STRATEGY[1]["data_storage"] = data_storage
+    test = ALiPY_ImitAL_Query_Strategy(
+        X=X,
+        Y=Y,
+        NN_BINARY_PATH=config.OUTPUT_PATH + "/03_imital_trained_ann.model",
+        data_storage=data_storage,
+    )
 al = AlExperiment(
     X,
     Y,
