@@ -52,7 +52,7 @@ parser.add_argument("--EVA_DATASET_IDS", nargs="*", default=[0])
 parser.add_argument("--EVA_STRATEGY_IDS", nargs="*", default=[0, 1, 2, 12])
 
 
-parser.add_argument("--BATCH_MODE", default="SINGLE")
+# parser.add_argument("--BATCH_MODE", action="store_true")
 parser.add_argument(
     "--STATE_ARGS",
     nargs="*",
@@ -158,7 +158,7 @@ if not config.ONLY_ALIPY:
         ITERATIONS_PER_BATCH=config.ITERATIONS_PER_BATCH,
         OFFSET=0,
         CLI_ARGS=" "
-        + str(config.BATCH_MODE)
+        #p+ str(config.BATCH_MODE)
         + " --INITIAL_BATCH_SAMPLING_METHOD "
         + str(config.INITIAL_BATCH_SAMPLING_METHOD)
         + " --BASE_PARAM_STRING "
