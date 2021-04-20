@@ -48,6 +48,10 @@ parser.add_argument("--TRAIN_STATE_PREDICTED_UNITY", action="store_true")
 parser.add_argument("--TRAIN_STATE_DISTANCES_LAB", action="store_true")
 parser.add_argument("--STATE_INCLUDE_NR_FEATURES", action="store_true")
 parser.add_argument("--TOTAL_BUDGET", type=int, default=50)
+
+parser.add_argument("--WS_MODE", action="store_true")
+parser.add_argument("--USE_WS_LABELS_CONTINOUSLY", action="store_true")
+
 parser.add_argument("--EVA_DATASET_IDS", nargs="*", default=[0])
 parser.add_argument("--EVA_STRATEGY_IDS", nargs="*", default=[0, 1, 2, 12])
 
@@ -144,6 +148,15 @@ def write_slurm_and_bash_file(OUTPUT_FILE: str, **kwargs):
 if not os.path.exists(config.EXPERIMENT_LAUNCH_SCRIPTS):
     os.makedirs(config.EXPERIMENT_LAUNCH_SCRIPTS)
 
+
+WS_CONFIG_OPTIONS = ""
+if config.WS_MODE:
+    WS_CONFIG_OPTIONS += " --WS_MODE"
+
+    if config.USE_WS_LABELS_CONTINOUSLY:
+        WS_CONFIG_OPTIONS += " --USE_WS_LABELS_CONTINOUSLY"
+
+
 if not config.ONLY_ALIPY:
     START = 0
     END = int(config.TRAIN_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
@@ -158,7 +171,7 @@ if not config.ONLY_ALIPY:
         ITERATIONS_PER_BATCH=config.ITERATIONS_PER_BATCH,
         OFFSET=0,
         CLI_ARGS=" "
-        #p+ str(config.BATCH_MODE)
+        # p+ str(config.BATCH_MODE)
         + " --INITIAL_BATCH_SAMPLING_METHOD "
         + str(config.INITIAL_BATCH_SAMPLING_METHOD)
         + " --BASE_PARAM_STRING "
@@ -181,6 +194,7 @@ if not config.ONLY_ALIPY:
         + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB)
         + " "
         + " ".join(["--" + sa for sa in config.STATE_ARGS])
+        + WS_CONFIG_OPTIONS
         + " --RANDOM_ID_OFFSET $i"
         + " --DISTANCE_METRIC "
         + str(config.DISTANCE_METRIC),
@@ -269,7 +283,8 @@ python 04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASET_IDS {{ D
         + config.OUTPUT_DIR
         + "/"
         + config.EXP_TITLE
-        + "/ --INDEX $SLURM_ARRAY_TASK_ID",
+        + "/ --INDEX $SLURM_ARRAY_TASK_ID"
+        + WS_CONFIG_OPTIONS,
     )
 
 

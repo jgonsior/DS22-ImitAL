@@ -18,7 +18,7 @@ from active_learning.config import get_active_config
 from active_learning.dataStorage import DataStorage
 from active_learning.datasets import load_synthetic
 from active_learning.learner import get_classifier
-from active_learning.logger import init_logger, log_it
+from active_learning.logger import init_logger
 from active_learning.merge_weak_supervision_label_strategies.MajorityVoteLabelMergeStrategy import (
     MajorityVoteLabelMergeStrategy,
 )
@@ -28,13 +28,7 @@ from active_learning.query_sampling_strategies.BatchStateEncoding import (
     TrainImitALBatch,
 )
 from active_learning.query_sampling_strategies.ImitationLearner import TrainImitALSingle
-from active_learning.query_sampling_strategies.ImitationLearningBaseQuerySampler import (
-    ImitationLearningBaseQuerySampler,
-)
-from active_learning.query_sampling_strategies.TrainedImitALQuerySampler import (
-    TrainedImitALBatchSampler,
-    TrainedImitALSingleSampler,
-)
+
 from active_learning.stopping_criterias import ALCyclesStoppingCriteria
 from active_learning.weak_supervision import SyntheticLabelingFunctions
 from active_learning.weak_supervision.BaseWeakSupervision import BaseWeakSupervision
@@ -177,14 +171,16 @@ config.LEN_TRAIN_DATA = len(data_storage.unlabeled_mask) + len(
 
 oracle: BaseOracle = FakeExperimentOracle()  # type: ignore
 
-ws_list: List[BaseWeakSupervision] = [
-    SyntheticLabelingFunctions(X=data_storage.X, Y=data_storage.Y_merged_final)
-    for i in range(0, config.AMOUNT_OF_SYNTHETIC_LABELLING_FUNCTIONS)
-]  # type: ignore
 
-data_storage.set_weak_supervisions(ws_list, MajorityVoteLabelMergeStrategy())
+if config.WS_MODE:
+    ws_list: List[BaseWeakSupervision] = [
+        SyntheticLabelingFunctions(X=data_storage.X, Y=data_storage.exp_Y)
+        for i in range(0, config.AMOUNT_OF_SYNTHETIC_LABELLING_FUNCTIONS)
+    ]  # type: ignore
 
-# FIXME dem ImitationLearner werden die state configs nie weitergereicht?
+    data_storage.set_weak_supervisions(ws_list, MajorityVoteLabelMergeStrategy())
+
+
 if config.BATCH_MODE:
     print("ui" * 1000)
     samplingStrategy: ImitationLearner = TrainImitALBatch(
@@ -229,6 +225,7 @@ active_learner_params = {
         config.TOTAL_BUDGET / config.BATCH_SIZE
     ),
     "BATCH_SIZE": config.BATCH_SIZE,
+    "USE_WS_LABELS_CONTINOUSLY": config.USE_WS_LABELS_CONTINOUSLY,
 }
 
 active_learner = ActiveLearner(**active_learner_params)

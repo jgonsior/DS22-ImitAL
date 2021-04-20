@@ -346,10 +346,10 @@ def plot_evaluation_ranking_table(
             # tex_code = tex_code.replace("llllllllll", "lrrrrrrrrrr")
             tex_code = tex_code.replace("tabular", "tabularx")
             tex_code = tex_code.replace(
-                "begin{tabularx}", "begin{tabularx}{\linewidth}"
+                "begin{tabularx}", "begin{tabularx}{\linewidth}"  # type: ignore
             )
 
-            tex_code = tex_code.replace("mean \%", "\\midrule \n mean \%")
+            tex_code = tex_code.replace("mean \%", "\\midrule \n mean \%")  # type: ignore
             tex_code = tex_code.replace(" \\% ", "~~~")
             tex_code = tex_code.replace("\\% ", " ")
             tex_code = tex_code.replace("~~~", " \\%")
