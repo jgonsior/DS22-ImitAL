@@ -5,9 +5,39 @@ from tabulate import tabulate
 from active_learning.config.config import get_active_config
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pathlib
+from imitLearningPipelineSharedCode import dataset_id_mapping, strategy_id_mapping
 
 # plt.style.use('seaborn-paper')
 # plt.style.use('tex')
+
+
+config, parser = get_active_config(
+    [
+        (["--EXP1_PATH"], {}),
+        (["--EXP2_PATH"], {}),
+        (["--BASELINES_PATH"], {}),
+        (["--OUTPUT_PATH"], {}),
+    ],
+    return_parser=True,
+)  # type: ignore
+
+pathlib.Path(config.OUTPUT_PATH).mkdir(parents=True, exist_ok=True)
+
+baseline_names_mapping = {
+    "QueryInstanceUncertainty{'measure': 'margin'}": "MM",
+    "QueryInstanceUncertainty{'measure': 'least_confident'}": "LC",
+    "QueryInstanceUncertainty{'measure': 'entropy'}": "Ent",
+    "QueryInstanceGraphDensity{}": "GD",
+    "QueryInstanceRandom{}": "Rand",
+    "QueryInstanceQUIRE{}": "QUIRE",
+    "QueryInstanceQBC{}": "QBC",
+    "QureyExpectedErrorReduction{}": "EER",
+    "QueryInstanceLAL{}": "LAL",
+    "QueryInstanceSPAL{}": "SPAL",
+    "QueryInstanceBMDR{}": "BMDR",
+}
+
 
 font_size = 8
 
@@ -88,7 +118,7 @@ def duration_plot(df: pd.DataFrame, OUTPUT_PATH: str):
                     ax.text(_x, _y, "{:,.0f}".format(value), ha="left")
 
         if isinstance(axs, np.ndarray):
-            for idx, ax in np.ndenumerate(axs):
+            for idx, ax in np.ndenumerate(axs):  # type: ignore
                 _show_on_single_plot(ax)
         else:
             _show_on_single_plot(axs)
@@ -158,25 +188,30 @@ def duration_plot(df: pd.DataFrame, OUTPUT_PATH: str):
     )
 
 
-def plot_evaluation_ranking_table(df):
+def plot_evaluation_ranking_table(
+    df: pd.DataFrame,
+    OUTPUT_PATH: str,
+    OUTPUT_TEX=False,
+    COUNT_NOT_RANKS=False,
+    RANK_GO_UP_CONTINOUSLY=False,
+):
     from tabulate import tabulate
 
-    # strategy_results = [['strategy', 'synthetic', 'breast', 'diabetes', 'fertility', 'german', 'haberman', 'heart', 'ilpd', 'ionosphere', 'pima', 'planning', 'australian', 'dwtc', 'emnist']]#,'mean', 'df_mean', 'df_mean2']]
-    # strategy_results[0] = strategy_results[0][:len(df.dataset_id.unique())+1]
-    strategy_results = []
-    strategy_results.append(dataset_names)
-    # results_df.loc['NN Single', 'fertility'] = 2
+    # extract from df which datasets are included
+    strategy_results = [
+        ["strategy"] + [dataset_id_mapping[did][0] for did in df["dataset_id"].unique()]
+    ]
 
     def get_ranks(l):
         uniques = np.unique(l)
-        argssorted = np.flip(np.argsort(uniques))
+        argssorted = np.flip(np.argsort(uniques))  # type: ignore
         mapping = dict(zip(uniques, argssorted))
         ranks = [mapping[x] for x in l]
 
         m2 = {}
         last_value = -1
         increase = 0
-        for i, v in enumerate(sorted(ranks)):
+        for v in sorted(ranks):
             if last_value == v:
                 increase += 1
                 m2[v] = v
@@ -184,22 +219,33 @@ def plot_evaluation_ranking_table(df):
                 m2[v] = v + increase
             last_value = v
 
-        # ranks = [m2[x] for x in ranks]
+        if RANK_GO_UP_CONTINOUSLY:
+            ranks = [m2[x] for x in ranks]
         return ranks
 
     for strategy in df["strategy"].unique():
         results = [strategy]
         for dataset in df["dataset_id"].unique():
-            results.append(
-                "{:.40f}".format(
-                    df.loc[
-                        (df["dataset_id"] == dataset) & (df["strategy"] == strategy)
-                    ]["f1_auc"].mean()
-                )
-            )
-
             # count how often per dataset
-            # results.append("{}".format(len(df.loc[(df['dataset_id']==dataset) & (df['strategy']==strategy)])))
+            if COUNT_NOT_RANKS:
+                results.append(
+                    "{}".format(
+                        len(
+                            df.loc[
+                                (df["dataset_id"] == dataset)
+                                & (df["strategy"] == strategy)
+                            ]
+                        )
+                    )
+                )
+            else:
+                results.append(
+                    "{:.40f}".format(
+                        df.loc[
+                            (df["dataset_id"] == dataset) & (df["strategy"] == strategy)
+                        ]["f1_auc"].mean()
+                    )
+                )
 
             results = [r if r != "nan" else -0 for r in results]
 
@@ -208,18 +254,14 @@ def plot_evaluation_ranking_table(df):
         # results += [df.loc[df['strategy']==strategy]['performance'].mean()]
         # results += [np.mean(df.loc[df['strategy']==strategy].groupby('dataset_id')['performance'].mean())]
 
-        strategy_results.append(results)
-
-    # print(strategy_results[10][2])
-    # strategy_results[10][2] = 0.94
-    # print(strategy_results[10])
+        strategy_results.append(results)  # type: ignore
 
     results_df = pd.DataFrame(strategy_results[1:], columns=strategy_results[0])
     results_df = results_df.set_index("strategy")
-    results_df = results_df.replace(-1, np.NaN)
-    results_df = results_df.apply(pd.to_numeric)
+    results_df = results_df.replace(-1, np.NaN)  # type: ignore
+    results_df = results_df.apply(pd.to_numeric)  # type: ignore
 
-    results_df["mean"] = results_df.T.mean(skipna=True)
+    results_df["mean"] = results_df.T.mean(skipna=True)  # type: ignore
 
     # results_df = results_df.fillna(value=-1)
     # print(results_df)
@@ -229,34 +271,39 @@ def plot_evaluation_ranking_table(df):
     new_results = [transposed_results[0]]
     for row in transposed_results[1:]:
         row_sorting = get_ranks(np.array(row[1:]))
+
+        if COUNT_NOT_RANKS:
+            formatting_string = "{0:.0f}"
+        else:
+            formatting_string = "{:.1%} ({})"
+
         row = row[:1] + [
-            "{:.1%} ({})".format(float(a), b) for a, b in zip(row[1:], row_sorting)
+            formatting_string.format(float(a), b) for a, b in zip(row[1:], row_sorting)  # type: ignore
         ]
         new_results.append(row)
         ranking_only_table.append(row[:1] + row_sorting)
 
-    row = ["mean %"] + results_df["mean"].to_list()
+    row = ["mean %"] + results_df["mean"].to_list()  # type: ignore
     row_sorting = get_ranks(np.array(row[1:]))
 
     row = row[:1] + [
-        "{:.1%} ({})".format(float(a), b) for a, b in zip(row[1:], row_sorting)
+        "{:.1%} ({})".format(float(a), b) for a, b in zip(row[1:], row_sorting)  # type: ignore
     ]
     new_results.append(row)
 
     ranking_only_table = [transposed_results[0]] + ranking_only_table
     new_results.append(
-        ["mean (r)"]
+        ["mean (r)"]  # type: ignore
         + [
-            "{:1.2f}".format(sum(r) / len(r))
+            "{:1.2f}".format(sum(r) / len(r))  # type: ignore
             for r in list(map(list, zip(*ranking_only_table[1:])))[1:]
         ]
     )
 
     # sort colmuns manually
     df2 = pd.DataFrame(new_results[1:], columns=new_results[0])
-    # df2 = df2[['strategy', 'ANNSingle1010EuclidCos', 'ANNSingleCosNrf', 'ANNSingleCos', 'ANNSingleNrf','ANNBatchCosNrf', 'ANNBatchCos',  'NN Single', 'NN Batch', 'MM', 'QBC', 'LC', 'Ent',  'BMDR', 'GD', 'LAL', 'SPAL', 'EER',  'QUIRE', 'Rand']]
-    # df2 = df2[['strategy', 'NN Single', 'NN Batch1', 'NN Batch', 'MM', 'LC', 'QBC', 'BMDR', 'GD',  'Ent', 'LAL', 'SPAL', 'EER', 'QUIRE', 'Rand']]
-    df2 = df2[
+
+    """   df2 = df2[
         [
             "strategy",
             "NN Single",
@@ -273,86 +320,80 @@ def plot_evaluation_ranking_table(df):
             "EER",
             "QUIRE",
         ]
-    ]
+    ] """
 
     order = (
         ["strategy"]
-        + sorted([v for v in dataset_to_id.values()], key=lambda v: v.upper())
+        + sorted([v[0] for v in dataset_id_mapping.values()], key=lambda v: v.upper())
         + ["mean %", "mean (r)"]
     )
-    lol = [df2.columns.values.tolist()] + df2.values.tolist()
+    lol = [df2.columns.values.tolist()] + df2.values.tolist()  # type: ignore
     lol = sorted(lol, key=lambda l: order.index(l[0]))
 
-    with open("../paper/figures/ali_f1auc_table.tex", "w") as f:
-        tex_code = tabulate(lol, headers="firstrow", tablefmt="latex_booktabs")
-        splitted = [
-            "\\fontseries{b}\\selectfont{" + t[1:-1] + "}" if "(0)" in t else t
-            for t in tex_code.split("&")
-        ]
+    with open(OUTPUT_PATH + "/08_ali_f1auc_table.tex", "w") as f:
+        if OUTPUT_TEX:
+            tex_code = tabulate(lol, headers="firstrow", tablefmt="latex_booktabs")
+            splitted = [
+                "\\fontseries{b}\\selectfont{" + t[1:-1] + "}" if "(0)" in t else t
+                for t in tex_code.split("&")
+            ]
 
-        # for i in range(0,len(df.strategy.unique())):
-        #    splitted = [t.replace("(" + str(i) + ")", "(\\textit{"+str(i)+"})") for t in splitted]
+            # for i in range(0,len(df.strategy.unique())):
+            #    splitted = [t.replace("(" + str(i) + ")", "(\\textit{"+str(i)+"})") for t in splitted]
 
-        tex_code = "&".join(splitted)
-        tex_code = tex_code.replace("llllllllllllll", "L{1.4cm}cccccccccccccc")
-        # tex_code = tex_code.replace("llllllllll", "lrrrrrrrrrr")
-        tex_code = tex_code.replace("tabular", "tabularx")
-        tex_code = tex_code.replace("begin{tabularx}", "begin{tabularx}{\linewidth}")
+            tex_code = "&".join(splitted)
+            tex_code = tex_code.replace("llllllllllllll", "L{1.4cm}cccccccccccccc")
+            # tex_code = tex_code.replace("llllllllll", "lrrrrrrrrrr")
+            tex_code = tex_code.replace("tabular", "tabularx")
+            tex_code = tex_code.replace(
+                "begin{tabularx}", "begin{tabularx}{\linewidth}"
+            )
 
-        tex_code = tex_code.replace("mean \%", "\\midrule \n mean \%")
-        tex_code = tex_code.replace(" \\% ", "~~~")
-        tex_code = tex_code.replace("\\% ", " ")
-        tex_code = tex_code.replace("~~~", " \\%")
-        for ind in range(0, 100):
-            tex_code = tex_code.replace(" 0.0 (" + str(ind) + ")", "")
-        #    tex_code = tex_code.replace(" ("+str(ind)+")", '')
-        tex_code = tex_code.replace("1.36", "\\fontseries{b}\\selectfont{1.36}")
-        tex_code = tex_code.replace(" \\\\", "\\\\")
-        tex_code = tex_code.replace("cc", "rr")
-        tex_code = tex_code.replace("strategy", "")
-        f.write(tex_code)
+            tex_code = tex_code.replace("mean \%", "\\midrule \n mean \%")
+            tex_code = tex_code.replace(" \\% ", "~~~")
+            tex_code = tex_code.replace("\\% ", " ")
+            tex_code = tex_code.replace("~~~", " \\%")
+            for ind in range(0, 100):
+                tex_code = tex_code.replace(" 0.0 (" + str(ind) + ")", "")
+            #    tex_code = tex_code.replace(" ("+str(ind)+")", '')
+            tex_code = tex_code.replace("1.36", "\\fontseries{b}\\selectfont{1.36}")
+            tex_code = tex_code.replace(" \\\\", "\\\\")
+            tex_code = tex_code.replace("cc", "rr")
+            tex_code = tex_code.replace("strategy", "")
+            f.write(tex_code)
+        else:
+            f.write(
+                tabulate(
+                    lol,
+                    headers="firstrow",
+                    tablefmt="pretty",
+                    colalign=["right" for _ in lol[0]],
+                )
+            )
 
-    tabulate(lol, headers="firstrow", tablefmt="html")
+    print(
+        tabulate(
+            lol,
+            headers="firstrow",
+            tablefmt="pretty",
+            colalign=["right" for _ in lol[0]],
+        )
+    )
     # tabulate(strategy_results, headers="firstrow", tablefmt="html")
 
 
-config, parser = get_active_config(
-    [
-        (["--EXP1_PATH"], {}),
-        (["--EXP2_PATH"], {}),
-        (["--BASELINES_PATH"], {}),
-    ],
-    return_parser=True,
-)  # type: ignore
-
-
-baseline_names_mapping = {
-    "QueryInstanceUncertainty{'measure': 'margin'}": "MM",
-    "QueryInstanceUncertainty{'measure': 'least_confident'}": "LC",
-    "QueryInstanceUncertainty{'measure': 'entropy'}": "Ent",
-    "QueryInstanceGraphDensity{}": "GD",
-    "QueryInstanceRandom{}": "Rand",
-    "QueryInstanceQUIRE{}": "QUIRE",
-    "QueryInstanceQBC{}": "QBC",
-    "QureyExpectedErrorReduction{}": "EER",
-    "QueryInstanceLAL{}": "LAL",
-    "QueryInstanceSPAL{}": "SPAL",
-    "QueryInstanceBMDR{}": "BMDR",
-}
-
-
-if config.EXP1_PATH:
-    exp1_df = pd.read_csv(
-        config.EXP1_PATH + "/05_alipy_results.csv",
+def read_experiment_results(path: str) -> pd.DataFrame:
+    df = pd.read_csv(
+        path + "/05_alipy_results.csv",
         index_col=None,
     )
 
     # only extract the experiment results
     for baseline in baseline_names_mapping.keys():
-        exp1_df = exp1_df[exp1_df["strategy"] != baseline]
+        df = df[df["strategy"] != baseline]
 
     # merge strategies based on NN_BINARY_PATH
-    full_strategy_names = exp1_df["strategy"].tolist()
+    full_strategy_names = df["strategy"].tolist()
 
     # extract unique NN_BINARY_PATHES
     unique_nn_binary_pathes = [
@@ -365,23 +406,24 @@ if config.EXP1_PATH:
         for u in unique_nn_binary_pathes
     ]
 
-    mapping = zip(full_strategy_names, unique_nn_binary_pathes)
     for full, unique in zip(full_strategy_names, unique_nn_binary_pathes):
-        exp1_df["strategy"] = exp1_df["strategy"].replace(full, unique)
+        df["strategy"] = df["strategy"].replace(full, unique)
 
+    return df
+
+
+if config.EXP1_PATH:
+    exp1_df = read_experiment_results(config.EXP1_PATH)
 else:
     print("Please specify experiment!")
     exit(-1)
 
 if config.EXP2_PATH:
-    exp2_df = pd.read_csv(
-        config.EXP1_PATH + "/05_alipy_results.csv",
-        index_col=None,
-    )
+    exp2_df = read_experiment_results(config.EXP2_PATH)
 
 if config.BASELINES_PATH:
     baselines_df = pd.read_csv(
-        config.EXP1_PATH + "/05_alipy_results.csv",
+        config.BASELINES_PATH + "/05_alipy_results.csv",
         index_col=None,
     )
 
@@ -390,14 +432,24 @@ if config.BASELINES_PATH:
         if strategy_key not in baseline_names_mapping.keys():
             baselines_df = baselines_df[baselines_df["strategy"] != strategy_key]
 
-    baselines_df["strategy"] = baselines_df["strategy"].map(baseline_names_mapping)
+    baselines_df["strategy"] = baselines_df["strategy"].map(baseline_names_mapping)  # type: ignore
 else:
     print("Please specify baselines!")
     exit(-1)
 
 
-print(exp1_df)
-print(baselines_df)
+concat_dfs = [exp1_df, baselines_df]
 
+if config.EXP2_PATH:
+    concat_dfs.append(exp2_df)  # type: ignore
 
-duration_plot(pd.concat([exp1_df, baselines_df]), config.EXP1_PATH)
+df_joined = pd.concat(concat_dfs)  # type: ignore
+
+duration_plot(df_joined, config.OUTPUT_PATH)
+
+plot_evaluation_ranking_table(df_joined, config.OUTPUT_PATH)
+plot_evaluation_ranking_table(df_joined, config.OUTPUT_PATH, COUNT_NOT_RANKS=True)
+
+# display table
+# display how much from which dataset/strategy combination
+# display missing random_seeds
