@@ -448,7 +448,7 @@ df_joined = pd.concat(concat_dfs)  # type: ignore
 duration_plot(df_joined, config.OUTPUT_PATH)
 
 plot_evaluation_ranking_table(df_joined, config.OUTPUT_PATH)
-plot_evaluation_ranking_table(df_joined, config.OUTPUT_PATH, COUNT_NOT_RANKS=True)
+# plot_evaluation_ranking_table(df_joined, config.OUTPUT_PATH, COUNT_NOT_RANKS=True)
 
 # display table
 # display how much from which dataset/strategy combination
