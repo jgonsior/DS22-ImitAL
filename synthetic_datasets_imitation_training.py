@@ -180,7 +180,6 @@ if config.WS_MODE:
 
     data_storage.set_weak_supervisions(ws_list, MajorityVoteLabelMergeStrategy())
 
-
 if config.BATCH_MODE:
     print("ui" * 1000)
     samplingStrategy: ImitationLearner = TrainImitALBatch(

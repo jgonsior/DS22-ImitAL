@@ -212,6 +212,7 @@ if config.WITH_HYPER_SEARCH:
         MEMORY=5250,
         CLI_ARGS="--DATA_PATH "
         + config.OUTPUT_DIR
+        + "/"
         + config.EXP_TITLE
         + " --STATE_ENCODING listwise --TARGET_ENCODING binary --HYPER_SEARCH --N_ITER 100 ",
     )
