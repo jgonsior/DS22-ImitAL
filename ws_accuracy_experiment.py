@@ -91,8 +91,68 @@ for ws in ws_list:
 
 
 data_storage.set_weak_supervisions(ws_list, MajorityVoteLabelMergeStrategy())
+data_storage.generate_weak_labels(learner, mask=data_storage.test_mask)
 
 # compute the acc + f1 with majority vote / snorkel
+print()
+Y_pred = data_storage.Y_merged_final[data_storage.test_mask]
+acc = accuracy_score(data_storage.exp_Y[data_storage.test_mask], Y_pred)
+f1 = f1_score(data_storage.exp_Y[data_storage.test_mask], Y_pred, average="weighted")
+c = Counter(Y_pred)
+
+print(
+    "{:<60} Acc: {:.2%} F1: {:.2%} MC: {}-{:.1%}".format(
+        "Majority Vote",
+        acc,
+        f1,
+        c.most_common(1)[0][0],
+        c.most_common(1)[0][1] / len(Y_pred),
+    )
+)
 
 
 # compute the 50/100/200/500 worst wrongly classified samples -> classify them correctly (aka. fake active learning) -> is there really room for improvement after falsely applyed WS??
+
+# apply it to the train_set
+data_storage.generate_weak_labels(learner)
+
+weights = []
+for indice in data_storage.weakly_combined_mask:
+    if indice in data_storage.labeled_mask:
+        weights.append(100)
+    else:
+        weights.append(1)
+
+learner.fit(
+    data_storage.X[data_storage.weakly_combined_mask],
+    data_storage.Y_merged_final[data_storage.weakly_combined_mask],
+    sample_weight=weights,
+)
+Y_pred = learner.predict(data_storage.X[data_storage.test_mask])
+Y_true = data_storage.exp_Y[data_storage.test_mask]
+
+acc = accuracy_score(Y_true, Y_pred)
+f1 = f1_score(Y_true, Y_pred, average="weighted")
+c = Counter(Y_pred)
+
+print(
+    "{:<60} Acc: {:.2%} F1: {:.2%} MC: {}-{:.1%}".format(
+        "Trained RF",
+        acc,
+        f1,
+        c.most_common(1)[0][0],
+        c.most_common(1)[0][1] / len(Y_pred),
+    )
+)
+
+
+wrong_mask = np.logical_not(np.array_equal(Y_pred, Y_true))
+
+print(data_storage.Y_merged_final[wrong_mask])
+print(data_storage.exp_Y[wrong_mask])
+
+# calculate acc/f1 a) mit weakly_labeled b) ohne weakly labeled c) mit gewichten d) mit höheren gewichten e) mit mehr echten labels (best-case AL, siehe unten!)
+# calculate acc/f1 now and before ONLY on those without abstain!, but add "coverage" to the WS LF
+# a) get those samples, who are least covered by the LF
+# b) get those samples, where the classification is wrong by the merged LFs
+# c) get those samples, with the greatest disagreement among the LFs
