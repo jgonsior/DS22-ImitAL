@@ -173,14 +173,14 @@ test_one_labeled_set(data_storage, label_strategy="random", param=25)
 test_one_labeled_set(data_storage, label_strategy="random", param=50)
 test_one_labeled_set(data_storage, label_strategy="random", param=100)
 test_one_labeled_set(data_storage, label_strategy="random", param=200)
-# randomly select samples to be labeled
+
+# -> how to combine AL and WS labels in a way, that the experiment actually benefits from the labels
 
 # wrong_mask = np.logical_not(np.array_equal(Y_pred, Y_true))
 
 # print(data_storage.Y_merged_final[wrong_mask])
 # print(data_storage.exp_Y[wrong_mask])
 
-# calculate acc/f1 a) mit weakly_labeled b) ohne weakly labeled c) mit gewichten d) mit höheren gewichten e) mit mehr echten labels (best-case AL, siehe unten!)
 # calculate acc/f1 now and before ONLY on those without abstain!, but add "coverage" to the WS LF
 # a) get those samples, who are least covered by the LF
 # b) get those samples, where the classification is wrong by the merged LFs

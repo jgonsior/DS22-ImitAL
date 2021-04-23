@@ -24,9 +24,12 @@ parser.add_argument("--TRAIN_NR_LEARNING_SAMPLES", default=1000, type=int)
 parser.add_argument("--ITERATIONS_PER_BATCH", default=10, type=int)
 parser.add_argument("--N_JOBS", default=4, type=int)
 parser.add_argument("--EXPERIMENT_LAUNCH_SCRIPTS", default="_experiment_launch_scripts")
-parser.add_argument("--HPC_WS_DIR", default="/lustre/ssd/ws/s5968580-IL_TD2")
 parser.add_argument(
-    "--OUTPUT_DIR", default="/lustre/ssd/ws/s5968580-IL_TD2/single_vs_batch"
+    "--HPC_WS_DIR", default="MPLCONFIGDIR=/lustre/ssd/ws/s5968580-praticAl"
+)
+parser.add_argument("--OUTPUT_DIR", default="/lustre/ssd/ws/s5968580-praticAl")
+parser.add_argument(
+    "--DATASETS_DIR", default="/lustre/ssd/ws/s5968580-praticAl/datasets/"
 )
 parser.add_argument("--WITH_HYPER_SEARCH", action="store_true")
 parser.add_argument("--WITH_CLASSICS", action="store_true")
@@ -180,6 +183,8 @@ if not config.ONLY_ALIPY:
         + str(config.INITIAL_BATCH_SAMPLING_ARG)
         + " --OUTPUT_DIRECTORY "
         + config.OUTPUT_DIR
+        + " --DATASETS_DIR "
+        + config.DATASETS_DIR
         + " --TOTAL_BUDGET "
         + str(config.TOTAL_BUDGET)
         + " --NR_LEARNING_SAMPLES "

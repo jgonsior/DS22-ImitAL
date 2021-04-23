@@ -89,8 +89,6 @@ def get_config():
             (["--PLOT_METRIC"], {"default": "acc_auc"}),
             (["--INCLUDE_OPTIMAL_IN_PLOT"], {"action": "store_true"}),
             (["--INCLUDE_ONLY_OPTIMAL_IN_PLOT"], {"action": "store_true"}),
-            (["--WS_MODE"], {"action": "store_true"}),
-            (["--USE_WS_LABELS_CONTINOUSLY"], {"action": "store_true"}),
             (["--COMPARE_ALL_FOLDERS"], {"action": "store_true"}),
             (["--NR_ANN_HYPER_SEARCH_ITERATIONS"], {"default": 50}),
             (["--RANDOM_ID_OFFSET"], {"default": 0}),

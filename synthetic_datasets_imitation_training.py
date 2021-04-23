@@ -224,6 +224,7 @@ active_learner_params = {
         config.TOTAL_BUDGET / config.BATCH_SIZE
     ),
     "BATCH_SIZE": config.BATCH_SIZE,
+    "WS_MODE": config.WS_MODE,
     "USE_WS_LABELS_CONTINOUSLY": config.USE_WS_LABELS_CONTINOUSLY,
 }
 
