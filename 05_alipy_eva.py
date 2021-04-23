@@ -24,7 +24,7 @@ from imitLearningPipelineSharedCode import dataset_id_mapping, strategy_id_mappi
 init_logger("tmp.log")
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--DATASETS_PATH", default="../datasets")
+parser.add_argument("--DATASETS_DIR", default="../datasets")
 parser.add_argument("--N_JOBS", type=int, default=1)
 parser.add_argument(
     "--INDEX", type=int, default=1, help="Specifies which dataset to use etc."
@@ -68,11 +68,11 @@ if DATASET_NAME == "synthetic":
     )
 elif DATASET_NAME == "dwtc":
     df, synthetic_creation_args = load_dwtc(
-        DATASETS_PATH=config.DATASETS_PATH, RANDOM_SEED=DATASET_RANDOM_SEED
+        DATASETS_DIR=config.DATASETS_DIR, RANDOM_SEED=DATASET_RANDOM_SEED
     )
 else:
     df, synthetic_creation_args = load_uci(
-        DATASETS_PATH=config.DATASETS_PATH,
+        DATASETS_DIR=config.DATASETS_DIR,
         RANDOM_SEED=DATASET_RANDOM_SEED,
         DATASET_NAME=DATASET_NAME,
     )

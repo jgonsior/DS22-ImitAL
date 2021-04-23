@@ -75,6 +75,21 @@ class ALiPY_ImitAL_Query_Strategy:
         Y_output_state: OutputState = self.trained_imitAL_sampler.applyNN(
             X_input_state
         )[0]
+        """ print()
+        print("labeled are ", sorted(labeled_index))
+        print(sorted(pre_sampled_X_querie_indices))
+        print(
+            "selected: ",
+            sorted(
+                [
+                    v
+                    for v in self.trained_imitAL_sampler.decode_output_state(
+                        Y_output_state, pre_sampled_X_querie_indices, batch_size
+                    )
+                ]
+            ),
+        )
+        print() """
 
         return [
             v

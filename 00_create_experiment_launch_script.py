@@ -183,8 +183,6 @@ if not config.ONLY_ALIPY:
         + str(config.INITIAL_BATCH_SAMPLING_ARG)
         + " --OUTPUT_DIRECTORY "
         + config.OUTPUT_DIR
-        + " --DATASETS_DIR "
-        + config.DATASETS_DIR
         + " --TOTAL_BUDGET "
         + str(config.TOTAL_BUDGET)
         + " --NR_LEARNING_SAMPLES "
@@ -285,6 +283,8 @@ python 04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASET_IDS {{ D
         THREADS=2,
         MEMORY=2583,
         CLI_ARGS=" "
+        + " --DATASETS_DIR "
+        + config.DATASETS_DIR
         + " --OUTPUT_PATH "
         + config.OUTPUT_DIR
         + "/"
@@ -337,6 +337,8 @@ for tmp_file in sorted(
                 + config.EXP_TITLE
                 + " --N_PARALLEL_JOBS "
                 + str(config.N_JOBS)
+                + " --DATASETS_DIR "
+                + config.DATASETS_DIR
                 + " --N_TASKS XXX"
             )
         else:
