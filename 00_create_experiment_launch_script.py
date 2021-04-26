@@ -126,6 +126,9 @@ bash_mode_common_template = Template("{{PYTHON_FILE}}.py {{ CLI_ARGS }}")
 
 submit_jobs = Template(
     """#!/bin/bash
+cd {{ HPC_WS_DIR }}/code
+export LC_ALL=en_US.utf-8
+export LANG=en_US.utf-8
 create_synthetic_training_data_id=$(sbatch --parsable {{HPC_WS_DIR}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/01_create_synthetic_training_data.slurm)
 {%if WITH_HYPER_SEARCH %}hyper_search_id=$(sbatch --parsable --dependency=afterok:$create_synthetic_training_data_id {{HPC_WS_DIR}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/02_hyper_search.slurm){% endif %}
 train_imital_id=$(sbatch --parsable --dependency=afterok:$create_synthetic_training_data_id{%if WITH_HYPER_SEARCH %}:$hyper_search_id{% endif %} {{HPC_WS_DIR}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/03_train_imital.slurm)
@@ -391,7 +394,7 @@ with open(
 # start experiment there
 {{ EXPERIMENT_LAUNCH_SCRIPTS }}/04_alipy_init_seeds.sh
 rsync -avz -P {{ LOCAL_CODE_FOLDER }} {{ SSH_LOGIN }}:{{ SLURM_DIR }}
-ssh {{ SSH_LOGIN }} 'cd {{ SLURM_DIR}}/code; {{ EXPERIMENT_LAUNCH_SCRIPTS }}/06_start_slurm_jobs.sh'
+ssh {{ SSH_LOGIN }} '{{ SLURM_DIR}}/code/{{ EXPERIMENT_LAUNCH_SCRIPTS }}/06_start_slurm_jobs.sh'
     """
         ).render(
             EXPERIMENT_LAUNCH_SCRIPTS=config.EXPERIMENT_LAUNCH_SCRIPTS,
