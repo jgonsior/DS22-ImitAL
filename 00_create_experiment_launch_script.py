@@ -39,14 +39,10 @@ parser.add_argument("--WITH_PLOTS", action="store_true")
 parser.add_argument("--WITH_TUD_EVAL", action="store_true")
 parser.add_argument("--WITH_ALIPY", action="store_true")
 parser.add_argument("--ONLY_ALIPY", action="store_true")
-parser.add_argument("--INITIAL_BATCH_SAMPLING_HYBRID_UNCERT", type=float, default=0.2)
-parser.add_argument("--INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST", type=float, default=0.2)
-parser.add_argument(
-    "--INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB", type=float, default=0.2
-)
-parser.add_argument(
-    "--INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY", type=float, default=0.2
-)
+parser.add_argument("--PRE_SAMPLING_HYBRID_UNCERT", type=float, default=0.2)
+parser.add_argument("--PRE_SAMPLING_HYBRID_FURTHEST", type=float, default=0.2)
+parser.add_argument("--PRE_SAMPLING_HYBRID_FURTHEST_LAB", type=float, default=0.2)
+parser.add_argument("--PRE_SAMPLING_HYBRID_PRED_UNITY", type=float, default=0.2)
 parser.add_argument("--TRAIN_STATE_DISTANCES", action="store_true")
 parser.add_argument("--TRAIN_STATE_UNCERTAINTIES", action="store_true")
 parser.add_argument("--TRAIN_STATE_PREDICTED_UNITY", action="store_true")
@@ -73,9 +69,9 @@ parser.add_argument(
     ],
 )
 parser.add_argument("--DISTANCE_METRIC", default="euclidean")
-parser.add_argument("--INITIAL_BATCH_SAMPLING_METHOD", default="furthest")
+parser.add_argument("--PRE_SAMPLING_METHOD", default="furthest")
 
-parser.add_argument("--INITIAL_BATCH_SAMPLING_ARG", type=int, default=10)
+parser.add_argument("--PRE_SAMPLING_ARG", type=int, default=10)
 
 
 # FIXME wenn HYBRID -> HYBRID namen so ändern, dass die Werte von oben an den titel angefügt werden
@@ -180,26 +176,26 @@ if not config.ONLY_ALIPY:
         OFFSET=0,
         CLI_ARGS=" "
         # p+ str(config.BATCH_MODE)
-        + " --INITIAL_BATCH_SAMPLING_METHOD "
-        + str(config.INITIAL_BATCH_SAMPLING_METHOD)
+        + " --PRE_SAMPLING_METHOD "
+        + str(config.PRE_SAMPLING_METHOD)
         + " --BASE_PARAM_STRING "
         + config.EXP_TITLE
-        + " --INITIAL_BATCH_SAMPLING_ARG "
-        + str(config.INITIAL_BATCH_SAMPLING_ARG)
+        + " --PRE_SAMPLING_ARG "
+        + str(config.PRE_SAMPLING_ARG)
         + " --OUTPUT_DIRECTORY "
         + config.OUTPUT_DIR
         + " --TOTAL_BUDGET "
         + str(config.TOTAL_BUDGET)
         + " --NR_LEARNING_SAMPLES "
         + str(config.ITERATIONS_PER_BATCH)
-        + " --INITIAL_BATCH_SAMPLING_HYBRID_UNCERT "
-        + str(config.INITIAL_BATCH_SAMPLING_HYBRID_UNCERT)
-        + " --INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY "
-        + str(config.INITIAL_BATCH_SAMPLING_HYBRID_PRED_UNITY)
-        + " --INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST "
-        + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST)
-        + " --INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB "
-        + str(config.INITIAL_BATCH_SAMPLING_HYBRID_FURTHEST_LAB)
+        + " --PRE_SAMPLING_HYBRID_UNCERT "
+        + str(config.PRE_SAMPLING_HYBRID_UNCERT)
+        + " --PRE_SAMPLING_HYBRID_PRED_UNITY "
+        + str(config.PRE_SAMPLING_HYBRID_PRED_UNITY)
+        + " --PRE_SAMPLING_HYBRID_FURTHEST "
+        + str(config.PRE_SAMPLING_HYBRID_FURTHEST)
+        + " --PRE_SAMPLING_HYBRID_FURTHEST_LAB "
+        + str(config.PRE_SAMPLING_HYBRID_FURTHEST_LAB)
         + " "
         + " ".join(["--" + sa for sa in config.STATE_ARGS])
         + WS_CONFIG_OPTIONS

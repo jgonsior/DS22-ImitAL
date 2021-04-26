@@ -38,8 +38,8 @@ class ALiPY_ImitAL_Query_Strategy:
         # overwrite
 
         self.trained_imitAL_sampler = TrainedImitALSingleSampler(
-            PRE_SAMPLING_METHOD=dataset_stats["INITIAL_BATCH_SAMPLING_METHOD"],
-            PRE_SAMPLING_ARG=dataset_stats["INITIAL_BATCH_SAMPLING_ARG"],
+            PRE_SAMPLING_METHOD=dataset_stats["PRE_SAMPLING_METHOD"],
+            PRE_SAMPLING_ARG=dataset_stats["PRE_SAMPLING_ARG"],
             AMOUNT_OF_PEAKED_OBJECTS=dataset_stats["AMOUNT_OF_PEAKED_OBJECTS"],
             DISTANCE_METRIC=dataset_stats["DISTANCE_METRIC"],
             STATE_ARGSECOND_PROBAS=dataset_stats["STATE_ARGSECOND_PROBAS"],
