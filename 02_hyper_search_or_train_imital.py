@@ -1,5 +1,6 @@
 import argparse
 import json
+from xml.dom import XML_NAMESPACE
 import numpy as np
 import os
 import pandas as pd
@@ -10,7 +11,7 @@ import joblib
 
 # Tfrom keras.layers import Dense, Dropout
 # from keras.models import Sequential
-from scikeras.wrappers import KerasRegressor
+from scikeras.wrappers import KerasRegressor, KerasClassifier
 from scipy.stats import kendalltau, spearmanr
 from sklearn.metrics import accuracy_score, make_scorer
 from sklearn.model_selection import RandomizedSearchCV
@@ -53,6 +54,8 @@ parser.add_argument(
     "--TARGET_ENCODING", type=str, help="regression, binary", default="regression"
 )
 parser.add_argument("--SAVE_DESTINATION", type=str)
+parser.add_argument("--PERMUTATE_NN_TRAINING_INPUT", type=int, default=0)
+
 config = parser.parse_args()
 
 if len(sys.argv[:-1]) == 0:
@@ -70,6 +73,7 @@ DATA_PATH = config.DATA_PATH
 states = pd.read_csv(DATA_PATH + "/01_state_encodings_X.csv")
 optimal_policies = pd.read_csv(DATA_PATH + "/01_expert_actions_Y.csv")
 
+
 #  states = states[0:100]
 #  optimal_policies = optimal_policies[0:100]
 
@@ -78,7 +82,6 @@ AMOUNT_OF_PEAKED_OBJECTS = len(optimal_policies.columns)
 
 def _binarize_targets(df, TOP_N=5):
     df = df.assign(threshold=np.sort(df.values)[:, -TOP_N : -(TOP_N - 1)])
-
     for column_name in df.columns:
         if column_name == "threshold":
             continue
@@ -111,9 +114,11 @@ def _evaluate_top_k(Y_true, Y_pred):
 
 
 if config.TARGET_ENCODING == "regression":
+    wrapper = KerasRegressor
     # congrats, default values
     pass
 elif config.TARGET_ENCODING == "binary":
+    wrapper = KerasClassifier
     optimal_policies = _binarize_targets(optimal_policies)
 else:
     print("Not a valid TARGET_ENCODING")
@@ -136,11 +141,47 @@ else:
 X = states
 Y = optimal_policies
 
+# normalize states
 scaler = MinMaxScaler()
 scaler.fit(X)
 X = scaler.transform(X)
 
-# normalize states
+
+def _permutate_ndarray(X: np.ndarray, permutation: List[int]) -> np.ndarray:
+    # use fancy indexing: https://stackoverflow.com/questions/20265229/rearrange-columns-of-numpy-2d-array
+    new_idx = np.empty_like(permutation)
+    new_idx[permutation] = np.arange(len(permutation))
+    return X[:, new_idx]
+
+
+new_X = X
+new_Y = Y
+
+for permutate_index in range(1, config.PERMUTATE_NN_TRAINING_INPUT + 1):
+    SAMPLING_SIZE = Y.shape[1]
+
+    # random rearrangement
+    random_permutation = [x for x in range(0, SAMPLING_SIZE)]
+    random.shuffle(random_permutation)
+    print(random_permutation)
+
+    Y2 = _permutate_ndarray(Y.to_numpy(), random_permutation)
+
+    amount_of_states = int(np.shape(X)[1] / len(random_permutation))  # type: ignore
+    X_permutation = random_permutation.copy()
+
+    for i in range(1, amount_of_states):
+        X_permutation += [rp + i * len(random_permutation) for rp in random_permutation]
+    X2 = _permutate_ndarray(X, X_permutation)
+
+    new_Y = np.concatenate((new_Y, Y2))
+    new_X = np.concatenate((new_X, X2))
+
+print(np.shape(new_X))
+print(np.shape(new_Y))
+
+X = new_X
+Y = new_Y
 
 
 def tau_loss(Y_true, Y_pred):
@@ -250,10 +291,10 @@ if config.HYPER_SEARCH:
         "activation": ["elu", "relu", "tanh"],
     }
 
-    model = KerasRegressor(
+    model = wrapper(
         model=get_clf,
         input_size=X.shape[1:],
-        output_size=len(Y.columns),
+        output_size=np.shape(Y)[1],
         verbose=2,
         activation=None,
         validation_split=0.3,
@@ -288,7 +329,7 @@ if config.HYPER_SEARCH:
 
     fitted_model = gridsearch.fit(X, Y)
 
-    fitted_model.model_.save(config.DATA_PATH + "/02_best_model.model")
+    fitted_model.best_estimator_.model_.save(config.DATA_PATH + "/02_best_model.model")
 
     joblib.dump(scaler, config.DATA_PATH + "/02_scaler.gz")
 
@@ -300,10 +341,10 @@ if config.HYPER_SEARCH:
 
 
 else:
-    reg = KerasRegressor(
+    reg = wrapper(
         model=get_clf,
         input_size=X.shape[1:],
-        output_size=len(Y.columns),
+        output_size=np.shape(Y)[1],
         verbose=0,
         activation=config.ACTIVATION,
         validation_split=0.3,

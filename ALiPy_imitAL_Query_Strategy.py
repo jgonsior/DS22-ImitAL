@@ -49,6 +49,7 @@ class ALiPY_ImitAL_Query_Strategy:
             STATE_DISTANCES_LAB=dataset_stats["STATE_DISTANCES_LAB"],
             STATE_DISTANCES_UNLAB=dataset_stats["STATE_DISTANCES_UNLAB"],
             STATE_INCLUDE_NR_FEATURES=dataset_stats["STATE_INCLUDE_NR_FEATURES"],
+            WRAPPER=dataset_stats["WRAPPER"],
             NN_BINARY_PATH=kwargs["NN_BINARY_PATH"],
         )
 

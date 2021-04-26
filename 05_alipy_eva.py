@@ -39,7 +39,7 @@ if len(sys.argv[:-1]) == 0:
     parser.print_help()
     parser.exit()
 
-
+print("Reading in ", config.RANDOM_SEEDS_INPUT_FILE)
 # first open job file to get the real random_seed from it
 random_seed_df = pd.read_csv(
     config.RANDOM_SEEDS_INPUT_FILE,

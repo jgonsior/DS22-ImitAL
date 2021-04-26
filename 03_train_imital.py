@@ -11,7 +11,9 @@ from imitLearningPipelineSharedCode import get_config, run_python_experiment
     PARENT_OUTPUT_DIRECTORY,
     base_param_string,
 ) = get_config()
+
 print(base_param_string)
+
 if config.HYPER_SEARCHED:
     HYPER_SEARCH_OUTPUT_FILE = (
         config.OUTPUT_DIRECTORY + base_param_string + "/hyper_results.txt"
@@ -78,5 +80,6 @@ run_python_experiment(
         "ANN_BATCH_SIZE": ANN_HYPER_PARAMS["ANN_BATCH_SIZE"],
         "ACTIVATION": ANN_HYPER_PARAMS["ACTIVATION"],
         "RANDOM_SEED": 1,
+        "PERMUTATE_NN_TRAINING_INPUT": config.PERMUTATE_NN_TRAINING_INPUT,
     },
 )

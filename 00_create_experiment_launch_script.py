@@ -43,10 +43,7 @@ parser.add_argument("--PRE_SAMPLING_HYBRID_UNCERT", type=float, default=0.2)
 parser.add_argument("--PRE_SAMPLING_HYBRID_FURTHEST", type=float, default=0.2)
 parser.add_argument("--PRE_SAMPLING_HYBRID_FURTHEST_LAB", type=float, default=0.2)
 parser.add_argument("--PRE_SAMPLING_HYBRID_PRED_UNITY", type=float, default=0.2)
-parser.add_argument("--TRAIN_STATE_DISTANCES", action="store_true")
-parser.add_argument("--TRAIN_STATE_UNCERTAINTIES", action="store_true")
-parser.add_argument("--TRAIN_STATE_PREDICTED_UNITY", action="store_true")
-parser.add_argument("--TRAIN_STATE_DISTANCES_LAB", action="store_true")
+
 parser.add_argument("--STATE_INCLUDE_NR_FEATURES", action="store_true")
 parser.add_argument("--TOTAL_BUDGET", type=int, default=50)
 
@@ -55,7 +52,7 @@ parser.add_argument("--USE_WS_LABELS_CONTINOUSLY", action="store_true")
 
 parser.add_argument("--EVA_DATASET_IDS", nargs="*", default=[0])
 parser.add_argument("--EVA_STRATEGY_IDS", nargs="*", default=[0, 1, 2, 12])
-
+parser.add_argument("--PERMUTATE_NN_TRAINING_INPUT", type=int, default=0)
 
 # parser.add_argument("--BATCH_MODE", action="store_true")
 parser.add_argument(
@@ -75,9 +72,7 @@ parser.add_argument("--PRE_SAMPLING_ARG", type=int, default=10)
 
 
 # FIXME wenn HYBRID -> HYBRID namen so ändern, dass die Werte von oben an den titel angefügt werden
-
 config = parser.parse_args()
-config.STATE_ARGS = config.STATE_ARGS[0].split(",")
 
 if len(sys.argv[:-1]) == 0:
     parser.print_help()
@@ -111,7 +106,7 @@ slurm_common_template = Template(
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
 export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
 
-{% if array %}i=$(( {{OFFSET}} + $SLURM_ARRAY_TASK_ID * {{ITERATIONS_PER_BATCH}} )){% endif %}
+{% if array %}i=$(( {{ OFFSET }} + $SLURM_ARRAY_TASK_ID * {{ ITERATIONS_PER_BATCH }} )){% endif %}
 
 MPLCONFIGDIR={{HPC_WS_DIR}}/cache python3 -m pipenv run python {{HPC_WS_DIR}}/code/{{PYTHON_FILE}}.py {{ CLI_ARGS }}
 exit 0
@@ -218,6 +213,8 @@ if config.WITH_HYPER_SEARCH:
         + config.OUTPUT_DIR
         + "/"
         + config.EXP_TITLE
+        + " --PERMUTATE_NN_TRAINING_INPUT "
+        + str(config.PERMUTATE_NN_TRAINING_INPUT)
         + " --STATE_ENCODING listwise --TARGET_ENCODING binary --HYPER_SEARCH --N_ITER 100 ",
     )
 
@@ -239,7 +236,9 @@ if not config.ONLY_ALIPY:
         + config.OUTPUT_DIR
         + "/ --BASE_PARAM_STRING "
         + config.EXP_TITLE
-        + hypered_appendix,
+        + hypered_appendix
+        + " --PERMUTATE_NN_TRAINING_INPUT "
+        + str(config.PERMUTATE_NN_TRAINING_INPUT),
     )
 
 
@@ -277,12 +276,14 @@ python 04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASET_IDS {{ D
         OUTPUT_FILE="05_alipy_eva",
         HPC_WS_DIR=config.HPC_WS_DIR,
         TITLE=config.EXP_TITLE,
-        PYTHON_FILE="05_alipy_eva.py",
+        PYTHON_FILE="05_alipy_eva",
         array=True,
         START="0",
         END="XXX",
         THREADS=2,
         MEMORY=2583,
+        ITERATIONS_PER_BATCH=1,
+        OFFSET=0,
         CLI_ARGS=" "
         + " --DATASETS_DIR "
         + config.DATASETS_DIR

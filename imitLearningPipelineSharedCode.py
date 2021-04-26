@@ -61,8 +61,12 @@ strategy_id_mapping = {
     10: ("QueryInstanceSPAL", {}),  # cvxpy
     # 11: ("QueryInstanceUncertainty", {"measure": "distance_to_boundary"}), only works with SVM
     12: (ALiPY_ImitAL_Query_Strategy, {"NN_BINARY_PATH": "?"}),
+    99: (
+        ALiPY_ImitAL_Query_Strategy,
+        {"NN_BINARY_PATH": "?"},
+    ),  # only for local tests, because it can also be run locally, not only on slurm
 }
-non_slurm_strategy_ids = [8, 0, 10]
+non_slurm_strategy_ids = [8, 0, 10, 99]
 # non_slurm_strategy_ids = [0, 1, 2, 12]
 
 
@@ -92,6 +96,7 @@ def get_config():
             (["--COMPARE_ALL_FOLDERS"], {"action": "store_true"}),
             (["--NR_ANN_HYPER_SEARCH_ITERATIONS"], {"default": 50}),
             (["--RANDOM_ID_OFFSET"], {"default": 0}),
+            (["--PERMUTATE_NN_TRAINING_INPUT"], {"action": "store_true"}),
         ],
         return_parser=True,
     )  # type: ignore
