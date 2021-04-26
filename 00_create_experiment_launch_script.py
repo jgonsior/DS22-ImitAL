@@ -24,12 +24,14 @@ parser.add_argument("--TRAIN_NR_LEARNING_SAMPLES", default=1000, type=int)
 parser.add_argument("--ITERATIONS_PER_BATCH", default=10, type=int)
 parser.add_argument("--N_JOBS", default=4, type=int)
 parser.add_argument("--EXPERIMENT_LAUNCH_SCRIPTS", default="_experiment_launch_scripts")
-parser.add_argument(
-    "--HPC_WS_DIR", default="MPLCONFIGDIR=/lustre/ssd/ws/s5968580-praticAl"
-)
+parser.add_argument("--HPC_WS_DIR", default="/lustre/ssd/ws/s5968580-praticAl")
 parser.add_argument("--OUTPUT_DIR", default="/lustre/ssd/ws/s5968580-praticAl")
 parser.add_argument(
     "--DATASETS_DIR", default="/lustre/ssd/ws/s5968580-praticAl/datasets/"
+)
+parser.add_argument("--LOCAL_CODE_FOLDER", default="$HOME/Projects/imitating_al/code")
+parser.add_argument(
+    "--SSH_LOGIN",
 )
 parser.add_argument("--WITH_HYPER_SEARCH", action="store_true")
 parser.add_argument("--WITH_CLASSICS", action="store_true")
@@ -115,7 +117,7 @@ export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
 
 {% if array %}i=$(( {{OFFSET}} + $SLURM_ARRAY_TASK_ID * {{ITERATIONS_PER_BATCH}} )){% endif %}
 
-MPLCONFIGDIR={{HPC_WS_DIR}}/cache python3 -m pipenv run python {{HPC_WS_DIR}}/imitating-weakal/{{PYTHON_FILE}}.py {{ CLI_ARGS }}
+MPLCONFIGDIR={{HPC_WS_DIR}}/cache python3 -m pipenv run python {{HPC_WS_DIR}}/code/{{PYTHON_FILE}}.py {{ CLI_ARGS }}
 exit 0
 """
 )
@@ -124,10 +126,10 @@ bash_mode_common_template = Template("{{PYTHON_FILE}}.py {{ CLI_ARGS }}")
 
 submit_jobs = Template(
     """#!/bin/bash
-01_create_synthetic_training_data_id=$(sbatch --parsable {{HPC_WS_DIR}}/imitating-weakal/{{EXPERIMENT_LAUNCH_SCRIPTS}}/01_create_synthetic_training_data.slurm)
-{%if WITH_HYPER_SEARCH %}02_hyper_search_id=$(sbatch --parsable --dependency=afterok:$01_create_synthetic_training_data_id {{HPC_WS_DIR}}/imitating-weakal/{{EXPERIMENT_LAUNCH_SCRIPTS}}/02_hyper_search.slurm){% endif %}
-03_train_imital_id=$(sbatch --parsable --dependency=afterok:$01_create_synthetic_training_data_id{%if WITH_HYPER_SEARCH %}:$02_hyper_search_id{% endif %} {{HPC_WS_DIR}}/imitating-weakal/{{EXPERIMENT_LAUNCH_SCRIPTS}}/03_train_imital.slurm)
-05_alipy_eva=$(sbatch --parsable --dependency=afterok:$01_create_synthetic_training_data_id:$03_train_imital_id{ {{HPC_WS_DIR}}/imitating-weakal/{{EXPERIMENT_LAUNCH_SCRIPTS}}/05_alipy_eva.slurm)
+create_synthetic_training_data_id=$(sbatch --parsable {{HPC_WS_DIR}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/01_create_synthetic_training_data.slurm)
+{%if WITH_HYPER_SEARCH %}hyper_search_id=$(sbatch --parsable --dependency=afterok:$create_synthetic_training_data_id {{HPC_WS_DIR}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/02_hyper_search.slurm){% endif %}
+train_imital_id=$(sbatch --parsable --dependency=afterok:$create_synthetic_training_data_id{%if WITH_HYPER_SEARCH %}:$hyper_search_id{% endif %} {{HPC_WS_DIR}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/03_train_imital.slurm)
+alipy_eva=$(sbatch --parsable --dependency=afterok:$create_synthetic_training_data_id:$train_imital_id {{HPC_WS_DIR}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/05_alipy_eva.slurm)
 exit 0
 """
 )
@@ -294,9 +296,7 @@ python 04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASET_IDS {{ D
     )
 
 
-with open(
-    config.EXPERIMENT_LAUNCH_SCRIPTS + "/06_start_slurm_jobs.sh_jobs.sh", "w"
-) as f:
+with open(config.EXPERIMENT_LAUNCH_SCRIPTS + "/06_start_slurm_jobs.sh", "w") as f:
     f.write(
         submit_jobs.render(
             HPC_WS_DIR=config.HPC_WS_DIR,
@@ -306,6 +306,10 @@ with open(
             WITH_ALIPY=config.WITH_ALIPY,
         )
     )
+os.chmod(
+    config.EXPERIMENT_LAUNCH_SCRIPTS + "/06_start_slurm_jobs.sh",
+    st.st_mode | stat.S_IEXEC,
+)
 
 # open all fake slurms and concat them into a single bash file
 submit_content = "#!/bin/bash\n"
@@ -355,7 +359,28 @@ os.chmod(
 )
 
 with open(
-    config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment.sh", "w"
+    config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment_locally.sh", "w"
+) as f:
+    f.write(
+        Template(
+            """
+# 6. 06_sync_and_run_experiment.sh
+{{ EXPERIMENT_LAUNCH_SCRIPTS }}/04_alipy_init_seeds.sh
+{{ EXPERIMENT_LAUNCH_SCRIPTS }}/06_run_code_locally_as_bash.sh
+    """
+        ).render(EXPERIMENT_LAUNCH_SCRIPTS=config.EXPERIMENT_LAUNCH_SCRIPTS)
+    )
+st = os.stat(
+    config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment_locally.sh"
+)
+os.chmod(
+    config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment_locally.sh",
+    st.st_mode | stat.S_IEXEC,
+)
+
+
+with open(
+    config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment_slurm.sh", "w"
 ) as f:
     f.write(
         Template(
@@ -365,12 +390,18 @@ with open(
 # updates taurus
 # start experiment there
 {{ EXPERIMENT_LAUNCH_SCRIPTS }}/04_alipy_init_seeds.sh
-{{ EXPERIMENT_LAUNCH_SCRIPTS }}/06_run_code_locally_as_bash.sh
+rsync -avz -P {{ LOCAL_CODE_FOLDER }} {{ SSH_LOGIN }}:{{ SLURM_DIR }}
+ssh {{ SSH_LOGIN }} 'cd {{ SLURM_DIR}}/code; {{ EXPERIMENT_LAUNCH_SCRIPTS }}/06_start_slurm_jobs.sh'
     """
-        ).render(EXPERIMENT_LAUNCH_SCRIPTS=config.EXPERIMENT_LAUNCH_SCRIPTS)
+        ).render(
+            EXPERIMENT_LAUNCH_SCRIPTS=config.EXPERIMENT_LAUNCH_SCRIPTS,
+            LOCAL_CODE_FOLDER=config.LOCAL_CODE_FOLDER,
+            SSH_LOGIN=config.SSH_LOGIN,
+            SLURM_DIR=config.HPC_WS_DIR,
+        )
     )
-st = os.stat(config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment.sh")
+st = os.stat(config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment_slurm.sh")
 os.chmod(
-    config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment.sh",
+    config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment_slurm.sh",
     st.st_mode | stat.S_IEXEC,
 )
