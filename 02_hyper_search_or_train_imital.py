@@ -138,7 +138,6 @@ else:
     print("Not a valid STATE_ENCODING")
     exit(-1)
 
-print(config.TARGET_ENCODING)
 
 X = states
 Y = optimal_policies
@@ -178,16 +177,16 @@ for permutate_index in range(1, config.PERMUTATE_NN_TRAINING_INPUT + 1):
     new_Y = np.concatenate((new_Y, Y2))  # type: ignore
     new_X = np.concatenate((new_X, X2))  # type: ignore
 
-print(np.shape(new_X))  # type: ignore
-print(np.shape(new_Y))  # type: ignore
+# print(np.shape(new_X))  # type: ignore
+# print(np.shape(new_Y))  # type: ignore
 
 X = new_X
 Y = new_Y
 
-from sklearn.utils.multiclass import type_of_target
+# from sklearn.utils.multiclass import type_of_target
 
-print(Y)
-print(type_of_target(Y))
+# print(Y)
+# print(type_of_target(Y))
 
 
 def tau_loss(Y_true, Y_pred):
@@ -335,11 +334,16 @@ if config.HYPER_SEARCH:
 
     fitted_model = gridsearch.fit(X, Y)
 
-    fitted_model.best_estimator_.model_.save(config.DATA_PATH + "/02_best_model.model")
+    fitted_model.best_estimator_.model_.save(
+        config.SAVE_DESTINATION + "/02_best_model.model"
+    )
 
-    joblib.dump(scaler, config.DATA_PATH + "/02_scaler.gz")
+    joblib.dump(scaler, config.SAVE_DESTINATION + "/scaler.gz")
 
-    with open(config.DATA_PATH + "/02_hyper_results.txt", "w") as handle:
+    with open(config.SAVE_DESTINATION + "/params.json", "w") as f:
+        json.dump({"TARGET_ENCODING": config.TARGET_ENCODING}, f)
+
+    with open(config.SAVE_DESTINATION + "/02_hyper_results.txt", "w") as handle:
         handle.write(str(fitted_model.best_score_))
         handle.write(str(fitted_model.cv_results_))
         handle.write("\n" * 5)
