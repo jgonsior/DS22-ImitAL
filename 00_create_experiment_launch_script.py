@@ -306,7 +306,9 @@ python 04_alipy_init_seeds.py --EXP_OUTPUT_PATH {{ EXP_OUTPUT_PATH }} --OUTPUT_P
         + config.HPC_OUTPUT_PATH
         + "/"
         + config.EXP_TITLE
-        + "/ --INDEX $SLURM_ARRAY_TASK_ID"
+        + " --RANDOM_SEEDS_INPUT_FILE "
+        + config.EXPERIMENT_LAUNCH_SCRIPTS
+        + "/04_random_seeds__bash.csv --INDEX $SLURM_ARRAY_TASK_ID"
         + WS_CONFIG_OPTIONS,
     )
 
