@@ -83,9 +83,6 @@ config.LOCAL_DATASETS_PATH = config_parser.get("LOCAL", "DATASET_PATH")
 config.LOCAL_CODE_PATH = config_parser.get("LOCAL", "LOCAL_CODE_PATH")
 config.LOCAL_OUTPUT_PATH = config_parser.get("LOCAL", "OUTPUT_PATH")
 
-config.VPS_SSH_LOGIN = config_parser.get("VPS", "SSH_LOGIN")
-config.VPS_REMOTE_PATH = config_parser.get("VPS", "WS_PATH")
-
 
 if config.WITH_CLASSICS or config.WITH_TUD_EVAL or config.WITH_PLOTS:
     print("config option deprecated")
@@ -262,8 +259,8 @@ if config.WITH_ALIPY:
     alipy_init_seeds_template = Template(
         """#!/bin/bash
 # run locally!
-python 04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASET_IDS {{ DATASET_IDS }} --STRATEGY_IDS {{ STRATEGY_IDS }} --AMOUNT_OF_RUNS {{ AMOUNT_OF_EVAL_RUNS }} --NON_SLURM --SLURM_FILE_TO_UPDATE {{ EXPERIMENT_LAUNCH_SCRIPTS }}/06_run_code_locally_as_bash.sh
-python 04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASET_IDS {{ DATASET_IDS }} --STRATEGY_IDS {{ STRATEGY_IDS }}  --AMOUNT_OF_RUNS {{ AMOUNT_OF_EVAL_RUNS }} --SLURM_FILE_TO_UPDATE {{ EXPERIMENT_LAUNCH_SCRIPTS }}/{{ SLURM_FILE_TO_UPDATE }}
+python 04_alipy_init_seeds.py --EXP_OUTPUT_PATH {{ EXP_OUTPUT_PATH }} --OUTPUT_PATH {{ EXPERIMENT_LAUNCH_SCRIPTS }} --DATASET_IDS {{ DATASET_IDS }} --STRATEGY_IDS {{ STRATEGY_IDS }} --AMOUNT_OF_RUNS {{ AMOUNT_OF_EVAL_RUNS }} --NON_SLURM --SLURM_FILE_TO_UPDATE {{ EXPERIMENT_LAUNCH_SCRIPTS }}/06_run_code_locally_as_bash.sh
+python 04_alipy_init_seeds.py --EXP_OUTPUT_PATH {{ EXP_OUTPUT_PATH }} --OUTPUT_PATH {{ EXPERIMENT_LAUNCH_SCRIPTS }} --DATASET_IDS {{ DATASET_IDS }} --STRATEGY_IDS {{ STRATEGY_IDS }}  --AMOUNT_OF_RUNS {{ AMOUNT_OF_EVAL_RUNS }} --SLURM_FILE_TO_UPDATE {{ EXPERIMENT_LAUNCH_SCRIPTS }}/{{ SLURM_FILE_TO_UPDATE }}
     """
     )
 
@@ -273,12 +270,12 @@ python 04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASET_IDS {{ D
         END = int(config.TEST_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
         f.write(
             alipy_init_seeds_template.render(
-                OUTPUT_PATH=config.EXPERIMENT_LAUNCH_SCRIPTS,
+                EXPERIMENT_LAUNCH_SCRIPTS=config.EXPERIMENT_LAUNCH_SCRIPTS,
                 DATASET_IDS=",".join([str(id) for id in config.EVA_DATASET_IDS]),
                 STRATEGY_IDS=",".join([str(id) for id in config.EVA_STRATEGY_IDS]),
                 AMOUNT_OF_EVAL_RUNS=config.TEST_NR_LEARNING_SAMPLES,
-                EXPERIMENT_LAUNCH_SCRIPTS=config.EXPERIMENT_LAUNCH_SCRIPTS,
                 SLURM_FILE_TO_UPDATE="05_alipy_eva.slurm",
+                EXP_OUTPUT_PATH=config.LOCAL_OUTPUT_PATH + "/" + config.EXP_TITLE,
             )
         )
     st = os.stat(config.EXPERIMENT_LAUNCH_SCRIPTS + "/04_alipy_init_seeds.sh")
@@ -421,33 +418,5 @@ ssh {{ HPC_SSH_LOGIN }} '{{ SLURM_PATH}}/code/{{ EXPERIMENT_LAUNCH_SCRIPTS }}/06
 st = os.stat(config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment_slurm.sh")
 os.chmod(
     config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment_slurm.sh",
-    st.st_mode | stat.S_IEXEC,
-)
-
-
-with open(
-    config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment_vps.sh", "w"
-) as f:
-    f.write(
-        Template(
-            """
-# 6. 06_sync_and_run_experiment.sh
-# check if data can be downloaded from taurus
-# updates taurus
-# start experiment there
-{{ EXPERIMENT_LAUNCH_SCRIPTS }}/04_alipy_init_seeds.sh
-rsync -avz -P {{ LOCAL_CODE_PATH }} {{ SSH_LOGIN }}:{{ REMOTE_WS_PATH }}
-ssh {{ SSH_LOGIN }} '{{ REMOTE_WS_PATH}}/code/{{ EXPERIMENT_LAUNCH_SCRIPTS }}/06_run_code_locally_as_bash.sh'
-    """
-        ).render(
-            EXPERIMENT_LAUNCH_SCRIPTS=config.EXPERIMENT_LAUNCH_SCRIPTS,
-            LOCAL_CODE_PATH=config.LOCAL_CODE_PATH,
-            REMOTE_WS_PATH=config.VPS_REMOTE_PATH,
-            SSH_LOGIN=config.VPS_SSH_LOGIN,
-        )
-    )
-st = os.stat(config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment_vps.sh")
-os.chmod(
-    config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment_vps.sh",
     st.st_mode | stat.S_IEXEC,
 )

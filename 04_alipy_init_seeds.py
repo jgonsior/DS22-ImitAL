@@ -8,7 +8,8 @@ from random import random
 from imitLearningPipelineSharedCode import non_slurm_strategy_ids
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--OUTPUT_PATH", default="../datasets/ali")
+parser.add_argument("--OUTPUT_PATH")
+parser.add_argument("--EXP_OUTPUT_PATH")
 parser.add_argument("--DATASET_IDS")
 parser.add_argument("--STRATEGY_IDS")
 parser.add_argument("--NON_SLURM", action="store_true")
@@ -31,9 +32,9 @@ config.STRATEGY_IDS = [int(item) for item in config.STRATEGY_IDS.split(",")]
 # it contains in a second column the dataset we are dealing with about, and in a third column the id of the AL strategy to use
 # the file baseline_comparison.py expects as the parameter "RANDOM_SEED_INDEX" the index for which the random seeds from random_ids.csv should be read
 
-if os.path.isfile(config.OUTPUT_PATH + "/05_alipy_results.csv"):
+if os.path.isfile(config.EXP_OUTPUT_PATH + "/05_alipy_results.csv"):
     result_df = pd.read_csv(
-        config.OUTPUT_PATH + "/05_alipy_results.csv",
+        config.EXP_OUTPUT_PATH + "/05_alipy_results.csv",
         index_col=None,
         usecols=["dataset_id", "strategy_id", "dataset_random_seed"],
     )
