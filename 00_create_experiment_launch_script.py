@@ -53,6 +53,7 @@ parser.add_argument("--USE_WS_LABELS_CONTINOUSLY", action="store_true")
 parser.add_argument("--EVA_DATASET_IDS", nargs="*", default=[0])
 parser.add_argument("--EVA_STRATEGY_IDS", nargs="*", default=[0, 1, 2, 12])
 parser.add_argument("--PERMUTATE_NN_TRAINING_INPUT", type=int, default=0)
+parser.add_argument("--TARGET_ENCODING", default="binary")
 
 # parser.add_argument("--BATCH_MODE", action="store_true")
 parser.add_argument(
@@ -215,7 +216,9 @@ if config.WITH_HYPER_SEARCH:
         + config.EXP_TITLE
         + " --PERMUTATE_NN_TRAINING_INPUT "
         + str(config.PERMUTATE_NN_TRAINING_INPUT)
-        + " --STATE_ENCODING listwise --TARGET_ENCODING binary --HYPER_SEARCH --N_ITER 100 ",
+        + " --STATE_ENCODING listwise --TARGET_ENCODING "
+        + config.TARGET_ENCODING
+        + " --HYPER_SEARCH --N_ITER 100 ",
     )
 
 if config.WITH_HYPER_SEARCH:
@@ -403,5 +406,33 @@ ssh {{ SSH_LOGIN }} '{{ SLURM_DIR}}/code/{{ EXPERIMENT_LAUNCH_SCRIPTS }}/06_star
 st = os.stat(config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment_slurm.sh")
 os.chmod(
     config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment_slurm.sh",
+    st.st_mode | stat.S_IEXEC,
+)
+
+
+with open(
+    config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment_182.sh", "w"
+) as f:
+    f.write(
+        Template(
+            """
+# 6. 06_sync_and_run_experiment.sh
+# check if data can be downloaded from taurus
+# updates taurus
+# start experiment there
+{{ EXPERIMENT_LAUNCH_SCRIPTS }}/04_alipy_init_seeds.sh
+rsync -avz -P {{ LOCAL_CODE_FOLDER }} {{ SSH_LOGIN }}:{{ SLURM_DIR }}
+ssh {{ SSH_LOGIN }} '{{ SLURM_DIR}}/code/{{ EXPERIMENT_LAUNCH_SCRIPTS }}/06_run_code_locally_as_bash.sh'
+    """
+        ).render(
+            EXPERIMENT_LAUNCH_SCRIPTS=config.EXPERIMENT_LAUNCH_SCRIPTS,
+            LOCAL_CODE_FOLDER=config.LOCAL_CODE_FOLDER,
+            SSH_LOGIN=config.SSH_LOGIN,
+            SLURM_DIR=config.HPC_WS_DIR,
+        )
+    )
+st = os.stat(config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment_182.sh")
+os.chmod(
+    config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment_182.sh",
     st.st_mode | stat.S_IEXEC,
 )

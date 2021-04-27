@@ -182,3 +182,5 @@ training_data/
 .vscode/launch.json
 typings/
 _*/
+
+.server_access_credentials.cfg
