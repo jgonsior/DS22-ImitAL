@@ -138,7 +138,7 @@ QUERY_STRATEGY: Tuple = strategy_id_mapping[STRATEGY_ID]
 
 
 print(QUERY_STRATEGY)
-if STRATEGY_ID == 12:
+if STRATEGY_ID == 12 or STRATEGY_ID == 99:
     # update NN_BINARY_PATH
     if "NN_BINARY_PATH" in QUERY_STRATEGY[1].keys():
         QUERY_STRATEGY[1]["NN_BINARY_PATH"] = (

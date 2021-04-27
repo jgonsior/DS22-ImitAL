@@ -58,6 +58,7 @@ if os.path.isfile(
     + "/03_imital_trained_ann.model/saved_model.pb"
 ):
     exit(0)
+    # pass
 
 
 run_python_experiment(

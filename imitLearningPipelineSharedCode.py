@@ -96,7 +96,7 @@ def get_config():
             (["--COMPARE_ALL_FOLDERS"], {"action": "store_true"}),
             (["--NR_ANN_HYPER_SEARCH_ITERATIONS"], {"default": 50}),
             (["--RANDOM_ID_OFFSET"], {"default": 0}),
-            (["--PERMUTATE_NN_TRAINING_INPUT"], {"action": "store_true"}),
+            (["--PERMUTATE_NN_TRAINING_INPUT"], {"type": int, "default": 0}),
         ],
         return_parser=True,
     )  # type: ignore

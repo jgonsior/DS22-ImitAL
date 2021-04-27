@@ -138,6 +138,8 @@ else:
     print("Not a valid STATE_ENCODING")
     exit(-1)
 
+print(config.TARGET_ENCODING)
+
 X = states
 Y = optimal_policies
 
@@ -163,7 +165,6 @@ for permutate_index in range(1, config.PERMUTATE_NN_TRAINING_INPUT + 1):
     # random rearrangement
     random_permutation = [x for x in range(0, SAMPLING_SIZE)]
     random.shuffle(random_permutation)
-    print(random_permutation)
 
     Y2 = _permutate_ndarray(Y.to_numpy(), random_permutation)
 
@@ -172,16 +173,21 @@ for permutate_index in range(1, config.PERMUTATE_NN_TRAINING_INPUT + 1):
 
     for i in range(1, amount_of_states):
         X_permutation += [rp + i * len(random_permutation) for rp in random_permutation]
-    X2 = _permutate_ndarray(X, X_permutation)
+    X2 = _permutate_ndarray(X, X_permutation)  # type: ignore
 
-    new_Y = np.concatenate((new_Y, Y2))
-    new_X = np.concatenate((new_X, X2))
+    new_Y = np.concatenate((new_Y, Y2))  # type: ignore
+    new_X = np.concatenate((new_X, X2))  # type: ignore
 
-print(np.shape(new_X))
-print(np.shape(new_Y))
+print(np.shape(new_X))  # type: ignore
+print(np.shape(new_Y))  # type: ignore
 
 X = new_X
 Y = new_Y
+
+from sklearn.utils.multiclass import type_of_target
+
+print(Y)
+print(type_of_target(Y))
 
 
 def tau_loss(Y_true, Y_pred):
@@ -344,7 +350,7 @@ else:
     reg = wrapper(
         model=get_clf,
         input_size=X.shape[1:],
-        output_size=np.shape(Y)[1],
+        output_size=np.shape(Y)[1],  # type: ignore
         verbose=0,
         activation=config.ACTIVATION,
         validation_split=0.3,
@@ -366,4 +372,7 @@ else:
 
     if config.SAVE_DESTINATION:
         reg.model_.save(config.SAVE_DESTINATION)
-        joblib.dump(scaler, config.SAVE_DESTINATION + "_scaler.gz")
+        joblib.dump(scaler, config.SAVE_DESTINATION + "/scaler.gz")
+
+        with open(config.SAVE_DESTINATION + "/params.json", "w") as f:
+            json.dump({"TARGET_ENCODING": config.TARGET_ENCODING}, f)
