@@ -66,10 +66,12 @@ run_python_experiment(
     PARENT_OUTPUT_PATH + base_param_string + "/03_imital_trained_ann.model",
     CLI_COMMAND="python 02_hyper_search_or_train_imital.py",
     CLI_ARGUMENTS={
-        "DATA_PATH": config.OUTPUT_PATH + base_param_string,
+        "OUTPUT_PATH": config.OUTPUT_PATH,
+        "BASE_PARAM_STRING": base_param_string,
         "STATE_ENCODING": "listwise",
         "TARGET_ENCODING": "binary",
         "SAVE_DESTINATION": config.OUTPUT_PATH
+        + "/"
         + base_param_string
         + "/03_imital_trained_ann.model",
         "REGULAR_DROPOUT_RATE": ANN_HYPER_PARAMS["REGULAR_DROPOUT_RATE"],

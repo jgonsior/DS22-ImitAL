@@ -80,7 +80,7 @@ config.HPC_SSH_LOGIN = config_parser.get("HPC", "SSH_LOGIN")
 config.HPC_OUTPUT_PATH = config_parser.get("HPC", "OUTPUT_PATH")
 
 config.LOCAL_DATASETS_PATH = config_parser.get("LOCAL", "DATASET_PATH")
-config.LOCAL_CODE_FOLDERFOLDER = config_parser.get("LOCAL", "LOCAL_CODE_PATH")
+config.LOCAL_CODE_PATH = config_parser.get("LOCAL", "LOCAL_CODE_PATH")
 config.LOCAL_OUTPUT_PATH = config_parser.get("LOCAL", "OUTPUT_PATH")
 
 config.VPS_SSH_LOGIN = config_parser.get("VPS", "SSH_LOGIN")
@@ -159,7 +159,7 @@ def write_slurm_and_bash_file(OUTPUT_FILE: str, APPEND_OUTPUT=False, **kwargs):
 
 
 if not os.path.exists(config.EXPERIMENT_LAUNCH_SCRIPTS):
-    os.makePATHs(config.EXPERIMENT_LAUNCH_SCRIPTS)
+    os.makedirs(config.EXPERIMENT_LAUNCH_SCRIPTS)
 
 
 WS_CONFIG_OPTIONS = ""
@@ -209,7 +209,7 @@ if not config.ONLY_ALIPY:
         + " --RANDOM_ID_OFFSET $i"
         + " --DISTANCE_METRIC "
         + str(config.DISTANCE_METRIC)
-        + "--OUTPUT_PATH ",
+        + " --OUTPUT_PATH ",
         APPEND_OUTPUT=True,
     )
 
@@ -230,7 +230,7 @@ if config.WITH_HYPER_SEARCH:
         + " --STATE_ENCODING listwise --TARGET_ENCODING "
         + config.TARGET_ENCODING
         + " --HYPER_SEARCH --N_ITER 100 "
-        + "--OUTPUT_PATH ",
+        + " --OUTPUT_PATH ",
         APPEND_OUTPUT=True,
     )
 
@@ -253,7 +253,7 @@ if not config.ONLY_ALIPY:
         + hypered_appendix
         + " --PERMUTATE_NN_TRAINING_INPUT "
         + str(config.PERMUTATE_NN_TRAINING_INPUT)
-        + "--OUTPUT_PATH ",
+        + " --OUTPUT_PATH ",
         APPEND_OUTPUT=True,
     )
 
@@ -273,7 +273,7 @@ python 04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASET_IDS {{ D
         END = int(config.TEST_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
         f.write(
             alipy_init_seeds_template.render(
-                OUTPUT_PATH=config.EXPERIMENT_LAUNCH_SCRIPTS + "/" + config.EXP_TITLE,
+                OUTPUT_PATH=config.EXPERIMENT_LAUNCH_SCRIPTS,
                 DATASET_IDS=",".join([str(id) for id in config.EVA_DATASET_IDS]),
                 STRATEGY_IDS=",".join([str(id) for id in config.EVA_STRATEGY_IDS]),
                 AMOUNT_OF_EVAL_RUNS=config.TEST_NR_LEARNING_SAMPLES,
@@ -359,6 +359,8 @@ for tmp_file in sorted(
                 + str(config.N_JOBS)
                 + " --DATASETS_PATH "
                 + config.LOCAL_DATASETS_PATH
+                + " --RANDOM_SEEDS_PATH "
+                + config.EXPERIMENT_LAUNCH_SCRIPTS
                 + " --N_TASKS XXX"
             )
         else:

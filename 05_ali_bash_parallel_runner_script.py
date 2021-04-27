@@ -9,6 +9,7 @@ parser.add_argument("--N_TASKS", type=int)
 parser.add_argument("--N_PARALLEL_JOBS", type=int)
 parser.add_argument("--OUTPUT_PATH")
 parser.add_argument("--DATASETS_PATH")
+parser.add_argument("--RANDOM_SEEDS_PATH")
 
 
 config = parser.parse_args()
@@ -27,7 +28,7 @@ def run_code(i):
         + " --DATASETS_PATH "
         + config.DATASETS_PATH
         + " --RANDOM_SEEDS_INPUT_FILE "
-        + config.OUTPUT_PATH
+        + config.RANDOM_SEEDS_PATH
         + "/04_random_seeds__bash.csv"
     )
     print("#" * 100)
