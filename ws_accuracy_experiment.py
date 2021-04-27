@@ -22,7 +22,7 @@ from active_learning.weak_supervision.BaseWeakSupervision import BaseWeakSupervi
 
 config: argparse.Namespace = get_active_config()  # type: ignore
 
-# python ws_accuracy_experiment.py --OUTPUT_DIRECTORY _experiment_resultss/tmp --DATASET_NAME synthetic --AMOUNT_OF_FEATURES -1 --RANDOM_SEED 0
+# python ws_accuracy_experiment.py --OUTPUT_PATH _experiment_resultss/tmp --DATASET_NAME synthetic --AMOUNT_OF_FEATURES -1 --RANDOM_SEED 0
 
 # -2 means that a true random seed is used, all other numbers use the provided CLI argument random_seed
 if config.RANDOM_SEED == -2:

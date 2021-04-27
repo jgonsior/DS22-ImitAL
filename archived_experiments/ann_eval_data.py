@@ -5,7 +5,7 @@ from imitLearningPipelineSharedCode import get_config, run_parallel_experiment
     shared_arguments,
     evaluation_arguments,
     ann_arguments,
-    PARENT_OUTPUT_DIRECTORY,
+    PARENT_OUTPUT_PATH,
     train_base_param_string,
 ) = get_config()
 
@@ -37,7 +37,7 @@ for DATASET_NAME in [
     evaluation_arguments["DATASET_NAME"] = DATASET_NAME
 
     EVALUATION_FILE_TRAINED_NN_PATH = (
-        config.OUTPUT_DIRECTORY
+        config.OUTPUT_PATH
         + "/"
         + config.BASE_PARAM_STRING
         + "_"
@@ -50,10 +50,10 @@ for DATASET_NAME in [
         OUTPUT_FILE=EVALUATION_FILE_TRAINED_NN_PATH,
         CLI_COMMAND="python single_al_cycle.py",
         CLI_ARGUMENTS={
-            "NN_BINARY": config.OUTPUT_DIRECTORY
+            "NN_BINARY": config.OUTPUT_PATH
             + train_base_param_string
             + "/03_imital_trained_ann.model",
-            "OUTPUT_DIRECTORY": EVALUATION_FILE_TRAINED_NN_PATH,
+            "OUTPUT_PATH": EVALUATION_FILE_TRAINED_NN_PATH,
             "SAMPLING": "trained_nn",
             **ann_arguments,
             **evaluation_arguments,

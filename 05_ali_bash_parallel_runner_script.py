@@ -8,7 +8,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--N_TASKS", type=int)
 parser.add_argument("--N_PARALLEL_JOBS", type=int)
 parser.add_argument("--OUTPUT_PATH")
-parser.add_argument("--DATASETS_DIR")
+parser.add_argument("--DATASETS_PATH")
 
 
 config = parser.parse_args()
@@ -24,8 +24,8 @@ def run_code(i):
         + config.OUTPUT_PATH
         + " --INDEX "
         + str(i)
-        + " --DATASETS_DIR "
-        + config.DATASETS_DIR
+        + " --DATASETS_PATH "
+        + config.DATASETS_PATH
         + " --RANDOM_SEEDS_INPUT_FILE "
         + config.OUTPUT_PATH
         + "/04_random_seeds__bash.csv"

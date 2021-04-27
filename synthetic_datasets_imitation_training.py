@@ -35,7 +35,7 @@ from active_learning.weak_supervision.BaseWeakSupervision import BaseWeakSupervi
 
 config: argparse.Namespace = get_active_config()  # type: ignore
 
-if not os.path.isfile(config.OUTPUT_DIRECTORY + "/01_state_encodings_X.csv"):
+if not os.path.isfile(config.OUTPUT_PATH + "/01_state_encodings_X.csv"):
     if not config.BATCH_MODE:
         columns = [
             str(i) + "_proba_argfirst" for i in range(config.AMOUNT_OF_PEAKED_OBJECTS)
@@ -106,12 +106,12 @@ if not os.path.isfile(config.OUTPUT_DIRECTORY + "/01_state_encodings_X.csv"):
         ],
     )
 
-    if not os.path.exists(config.OUTPUT_DIRECTORY):
-        os.makedirs(config.OUTPUT_DIRECTORY)
+    if not os.path.exists(config.OUTPUT_PATH):
+        os.makedirs(config.OUTPUT_PATH)
 
-    states.to_csv(config.OUTPUT_DIRECTORY + "/01_state_encodings_X.csv", index=False)
+    states.to_csv(config.OUTPUT_PATH + "/01_state_encodings_X.csv", index=False)
     optimal_policies.to_csv(
-        config.OUTPUT_DIRECTORY + "/01_expert_actions_Y.csv", index=False
+        config.OUTPUT_PATH + "/01_expert_actions_Y.csv", index=False
     )
 
 # -2 means that a true random seed is used, all other numbers use the provided CLI argument random_seed
@@ -234,7 +234,7 @@ start = timer()
 active_learner.al_cycle()
 end = timer()
 
-samplingStrategy.save_nn_training_data(config.OUTPUT_DIRECTORY)
+samplingStrategy.save_nn_training_data(config.OUTPUT_PATH)
 
 hyper_parameters = vars(config)
 hyper_parameters["synthetic_creation_args"] = synthetic_creation_args

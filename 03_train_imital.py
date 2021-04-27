@@ -8,7 +8,7 @@ from imitLearningPipelineSharedCode import get_config, run_python_experiment
     _,
     _,
     _,
-    PARENT_OUTPUT_DIRECTORY,
+    PARENT_OUTPUT_PATH,
     base_param_string,
 ) = get_config()
 
@@ -16,7 +16,7 @@ print(base_param_string)
 
 if config.HYPER_SEARCHED:
     HYPER_SEARCH_OUTPUT_FILE = (
-        config.OUTPUT_DIRECTORY + base_param_string + "/hyper_results.txt"
+        config.OUTPUT_PATH + base_param_string + "/hyper_results.txt"
     )
 
     with open(HYPER_SEARCH_OUTPUT_FILE, "r") as f:
@@ -53,7 +53,7 @@ else:
 
 # prevent retraining!
 if os.path.isfile(
-    PARENT_OUTPUT_DIRECTORY
+    PARENT_OUTPUT_PATH
     + base_param_string
     + "/03_imital_trained_ann.model/saved_model.pb"
 ):
@@ -63,13 +63,13 @@ if os.path.isfile(
 
 run_python_experiment(
     "Train ANN",
-    PARENT_OUTPUT_DIRECTORY + base_param_string + "/03_imital_trained_ann.model",
+    PARENT_OUTPUT_PATH + base_param_string + "/03_imital_trained_ann.model",
     CLI_COMMAND="python 02_hyper_search_or_train_imital.py",
     CLI_ARGUMENTS={
-        "DATA_PATH": config.OUTPUT_DIRECTORY + base_param_string,
+        "DATA_PATH": config.OUTPUT_PATH + base_param_string,
         "STATE_ENCODING": "listwise",
         "TARGET_ENCODING": "binary",
-        "SAVE_DESTINATION": config.OUTPUT_DIRECTORY
+        "SAVE_DESTINATION": config.OUTPUT_PATH
         + base_param_string
         + "/03_imital_trained_ann.model",
         "REGULAR_DROPOUT_RATE": ANN_HYPER_PARAMS["REGULAR_DROPOUT_RATE"],

@@ -21,8 +21,8 @@ if config.RANDOM_SEED == -2:
     np.random.seed(config.RANDOM_SEED)
     random.seed(config.RANDOM_SEED)
 
-if config.OUTPUT_DIRECTORY == "NN_BINARY":
-    config.OUTPUT_DIRECTORY = (
+if config.OUTPUT_PATH == "NN_BINARY":
+    config.OUTPUT_PATH = (
         os.path.dirname(config.NN_BINARY) + "/evaluation_hyper_parameters.csv"
     )
 

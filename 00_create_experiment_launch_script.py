@@ -1,9 +1,9 @@
 import argparse
+from configparser import RawConfigParser
 import glob
 import os
 import stat
 import sys
-
 from jinja2 import Template
 
 """
@@ -16,6 +16,9 @@ from jinja2 import Template
 -> 06 downloaded zuerst von taurus die neuen results (backup von den alten vorher),  startet dann schritt 4, und pushed das zeugs dann hoch (rsync)!
 """
 
+# we have config from a config file AND CLI arguments -> they'll get joined later
+config_parser = RawConfigParser()
+config_parser.read(".server_access_credentials.cfg")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--EXP_TITLE")
@@ -24,15 +27,6 @@ parser.add_argument("--TRAIN_NR_LEARNING_SAMPLES", default=1000, type=int)
 parser.add_argument("--ITERATIONS_PER_BATCH", default=10, type=int)
 parser.add_argument("--N_JOBS", default=4, type=int)
 parser.add_argument("--EXPERIMENT_LAUNCH_SCRIPTS", default="_experiment_launch_scripts")
-parser.add_argument("--HPC_WS_DIR", default="/lustre/ssd/ws/s5968580-praticAl")
-parser.add_argument("--OUTPUT_DIR", default="/lustre/ssd/ws/s5968580-praticAl")
-parser.add_argument(
-    "--DATASETS_DIR", default="/lustre/ssd/ws/s5968580-praticAl/datasets/"
-)
-parser.add_argument("--LOCAL_CODE_FOLDER", default="$HOME/Projects/imitating_al/code")
-parser.add_argument(
-    "--SSH_LOGIN",
-)
 parser.add_argument("--WITH_HYPER_SEARCH", action="store_true")
 parser.add_argument("--WITH_CLASSICS", action="store_true")
 parser.add_argument("--WITH_PLOTS", action="store_true")
@@ -75,9 +69,22 @@ parser.add_argument("--PRE_SAMPLING_ARG", type=int, default=10)
 # FIXME wenn HYBRID -> HYBRID namen so ändern, dass die Werte von oben an den titel angefügt werden
 config = parser.parse_args()
 
+
 if len(sys.argv[:-1]) == 0:
     parser.print_help()
     parser.exit()
+
+config.HPC_WS_PATH = config_parser.get("HPC", "WS_PATH")
+config.HPC_DATASETS_PATH = config_parser.get("HPC", "DATASET_PATH")
+config.HPC_SSH_LOGIN = config_parser.get("HPC", "SSH_LOGIN")
+config.HPC_OUTPUT_PATH = config_parser.get("HPC", "OUTPUT_PATH")
+
+config.LOCAL_DATASETS_PATH = config_parser.get("LOCAL", "DATASET_PATH")
+config.LOCAL_CODE_FOLDERFOLDER = config_parser.get("LOCAL", "LOCAL_CODE_PATH")
+config.LOCAL_OUTPUT_PATH = config_parser.get("LOCAL", "OUTPUT_PATH")
+
+config.VPS_SSH_LOGIN = config_parser.get("VPS", "SSH_LOGIN")
+config.VPS_REMOTE_PATH = config_parser.get("VPS", "WS_PATH")
 
 
 if config.WITH_CLASSICS or config.WITH_TUD_EVAL or config.WITH_PLOTS:
@@ -100,8 +107,8 @@ slurm_common_template = Template(
 #SBATCH --mail-user=julius.gonsior@tu-dresden.de
 #SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE,TIME_LIMIT
 #SBATCH -A p_ml_il
-#SBATCH --output {{HPC_WS_DIR}}/slurm_{{TITLE}}_{{PYTHON_FILE}}_out.txt
-#SBATCH --error {{HPC_WS_DIR}}/slurm_{{TITLE}}_{{PYTHON_FILE}}_error.txt
+#SBATCH --output {{HPC_WS_PATH}}/slurm_{{TITLE}}_{{PYTHON_FILE}}_out.txt
+#SBATCH --error {{HPC_WS_PATH}}/slurm_{{TITLE}}_{{PYTHON_FILE}}_error.txt
 {% if array %}#SBATCH --array {{START}}-{{END}}{% endif %}
 
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
@@ -109,7 +116,7 @@ export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
 
 {% if array %}i=$(( {{ OFFSET }} + $SLURM_ARRAY_TASK_ID * {{ ITERATIONS_PER_BATCH }} )){% endif %}
 
-MPLCONFIGDIR={{HPC_WS_DIR}}/cache python3 -m pipenv run python {{HPC_WS_DIR}}/code/{{PYTHON_FILE}}.py {{ CLI_ARGS }}
+MPLCONFIGPATH={{HPC_WS_PATH}}/cache python3 -m pipenv run python {{HPC_WS_PATH}}/code/{{PYTHON_FILE}}.py {{ CLI_ARGS }}
 exit 0
 """
 )
@@ -118,13 +125,13 @@ bash_mode_common_template = Template("{{PYTHON_FILE}}.py {{ CLI_ARGS }}")
 
 submit_jobs = Template(
     """#!/bin/bash
-cd {{ HPC_WS_DIR }}/code
+cd {{ HPC_WS_PATH }}/code
 export LC_ALL=en_US.utf-8
 export LANG=en_US.utf-8
-create_synthetic_training_data_id=$(sbatch --parsable {{HPC_WS_DIR}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/01_create_synthetic_training_data.slurm)
-{%if WITH_HYPER_SEARCH %}hyper_search_id=$(sbatch --parsable --dependency=afterok:$create_synthetic_training_data_id {{HPC_WS_DIR}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/02_hyper_search.slurm){% endif %}
-train_imital_id=$(sbatch --parsable --dependency=afterok:$create_synthetic_training_data_id{%if WITH_HYPER_SEARCH %}:$hyper_search_id{% endif %} {{HPC_WS_DIR}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/03_train_imital.slurm)
-alipy_eva=$(sbatch --parsable --dependency=afterok:$create_synthetic_training_data_id:$train_imital_id {{HPC_WS_DIR}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/05_alipy_eva.slurm)
+create_synthetic_training_data_id=$(sbatch --parsable {{HPC_WS_PATH}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/01_create_synthetic_training_data.slurm)
+{%if WITH_HYPER_SEARCH %}hyper_search_id=$(sbatch --parsable --dependency=afterok:$create_synthetic_training_data_id {{HPC_WS_PATH}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/02_hyper_search.slurm){% endif %}
+train_imital_id=$(sbatch --parsable --dependency=afterok:$create_synthetic_training_data_id{%if WITH_HYPER_SEARCH %}:$hyper_search_id{% endif %} {{HPC_WS_PATH}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/03_train_imital.slurm)
+alipy_eva=$(sbatch --parsable --dependency=afterok:$create_synthetic_training_data_id:$train_imital_id {{HPC_WS_PATH}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/05_alipy_eva.slurm)
 exit 0
 """
 )
@@ -136,17 +143,23 @@ sync_to_taurus = Template(
 )
 
 
-def write_slurm_and_bash_file(OUTPUT_FILE: str, **kwargs):
+def write_slurm_and_bash_file(OUTPUT_FILE: str, APPEND_OUTPUT=False, **kwargs):
     with open(
         config.EXPERIMENT_LAUNCH_SCRIPTS + "/" + OUTPUT_FILE + ".slurm", "w"
     ) as f:
-        f.write(slurm_common_template.render(**kwargs))
+        content = slurm_common_template.render(**kwargs)
+        if APPEND_OUTPUT:
+            content += " " + config.HPC_OUTPUT_PATH
+        f.write(content)
     with open(config.EXPERIMENT_LAUNCH_SCRIPTS + "/" + OUTPUT_FILE + ".tmp", "w") as f:
-        f.write(bash_mode_common_template.render(**kwargs))
+        content = bash_mode_common_template.render(**kwargs)
+        if APPEND_OUTPUT:
+            content += " " + config.LOCAL_OUTPUT_PATH
+        f.write(content)
 
 
 if not os.path.exists(config.EXPERIMENT_LAUNCH_SCRIPTS):
-    os.makedirs(config.EXPERIMENT_LAUNCH_SCRIPTS)
+    os.makePATHs(config.EXPERIMENT_LAUNCH_SCRIPTS)
 
 
 WS_CONFIG_OPTIONS = ""
@@ -162,7 +175,7 @@ if not config.ONLY_ALIPY:
     END = int(config.TRAIN_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
     write_slurm_and_bash_file(
         OUTPUT_FILE="01_create_synthetic_training_data",
-        HPC_WS_DIR=config.HPC_WS_DIR,
+        HPC_WS_PATH=config.HPC_WS_PATH,
         TITLE=config.EXP_TITLE,
         PYTHON_FILE="01_create_synthetic_training_data",
         array=True,
@@ -178,8 +191,6 @@ if not config.ONLY_ALIPY:
         + config.EXP_TITLE
         + " --PRE_SAMPLING_ARG "
         + str(config.PRE_SAMPLING_ARG)
-        + " --OUTPUT_DIRECTORY "
-        + config.OUTPUT_DIR
         + " --TOTAL_BUDGET "
         + str(config.TOTAL_BUDGET)
         + " --NR_LEARNING_SAMPLES "
@@ -197,28 +208,30 @@ if not config.ONLY_ALIPY:
         + WS_CONFIG_OPTIONS
         + " --RANDOM_ID_OFFSET $i"
         + " --DISTANCE_METRIC "
-        + str(config.DISTANCE_METRIC),
+        + str(config.DISTANCE_METRIC)
+        + "--OUTPUT_PATH ",
+        APPEND_OUTPUT=True,
     )
 
 
 if config.WITH_HYPER_SEARCH:
     write_slurm_and_bash_file(
         OUTPUT_FILE="02_hyper_search",
-        HPC_WS_DIR=config.HPC_WS_DIR,
+        HPC_WS_PATH=config.HPC_WS_PATH,
         TITLE=config.EXP_TITLE,
         PYTHON_FILE="02_hyper_search_or_train_imital",
         array=False,
         THREADS=24,
         MEMORY=5250,
-        CLI_ARGS="--DATA_PATH "
-        + config.OUTPUT_DIR
-        + "/"
+        CLI_ARGS="--BASE_PARAM_STRING "
         + config.EXP_TITLE
         + " --PERMUTATE_NN_TRAINING_INPUT "
         + str(config.PERMUTATE_NN_TRAINING_INPUT)
         + " --STATE_ENCODING listwise --TARGET_ENCODING "
         + config.TARGET_ENCODING
-        + " --HYPER_SEARCH --N_ITER 100 ",
+        + " --HYPER_SEARCH --N_ITER 100 "
+        + "--OUTPUT_PATH ",
+        APPEND_OUTPUT=True,
     )
 
 if config.WITH_HYPER_SEARCH:
@@ -229,19 +242,19 @@ else:
 if not config.ONLY_ALIPY:
     write_slurm_and_bash_file(
         OUTPUT_FILE="03_train_imital",
-        HPC_WS_DIR=config.HPC_WS_DIR,
+        HPC_WS_PATH=config.HPC_WS_PATH,
         TITLE=config.EXP_TITLE,
         PYTHON_FILE="03_train_imital",
         array=False,
         THREADS=8,
         MEMORY=5250,
-        CLI_ARGS="--OUTPUT_DIRECTORY "
-        + config.OUTPUT_DIR
-        + "/ --BASE_PARAM_STRING "
+        CLI_ARGS="--BASE_PARAM_STRING "
         + config.EXP_TITLE
         + hypered_appendix
         + " --PERMUTATE_NN_TRAINING_INPUT "
-        + str(config.PERMUTATE_NN_TRAINING_INPUT),
+        + str(config.PERMUTATE_NN_TRAINING_INPUT)
+        + "--OUTPUT_PATH ",
+        APPEND_OUTPUT=True,
     )
 
 
@@ -260,7 +273,7 @@ python 04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASET_IDS {{ D
         END = int(config.TEST_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
         f.write(
             alipy_init_seeds_template.render(
-                OUTPUT_PATH=config.OUTPUT_DIR + "/" + config.EXP_TITLE,
+                OUTPUT_PATH=config.EXPERIMENT_LAUNCH_SCRIPTS + "/" + config.EXP_TITLE,
                 DATASET_IDS=",".join([str(id) for id in config.EVA_DATASET_IDS]),
                 STRATEGY_IDS=",".join([str(id) for id in config.EVA_STRATEGY_IDS]),
                 AMOUNT_OF_EVAL_RUNS=config.TEST_NR_LEARNING_SAMPLES,
@@ -277,7 +290,7 @@ python 04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASET_IDS {{ D
 
     write_slurm_and_bash_file(
         OUTPUT_FILE="05_alipy_eva",
-        HPC_WS_DIR=config.HPC_WS_DIR,
+        HPC_WS_PATH=config.HPC_WS_PATH,
         TITLE=config.EXP_TITLE,
         PYTHON_FILE="05_alipy_eva",
         array=True,
@@ -288,10 +301,10 @@ python 04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASET_IDS {{ D
         ITERATIONS_PER_BATCH=1,
         OFFSET=0,
         CLI_ARGS=" "
-        + " --DATASETS_DIR "
-        + config.DATASETS_DIR
+        + " --DATASETS_PATH "
+        + config.HPC_DATASETS_PATH
         + " --OUTPUT_PATH "
-        + config.OUTPUT_DIR
+        + config.HPC_OUTPUT_PATH
         + "/"
         + config.EXP_TITLE
         + "/ --INDEX $SLURM_ARRAY_TASK_ID"
@@ -302,7 +315,7 @@ python 04_alipy_init_seeds.py --OUTPUT_PATH {{ OUTPUT_PATH }} --DATASET_IDS {{ D
 with open(config.EXPERIMENT_LAUNCH_SCRIPTS + "/06_start_slurm_jobs.sh", "w") as f:
     f.write(
         submit_jobs.render(
-            HPC_WS_DIR=config.HPC_WS_DIR,
+            HPC_WS_PATH=config.HPC_WS_PATH,
             EXPERIMENT_LAUNCH_SCRIPTS=config.EXPERIMENT_LAUNCH_SCRIPTS,
             TITLE=config.EXP_TITLE,
             WITH_HYPER_SEARCH=config.WITH_HYPER_SEARCH,
@@ -339,13 +352,13 @@ for tmp_file in sorted(
         if tmp_file.endswith("05_alipy_eva.tmp"):
             submit_content += (
                 "python 05_ali_bash_parallel_runner_script.py --OUTPUT_PATH "
-                + config.OUTPUT_DIR
+                + config.LOCAL_OUTPUT_PATH
                 + "/"
                 + config.EXP_TITLE
                 + " --N_PARALLEL_JOBS "
                 + str(config.N_JOBS)
-                + " --DATASETS_DIR "
-                + config.DATASETS_DIR
+                + " --DATASETS_PATH "
+                + config.LOCAL_DATASETS_PATH
                 + " --N_TASKS XXX"
             )
         else:
@@ -393,14 +406,14 @@ with open(
 # updates taurus
 # start experiment there
 {{ EXPERIMENT_LAUNCH_SCRIPTS }}/04_alipy_init_seeds.sh
-rsync -avz -P {{ LOCAL_CODE_FOLDER }} {{ SSH_LOGIN }}:{{ SLURM_DIR }}
-ssh {{ SSH_LOGIN }} '{{ SLURM_DIR}}/code/{{ EXPERIMENT_LAUNCH_SCRIPTS }}/06_start_slurm_jobs.sh'
+rsync -avz -P {{ LOCAL_CODE_PATH }} {{ HPC_SSH_LOGIN }}:{{ SLURM_PATH }}
+ssh {{ HPC_SSH_LOGIN }} '{{ SLURM_PATH}}/code/{{ EXPERIMENT_LAUNCH_SCRIPTS }}/06_start_slurm_jobs.sh'
     """
         ).render(
             EXPERIMENT_LAUNCH_SCRIPTS=config.EXPERIMENT_LAUNCH_SCRIPTS,
-            LOCAL_CODE_FOLDER=config.LOCAL_CODE_FOLDER,
-            SSH_LOGIN=config.SSH_LOGIN,
-            SLURM_DIR=config.HPC_WS_DIR,
+            LOCAL_CODE_PATH=config.LOCAL_CODE_PATH,
+            HPC_SSH_LOGIN=config.HPC_SSH_LOGIN,
+            SLURM_PATH=config.HPC_WS_PATH,
         )
     )
 st = os.stat(config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment_slurm.sh")
@@ -411,7 +424,7 @@ os.chmod(
 
 
 with open(
-    config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment_182.sh", "w"
+    config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment_vps.sh", "w"
 ) as f:
     f.write(
         Template(
@@ -421,18 +434,18 @@ with open(
 # updates taurus
 # start experiment there
 {{ EXPERIMENT_LAUNCH_SCRIPTS }}/04_alipy_init_seeds.sh
-rsync -avz -P {{ LOCAL_CODE_FOLDER }} {{ SSH_LOGIN }}:{{ SLURM_DIR }}
-ssh {{ SSH_LOGIN }} '{{ SLURM_DIR}}/code/{{ EXPERIMENT_LAUNCH_SCRIPTS }}/06_run_code_locally_as_bash.sh'
+rsync -avz -P {{ LOCAL_CODE_PATH }} {{ SSH_LOGIN }}:{{ REMOTE_WS_PATH }}
+ssh {{ SSH_LOGIN }} '{{ REMOTE_WS_PATH}}/code/{{ EXPERIMENT_LAUNCH_SCRIPTS }}/06_run_code_locally_as_bash.sh'
     """
         ).render(
             EXPERIMENT_LAUNCH_SCRIPTS=config.EXPERIMENT_LAUNCH_SCRIPTS,
-            LOCAL_CODE_FOLDER=config.LOCAL_CODE_FOLDER,
-            SSH_LOGIN=config.SSH_LOGIN,
-            SLURM_DIR=config.HPC_WS_DIR,
+            LOCAL_CODE_PATH=config.LOCAL_CODE_PATH,
+            REMOTE_WS_PATH=config.VPS_REMOTE_PATH,
+            SSH_LOGIN=config.VPS_SSH_LOGIN,
         )
     )
-st = os.stat(config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment_182.sh")
+st = os.stat(config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment_vps.sh")
 os.chmod(
-    config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment_182.sh",
+    config.EXPERIMENT_LAUNCH_SCRIPTS + "/07_sync_and_run_experiment_vps.sh",
     st.st_mode | stat.S_IEXEC,
 )

@@ -21,7 +21,8 @@ from typing import List
 from sklearn.preprocessing import MinMaxScaler
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--DATA_PATH", default="../datasets/")
+parser.add_argument("--OUTPUT_PATH")
+parser.add_argument("--BASE_PARAM_STRING")
 parser.add_argument(
     "--CLASSIFIER",
     default="RF",
@@ -69,7 +70,7 @@ if config.RANDOM_SEED != -1 and config.RANDOM_SEED != -2:
 # os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
-DATA_PATH = config.DATA_PATH
+DATA_PATH = config.OUTPUT_PATH + "/" + config.EXP_TITLE
 states = pd.read_csv(DATA_PATH + "/01_state_encodings_X.csv")
 optimal_policies = pd.read_csv(DATA_PATH + "/01_expert_actions_Y.csv")
 

@@ -93,7 +93,7 @@ def get_config():
             (["--PLOT_METRIC"], {"default": "acc_auc"}),
             (["--INCLUDE_OPTIMAL_IN_PLOT"], {"action": "store_true"}),
             (["--INCLUDE_ONLY_OPTIMAL_IN_PLOT"], {"action": "store_true"}),
-            (["--COMPARE_ALL_FOLDERS"], {"action": "store_true"}),
+            (["--COMPARE_ALL_PATHS"], {"action": "store_true"}),
             (["--NR_ANN_HYPER_SEARCH_ITERATIONS"], {"default": 50}),
             (["--RANDOM_ID_OFFSET"], {"default": 0}),
             (["--PERMUTATE_NN_TRAINING_INPUT"], {"type": int, "default": 0}),
@@ -101,7 +101,7 @@ def get_config():
         return_parser=True,
     )  # type: ignore
 
-    PARENT_OUTPUT_DIRECTORY = config.OUTPUT_DIRECTORY + "/"
+    PARENT_OUTPUT_PATH = config.OUTPUT_PATH + "/"
 
     shared_arguments = {
         "CLUSTER": "dummy",
@@ -157,7 +157,7 @@ def get_config():
         shared_arguments,
         evaluation_arguments,
         ann_arguments,
-        PARENT_OUTPUT_DIRECTORY,
+        PARENT_OUTPUT_PATH,
         base_param_string,
     )
 
@@ -169,7 +169,7 @@ def run_code_experiment(
     code_kwargs: Dict = {},
     OUTPUT_FILE_LENGTH=None,
 ) -> None:
-    # check if folder for OUTPUT_FILE exists
+    # check if PATH for OUTPUT_FILE exists
     Path(os.path.dirname(OUTPUT_FILE)).mkdir(parents=True, exist_ok=True)
     # if not run it
     print("#" * 80)
@@ -243,7 +243,7 @@ def run_parallel_experiment(
     SAVE_ARGUMENT_JSON: bool = True,
     RESTART_IF_NOT_ENOUGH_SAMPLES: bool = False,
 ):
-    # check if folder for OUTPUT_FILE exists
+    # check if PATH for OUTPUT_FILE exists
     Path(os.path.dirname(OUTPUT_FILE)).mkdir(parents=True, exist_ok=True)
 
     # save config.json

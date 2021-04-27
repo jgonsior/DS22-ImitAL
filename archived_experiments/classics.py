@@ -5,7 +5,7 @@ from imitLearningPipelineSharedCode import get_config, run_parallel_experiment
     shared_arguments,
     evaluation_arguments,
     _,
-    PARENT_OUTPUT_DIRECTORY,
+    PARENT_OUTPUT_PATH,
     base_param_string,
 ) = get_config()
 
@@ -36,7 +36,7 @@ for DATASET_NAME in [
     for comparison in config.TEST_COMPARISONS:
         #  print(comparison)
         COMPARISON_PATH = (
-            PARENT_OUTPUT_DIRECTORY
+            PARENT_OUTPUT_PATH
             + "classics/"
             + comparison
             #  + base_param_string
@@ -47,7 +47,7 @@ for DATASET_NAME in [
             OUTPUT_FILE=COMPARISON_PATH,
             CLI_COMMAND="python single_al_cycle.py",
             CLI_ARGUMENTS={
-                "OUTPUT_DIRECTORY": COMPARISON_PATH,
+                "OUTPUT_PATH": COMPARISON_PATH,
                 "SAMPLING": comparison,
                 **evaluation_arguments,
             },
