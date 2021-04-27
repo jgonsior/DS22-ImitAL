@@ -113,7 +113,7 @@ export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
 
 {% if array %}i=$(( {{ OFFSET }} + $SLURM_ARRAY_TASK_ID * {{ ITERATIONS_PER_BATCH }} )){% endif %}
 
-MPLCONFIGPATH={{HPC_WS_PATH}}/cache python3 -m pipenv run python {{HPC_WS_PATH}}/code/{{PYTHON_FILE}}.py {{ CLI_ARGS }}
+MPLCONFIGPATH={{HPC_WS_PATH}}/cache python3 -m pipenv run python {{HPC_WS_PATH}}/code/{{PYTHON_FILE}}.py {{ CLI_ARGS }} {% if APPEND_OUTPUT_PATH %} {{ OUTPUT_PATH }} {% endif %}
 exit 0
 """
 )
@@ -144,9 +144,11 @@ def write_slurm_and_bash_file(OUTPUT_FILE: str, APPEND_OUTPUT=False, **kwargs):
     with open(
         config.EXPERIMENT_LAUNCH_SCRIPTS + "/" + OUTPUT_FILE + ".slurm", "w"
     ) as f:
-        content = slurm_common_template.render(**kwargs)
-        if APPEND_OUTPUT:
-            content += " " + config.HPC_OUTPUT_PATH
+        content = slurm_common_template.render(
+            OUTPUT_PATH=config.HPC_OUTPUT_PATH,
+            APPEND_OUTPUT_PATH=APPEND_OUTPUT,
+            **kwargs
+        )
         f.write(content)
     with open(config.EXPERIMENT_LAUNCH_SCRIPTS + "/" + OUTPUT_FILE + ".tmp", "w") as f:
         content = bash_mode_common_template.render(**kwargs)
