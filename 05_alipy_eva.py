@@ -49,6 +49,8 @@ random_seed_df = pd.read_csv(
 )
 DATASET_ID, STRATEGY_ID, DATASET_RANDOM_SEED = random_seed_df.loc[config.INDEX]
 
+# use other random seeds than during training
+DATASET_RANDOM_SEED += 100000
 
 np.random.seed(DATASET_RANDOM_SEED)
 random.seed(DATASET_RANDOM_SEED)

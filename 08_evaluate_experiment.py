@@ -14,10 +14,8 @@ from imitLearningPipelineSharedCode import dataset_id_mapping, strategy_id_mappi
 
 config, parser = get_active_config(
     [
-        (["--EXP1_PATH"], {}),
-        (["--EXP2_PATH"], {}),
+        (["--EXP_PATHS"], {"nargs": "+", "default": []}),
         (["--BASELINES_PATH"], {}),
-        (["--OUTPUT_PATH"], {}),
     ],
     return_parser=True,
 )  # type: ignore
@@ -412,14 +410,9 @@ def read_experiment_results(path: str) -> pd.DataFrame:
     return df
 
 
-if config.EXP1_PATH:
-    exp1_df = read_experiment_results(config.EXP1_PATH)
-else:
-    print("Please specify experiment!")
-    exit(-1)
-
-if config.EXP2_PATH:
-    exp2_df = read_experiment_results(config.EXP2_PATH)
+concat_dfs = []
+for exp_path in config.EXP_PATHS:
+    concat_dfs.append(read_experiment_results(exp_path))
 
 if config.BASELINES_PATH:
     baselines_df = pd.read_csv(
@@ -433,23 +426,16 @@ if config.BASELINES_PATH:
             baselines_df = baselines_df[baselines_df["strategy"] != strategy_key]
 
     baselines_df["strategy"] = baselines_df["strategy"].map(baseline_names_mapping)  # type: ignore
-else:
-    print("Please specify baselines!")
-    exit(-1)
+    concat_dfs.append(baselines_df)
 
-
-concat_dfs = [exp1_df, baselines_df]
-
-if config.EXP2_PATH:
-    concat_dfs.append(exp2_df)  # type: ignore
 
 df_joined = pd.concat(concat_dfs)  # type: ignore
 
 duration_plot(df_joined, config.OUTPUT_PATH)
 
 plot_evaluation_ranking_table(df_joined, config.OUTPUT_PATH)
-# plot_evaluation_ranking_table(df_joined, config.OUTPUT_PATH, COUNT_NOT_RANKS=True)
-
+plot_evaluation_ranking_table(df_joined, config.OUTPUT_PATH, COUNT_NOT_RANKS=True)
+print(config.OUTPUT_PATH)
 # display table
 # display how much from which dataset/strategy combination
 # display missing random_seeds
