@@ -245,7 +245,7 @@ if not config.ONLY_ALIPY:
         TITLE=config.EXP_TITLE,
         PYTHON_FILE="03_train_imital",
         array=False,
-        THREADS=8,
+        THREADS=20,
         MEMORY=5250,
         CLI_ARGS="--BASE_PARAM_STRING "
         + config.EXP_TITLE
