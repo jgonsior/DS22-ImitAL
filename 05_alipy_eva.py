@@ -1,6 +1,6 @@
 from typing import Tuple
 from ALiPy.alipy.experiment.al_experiment import AlExperiment
-from ALiPy_imitAL_Query_Strategy import ALiPY_ImitAL_Query_Strategy
+from active_learning.ALiPy_imitAL_Query_Strategy import ALiPY_ImitAL_Query_Strategy
 import argparse
 import csv
 import math

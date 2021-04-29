@@ -1,4 +1,4 @@
-from ALiPy_imitAL_Query_Strategy import ALiPY_ImitAL_Query_Strategy
+from active_learning.ALiPy_imitAL_Query_Strategy import ALiPY_ImitAL_Query_Strategy
 import json
 import os
 import pandas as pd
