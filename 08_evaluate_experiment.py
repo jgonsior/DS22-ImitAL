@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pathlib
 from imitLearningPipelineSharedCode import dataset_id_mapping, strategy_id_mapping
+import os
 
 # plt.style.use('seaborn-paper')
 # plt.style.use('tex')
@@ -412,7 +413,8 @@ def read_experiment_results(path: str) -> pd.DataFrame:
 
 concat_dfs = []
 for exp_path in config.EXP_PATHS:
-    concat_dfs.append(read_experiment_results(exp_path))
+    if os.path.exists(exp_path + "/05_alipy_results.csv"):
+        concat_dfs.append(read_experiment_results(exp_path))
 
 if config.BASELINES_PATH:
     baselines_df = pd.read_csv(
@@ -434,7 +436,7 @@ df_joined = pd.concat(concat_dfs)  # type: ignore
 duration_plot(df_joined, config.OUTPUT_PATH)
 
 plot_evaluation_ranking_table(df_joined, config.OUTPUT_PATH)
-# plot_evaluation_ranking_table(df_joined, config.OUTPUT_PATH, COUNT_NOT_RANKS=True)
+plot_evaluation_ranking_table(df_joined, config.OUTPUT_PATH, COUNT_NOT_RANKS=True)
 
 # display table
 # display how much from which dataset/strategy combination

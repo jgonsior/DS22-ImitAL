@@ -49,8 +49,14 @@ random_seed_df = pd.read_csv(
 )
 DATASET_ID, STRATEGY_ID, DATASET_RANDOM_SEED = random_seed_df.loc[config.INDEX]
 
+# config.DATASETS_PATH = "/home/julius/datasets"
+
+# DATASET_ID = 3
+# STRATEGY_ID = 2
 # use other random seeds than during training
-DATASET_RANDOM_SEED += 100000
+# DATASET_RANDOM_SEED += 100000
+
+# DATASET_RANDOM_SEED = 100
 
 np.random.seed(DATASET_RANDOM_SEED)
 random.seed(DATASET_RANDOM_SEED)
@@ -79,9 +85,13 @@ else:
         DATASET_NAME=DATASET_NAME,
     )
 
-data_storage = DataStorage(df, TEST_FRACTION=0)
-X = data_storage.X
-Y = data_storage.exp_Y
+if STRATEGY_ID == 12 or STRATEGY_ID == 99:
+    data_storage = DataStorage(df, TEST_FRACTION=0)
+    X = data_storage.X
+    Y = data_storage.exp_Y
+else:
+    X = df[df.columns[:-1]].to_numpy()
+    Y = df["label"].to_numpy()
 
 shuffling = np.random.permutation(len(Y))
 X = X[shuffling]
@@ -114,14 +124,16 @@ test_idx = [np.array(test_idx)]  # type: ignore
 label_idx = [np.array(label_idx)]  # type: ignore
 unlabel_idx = [np.array(unlabel_idx)]  # type: ignore
 
-data_storage.exp_Y = None  # type: ignore
-data_storage.human_expert_Y = None  # type: ignore
-data_storage.Y_merged_final = None  # type: ignore
-# @TODO: previous could be important later for some state encodings??!
 
-data_storage.labeled_mask = label_idx[0]  # type: ignore
-data_storage.unlabeled_mask = unlabel_idx[0]  # type: ignore
-data_storage.test_mask = test_idx[0]  # type: ignore
+if STRATEGY_ID == 12 or STRATEGY_ID == 99:
+    data_storage.exp_Y = None  # type: ignore
+    data_storage.human_expert_Y = None  # type: ignore
+    data_storage.Y_merged_final = None  # type: ignore
+    # @TODO: previous could be important later for some state encodings??!
+
+    data_storage.labeled_mask = label_idx[0]  # type: ignore
+    data_storage.unlabeled_mask = unlabel_idx[0]  # type: ignore
+    data_storage.test_mask = test_idx[0]  # type: ignore
 
 """ print("Unlabeled before the experiment are: " + str(unlabel_idx))
 print("Labeled before are " + str(label_idx))
@@ -153,14 +165,19 @@ if STRATEGY_ID == 12 or STRATEGY_ID == 99:
         NN_BINARY_PATH=config.OUTPUT_PATH + "/03_imital_trained_ann.model",
         data_storage=data_storage,
     )
+
+# print("num_of_queries", dataset_id_mapping[DATASET_ID][1] / config.BATCH_SIZE)
+# print("stopping ", dataset_id_mapping[DATASET_ID][1] / config.BATCH_SIZE)
+
+
 al = AlExperiment(
     X,
     Y,
     #  model=MLPClassifier(),
     model=RandomForestClassifier(n_jobs=multiprocessing.cpu_count()),
     stopping_criteria="num_of_queries",
-    num_of_queries=dataset_id_mapping[DATASET_ID][1] / config.BATCH_SIZE,
-    stopping_value=dataset_id_mapping[DATASET_ID][1] / config.BATCH_SIZE,
+    num_of_queries=dataset_id_mapping[DATASET_ID][1],
+    stopping_value=dataset_id_mapping[DATASET_ID][1],
     batch_size=config.BATCH_SIZE,
     train_idx=train_idx,
     test_idx=test_idx,
@@ -176,8 +193,8 @@ al.set_performance_metric("f1_score")
 start = timer()
 al.start_query(multi_thread=False)
 end = timer()
-
-trained_model = al._model
+# print(end - start)
+# trained_model = al._model
 
 r = al.get_experiment_result()
 
@@ -205,6 +222,7 @@ metric_values = []
 if stateio.initial_point is not None:
     metric_values.append(stateio.initial_point)
 for state in stateio:
+    # print(state.get_value("select_index"))
     metric_values.append(state.get_value("performance"))
 
 f1_auc = auc([i for i in range(0, len(metric_values))], metric_values) / (
@@ -219,6 +237,8 @@ res["strategy"] = str(QUERY_STRATEGY[0]) + str(QUERY_STRATEGY[1])
 res["duration"] = end - start
 res["f1_auc"] = f1_auc
 res = {**res, **synthetic_creation_args}
+print(res["f1_auc"])
+
 with open(config.OUTPUT_PATH + "/05_alipy_results.csv", "a") as f:
     w = csv.DictWriter(f, fieldnames=res.keys())
     if len(open(config.OUTPUT_PATH + "/05_alipy_results.csv").readlines()) == 0:
