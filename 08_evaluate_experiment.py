@@ -382,6 +382,7 @@ def plot_evaluation_ranking_table(
 
 
 def read_experiment_results(path: str) -> pd.DataFrame:
+    print(path)
     df = pd.read_csv(
         path + "/05_alipy_results.csv",
         index_col=None,

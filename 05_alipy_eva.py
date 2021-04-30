@@ -48,15 +48,15 @@ random_seed_df = pd.read_csv(
     nrows=config.INDEX + 1,
 )
 DATASET_ID, STRATEGY_ID, DATASET_RANDOM_SEED = random_seed_df.loc[config.INDEX]
+"""
+config.DATASETS_PATH = "/home/julius/datasets"
 
-# config.DATASETS_PATH = "/home/julius/datasets"
-
-# DATASET_ID = 3
-# STRATEGY_ID = 2
+DATASET_ID = 0
+STRATEGY_ID = 2
 # use other random seeds than during training
 # DATASET_RANDOM_SEED += 100000
-
-# DATASET_RANDOM_SEED = 100
+"""
+DATASET_RANDOM_SEED = 0
 
 np.random.seed(DATASET_RANDOM_SEED)
 random.seed(DATASET_RANDOM_SEED)
@@ -228,6 +228,8 @@ for state in stateio:
 f1_auc = auc([i for i in range(0, len(metric_values))], metric_values) / (
     len(metric_values) - 1
 )
+print()
+print(f1_auc)
 
 res = {}
 res["dataset_id"] = DATASET_ID
