@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, List, Tuple
 
 from active_learning.config.config import get_active_config
 
+# 11, 16, 2, 12, 13, 3, 29, 4, 14, 5, 6, 8, 15, 10, 27
 
 dataset_id_mapping: Dict[int, Tuple[str, int]] = {
     0: ("synthetic", 50),
@@ -61,9 +62,20 @@ strategy_id_mapping = {
     10: ("QueryInstanceSPAL", {}),  # cvxpy
     # 11: ("QueryInstanceUncertainty", {"measure": "distance_to_boundary"}), only works with SVM
     12: (ALiPY_ImitAL_Query_Strategy, {"NN_BINARY_PATH": "?"}),
+    13: (
+        ALiPY_ImitAL_Query_Strategy,
+        {
+            "NN_BINARY_PATH": "?",
+            "PRE_SAMPLING_ARG": 1,
+        },
+    ),
+    14: (ALiPY_ImitAL_Query_Strategy, {"NN_BINARY_PATH": "?", "OLD_NN": True}),
     99: (
         ALiPY_ImitAL_Query_Strategy,
-        {"NN_BINARY_PATH": "?"},
+        {
+            "NN_BINARY_PATH": "?",
+            "PRE_SAMPLING_ARG": 1,
+        },
     ),  # only for local tests, because it can also be run locally, not only on slurm
 }
 non_slurm_strategy_ids = [8, 9, 10, 99]

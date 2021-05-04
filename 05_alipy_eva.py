@@ -55,9 +55,9 @@ DATASET_ID = 0
 STRATEGY_ID = 2
 # use other random seeds than during training
 # DATASET_RANDOM_SEED += 100000
-"""
-DATASET_RANDOM_SEED = 0
 
+DATASET_RANDOM_SEED = 0
+"""
 np.random.seed(DATASET_RANDOM_SEED)
 random.seed(DATASET_RANDOM_SEED)
 DATASET_NAME = dataset_id_mapping[DATASET_ID][0]
@@ -85,7 +85,7 @@ else:
         DATASET_NAME=DATASET_NAME,
     )
 
-if STRATEGY_ID == 12 or STRATEGY_ID == 99:
+if "NN_BINARY_PATH" in strategy_id_mapping[STRATEGY_ID][1].keys():
     data_storage = DataStorage(df, TEST_FRACTION=0)
     X = data_storage.X
     Y = data_storage.exp_Y
@@ -125,7 +125,7 @@ label_idx = [np.array(label_idx)]  # type: ignore
 unlabel_idx = [np.array(unlabel_idx)]  # type: ignore
 
 
-if STRATEGY_ID == 12 or STRATEGY_ID == 99:
+if "NN_BINARY_PATH" in strategy_id_mapping[STRATEGY_ID][1].keys():
     data_storage.exp_Y = None  # type: ignore
     data_storage.human_expert_Y = None  # type: ignore
     data_storage.Y_merged_final = None  # type: ignore
@@ -152,19 +152,14 @@ QUERY_STRATEGY: Tuple = strategy_id_mapping[STRATEGY_ID]
 
 
 print(QUERY_STRATEGY)
-if STRATEGY_ID == 12 or STRATEGY_ID == 99:
+if "NN_BINARY_PATH" in strategy_id_mapping[STRATEGY_ID][1].keys():
     # update NN_BINARY_PATH
     if "NN_BINARY_PATH" in QUERY_STRATEGY[1].keys():
         QUERY_STRATEGY[1]["NN_BINARY_PATH"] = (
             config.OUTPUT_PATH + "/03_imital_trained_ann.model"
         )
         QUERY_STRATEGY[1]["data_storage"] = data_storage
-    test = ALiPY_ImitAL_Query_Strategy(
-        X=X,
-        Y=Y,
-        NN_BINARY_PATH=config.OUTPUT_PATH + "/03_imital_trained_ann.model",
-        data_storage=data_storage,
-    )
+    test = ALiPY_ImitAL_Query_Strategy(X=X, Y=Y, **QUERY_STRATEGY[1])
 
 # print("num_of_queries", dataset_id_mapping[DATASET_ID][1] / config.BATCH_SIZE)
 # print("stopping ", dataset_id_mapping[DATASET_ID][1] / config.BATCH_SIZE)
