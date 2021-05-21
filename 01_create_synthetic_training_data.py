@@ -22,7 +22,7 @@ run_parallel_experiment(
         "CLASSIFIER": config.CLASSIFIER,
         "OUTPUT_PATH": PARENT_OUTPUT_PATH + base_param_string,
         "DATASET_NAME": "synthetic",
-        "SAMPLING": "trained_nn",
+        "QUERY_STRATEGY": "trained_nn",
         "AMOUNT_OF_PEAKED_OBJECTS": config.AMOUNT_OF_PEAKED_SAMPLES,
         "AMOUNT_OF_FEATURES": config.AMOUNT_OF_FEATURES,
         "VARIABLE_DATASET": config.VARIABLE_DATASET,

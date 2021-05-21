@@ -48,7 +48,7 @@ for DATASET_NAME in [
             CLI_COMMAND="python single_al_cycle.py",
             CLI_ARGUMENTS={
                 "OUTPUT_PATH": COMPARISON_PATH,
-                "SAMPLING": comparison,
+                "QUERY_STRATEGY": comparison,
                 **evaluation_arguments,
             },
             RANDOM_ID_OFFSET=config.RANDOM_ID_OFFSET,

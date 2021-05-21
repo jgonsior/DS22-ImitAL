@@ -69,7 +69,6 @@ strategy_id_mapping = {
             "PRE_SAMPLING_ARG": 1,
         },
     ),
-
     99: (
         ALiPY_ImitAL_Query_Strategy,
         {

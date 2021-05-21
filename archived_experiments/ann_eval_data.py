@@ -54,7 +54,7 @@ for DATASET_NAME in [
             + train_base_param_string
             + "/03_imital_trained_ann.model",
             "OUTPUT_PATH": EVALUATION_FILE_TRAINED_NN_PATH,
-            "SAMPLING": "trained_nn",
+            "QUERY_STRATEGY": "trained_nn",
             **ann_arguments,
             **evaluation_arguments,
         },

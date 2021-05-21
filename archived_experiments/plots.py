@@ -51,7 +51,7 @@ def concatenate_evaluation_csvs():
         more_results = pd.read_csv(
             csv_file, index_col=None, nrows=config.TEST_NR_LEARNING_SAMPLES
         )
-        more_results["sampling"] = csv_file.split("/")[-1]
+        more_results["QUERY_STRATEGY"] = csv_file.split("/")[-1]
         df = pd.concat([df, more_results])
 
     #  print(df)
@@ -70,7 +70,7 @@ run_python_experiment(
     CLI_COMMAND="python compare_distributions.py",
     CLI_ARGUMENTS={
         "CSV_FILE": comparison_path,
-        "GROUP_COLUMNS": "sampling",
+        "GROUP_COLUMNS": "QUERY_STRATEGY",
         "SAVE_FILE": comparison_path,
         "TITLE": comparison_path,
         "METRIC": config.PLOT_METRIC,
@@ -82,7 +82,7 @@ run_python_experiment(
 
 def plot_all_metrics_as_a_table(df):
     sources = []
-    sources = df["sampling"].unique()
+    sources = df["QUERY_STRATEGY"].unique()
 
     metrics = [
         "acc_auc",
@@ -98,8 +98,10 @@ def plot_all_metrics_as_a_table(df):
     for source in sources:
         metric_values = {"Source": source}
         for metric in metrics:
-            metric_values[metric] = df.loc[df["sampling"] == source][metric].mean()
-            #  metric_values[metric] = df.loc[df["sampling"] == source][
+            metric_values[metric] = df.loc[df["QUERY_STRATEGY"] == source][
+                metric
+            ].mean()
+            #  metric_values[metric] = df.loc[df["QUERY_STRATEGY"] == source][
             #      metric
             #  ].median()
             metric_values[metric + "_diff_to_mm"] = np.NaN
