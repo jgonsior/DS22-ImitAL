@@ -77,8 +77,8 @@ strategy_id_mapping = {
         },
     ),  # only for local tests, because it can also be run locally, not only on slurm
 }
-non_slurm_strategy_ids = [8, 9, 10, 99]
-# non_slurm_strategy_ids = [0, 1, 2, 12]
+# non_slurm_strategy_ids = [8, 9, 10, 99]
+non_slurm_strategy_ids = [0, 1, 2, 12]
 
 
 def get_config():

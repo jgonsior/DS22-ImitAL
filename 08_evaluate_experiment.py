@@ -17,6 +17,7 @@ config, parser = get_active_config(
     [
         (["--EXP_PATHS"], {"nargs": "+", "default": []}),
         (["--BASELINES_PATH"], {}),
+        (["--OPTIMAL_PATH"], {}),
     ],
     return_parser=True,
 )  # type: ignore
@@ -430,8 +431,21 @@ if config.BASELINES_PATH:
 
     baselines_df["strategy"] = baselines_df["strategy"].map(baseline_names_mapping)  # type: ignore
     concat_dfs.append(baselines_df)
+    # print(baselines_df)
 
+if config.OPTIMAL_PATH:
+    optimal_df = pd.read_csv(
+        config.OPTIMAL_PATH + "/01_dataset_creation_stats.csv", index_col=None
+    )
+    # print(optimal_df)
+    # print(optimal_df.columns)
+    optimal_df["dataset_id"] = 0
+    optimal_df["strategy"] = "Optimal"
+    optimal_df["dataset_random_seed"] = optimal_df["random_state"]
+    optimal_df["duration"] = optimal_df["fit_time"]
 
+    concat_dfs.append(optimal_df)
+# exit(-1)
 df_joined = pd.concat(concat_dfs)  # type: ignore
 
 duration_plot(df_joined, config.OUTPUT_PATH)
