@@ -182,7 +182,7 @@ if config.WS_MODE:
 
 if config.BATCH_MODE:
     print("ui" * 1000)
-    samplingStrategy: ImitationLearner = TrainImitALBatch(
+    queryStrategy: ImitationLearner = TrainImitALBatch(
         PRE_SAMPLING_METHOD=config.PRE_SAMPLING_METHOD,
         PRE_SAMPLING_ARG=config.PRE_SAMPLING_ARG,
         AMOUNT_OF_PEAKED_OBJECTS=config.AMOUNT_OF_PEAKED_OBJECTS,
@@ -196,8 +196,7 @@ if config.BATCH_MODE:
         STATE_INCLUDE_NR_FEATURES=config.STATE_INCLUDE_NR_FEATURES,
     )
 else:
-
-    samplingStrategy = TrainImitALSingle(
+    queryStrategy = TrainImitALSingle(
         PRE_SAMPLING_METHOD=config.PRE_SAMPLING_METHOD,
         PRE_SAMPLING_ARG=config.PRE_SAMPLING_ARG,
         AMOUNT_OF_PEAKED_OBJECTS=config.AMOUNT_OF_PEAKED_OBJECTS,
@@ -215,7 +214,7 @@ callbacks = {
     "logging": PrintLoggingStatisticsCallback(),
 }
 active_learner_params = {
-    "query_sampling_strategy": samplingStrategy,
+    "query_sampling_strategy": queryStrategy,
     "data_storage": data_storage,
     "oracle": oracle,
     "learner": get_classifier(config.CLASSIFIER, random_state=config.RANDOM_SEED),
@@ -234,7 +233,7 @@ start = timer()
 active_learner.al_cycle()
 end = timer()
 
-samplingStrategy.save_nn_training_data(config.OUTPUT_PATH)
+queryStrategy.save_nn_training_data(config.OUTPUT_PATH)
 
 hyper_parameters = vars(config)
 hyper_parameters["synthetic_creation_args"] = synthetic_creation_args
