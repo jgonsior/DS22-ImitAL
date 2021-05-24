@@ -1,4 +1,5 @@
 import glob
+import math
 import numpy as np
 import pandas as pd
 from tabulate import tabulate
@@ -17,11 +18,12 @@ config, parser = get_active_config(
     [
         (["--EXP_PATHS"], {"nargs": "+", "default": []}),
         (["--BASELINES_PATH"], {}),
-        (["--OPTIMAL_PATH"], {}),
+        (["--DURATION_PLOT"], {"action": "store_true"}),
+        (["--HIST_PLOT"], {"action": "store_true"}),
     ],
     return_parser=True,
 )  # type: ignore
-
+print(config.OUTPUT_PATH)
 pathlib.Path(config.OUTPUT_PATH).mkdir(parents=True, exist_ok=True)
 
 baseline_names_mapping = {
@@ -29,13 +31,14 @@ baseline_names_mapping = {
     "QueryInstanceUncertainty{'measure': 'least_confident'}": "LC",
     "QueryInstanceUncertainty{'measure': 'entropy'}": "Ent",
     "QueryInstanceGraphDensity{}": "GD",
-    "QueryInstanceRandom{}": "Rand",
+    "QueryInstanceRandom{}": "Random",
     "QueryInstanceQUIRE{}": "QUIRE",
     "QueryInstanceQBC{}": "QBC",
     "QureyExpectedErrorReduction{}": "EER",
     "QueryInstanceLAL{}": "LAL",
     "QueryInstanceSPAL{}": "SPAL",
     "QueryInstanceBMDR{}": "BMDR",
+    "<class 'active_learning.ALiPy_optimal_Query_Strategy.ALiPY_Optimal_Query_Strategy'>{}": "Optimal",
 }
 
 
@@ -43,8 +46,8 @@ font_size = 8
 
 tex_fonts = {
     # Use LaTeX to write all text
-    # "text.usetex": True,
-    "text.usetex": False,
+    "text.usetex": True,
+    # "text.usetex": False,
     "font.family": "times",
     # Use 10pt font in plots, to match 10pt font in document
     "axes.labelsize": font_size,
@@ -99,6 +102,62 @@ def set_matplotlib_size(width, fraction=1):
 
 
 width = 505.89
+
+
+def hist_plot(df: pd.DataFrame, OUTPUT_PATH: str):
+    title = ""
+    """sns.set(
+        font_scale=1,
+        #  rc={"text.usetex": False, "figure.figsize": (11, 2)},
+        style="ticks",
+        font="STIXGeneral",
+    )
+    sns.set_palette("tab10")"""
+    fig = plt.figure(figsize=set_matplotlib_size(width, fraction=0.5))
+
+    # fig = plt.gcf()  # type: ignore
+    # fig.set_size_inches(18.5, 10.5)
+
+    selection_list = []
+
+    for strategy in df["strategy"].unique():
+        selection_list.append((df[df["strategy"] == strategy]["f1_auc"], strategy))
+
+    for selection, label in sorted(selection_list, key=lambda tup: tup[1]):
+        #  ax = sns.distplot(selection, label=label, **kwargs)
+        #  label = "{}-{:>3}: {:.4g}% ".format(label[0], label[1], selection.mean() * 100)
+        label = "{:<10}{:>5.4g}% ".format(label + ":", selection.mean() * 100)
+        ax = sns.kdeplot(selection, label=label)
+        # ax = sns.distplot(selection, label=label, kde=True)
+        ax.set_xlim(0, 1)
+        # ax.set_xlim(0.45, 0.7)
+        #  ax.set_xlim(0.75, 0.8)
+        #  ax.set_xlim(80, 875)
+
+        mean = selection.mean()
+        if selection.count() == 0:
+            low = high = mean
+        else:
+            low = selection.mean() - 1.96 * selection.std() / math.sqrt(
+                selection.count()
+            )
+            high = selection.mean() + 1.96 * selection.std() / math.sqrt(
+                selection.count()
+            )
+        print(label)
+        ax.axvline(mean, color=plt.gca().lines[-1].get_color())  # type: ignore
+        ax.axvspan(low, high, alpha=0.2, color=plt.gca().lines[-1].get_color())  # type: ignore
+        ax.set_xticklabels(["{:.0%}\\%".format(x) for x in ax.get_xticks()])
+    ax.set_title(title)  # type: ignore
+    # ax.set_ylabel("")
+    ax.set_xlabel("AUC-F1 (\\%)")  # type: ignore
+    ax.legend(  # type: ignore
+        loc="center left"
+    )  # , bbox_to_anchor=(0.0, 1.01), borderaxespad=0, frameon=False, ncol=len(selection))  # type: ignore
+    # ax.xa
+    plt.savefig(
+        OUTPUT_PATH + "/08_optimal.pdf", dpi=300, format="pdf", bbox_inches="tight"
+    )
 
 
 def duration_plot(df: pd.DataFrame, OUTPUT_PATH: str):
@@ -433,22 +492,14 @@ if config.BASELINES_PATH:
     concat_dfs.append(baselines_df)
     # print(baselines_df)
 
-if config.OPTIMAL_PATH:
-    optimal_df = pd.read_csv(
-        config.OPTIMAL_PATH + "/01_dataset_creation_stats.csv", index_col=None
-    )
-    # print(optimal_df)
-    # print(optimal_df.columns)
-    optimal_df["dataset_id"] = 0
-    optimal_df["strategy"] = "Optimal"
-    optimal_df["dataset_random_seed"] = optimal_df["random_state"]
-    optimal_df["duration"] = optimal_df["fit_time"]
-
-    concat_dfs.append(optimal_df)
 # exit(-1)
 df_joined = pd.concat(concat_dfs)  # type: ignore
 
-duration_plot(df_joined, config.OUTPUT_PATH)
+if config.DURATION_PLOT:
+    duration_plot(df_joined, config.OUTPUT_PATH)
+
+if config.HIST_PLOT:
+    hist_plot(df_joined, config.OUTPUT_PATH)
 
 plot_evaluation_ranking_table(df_joined, config.OUTPUT_PATH)
 plot_evaluation_ranking_table(df_joined, config.OUTPUT_PATH, COUNT_NOT_RANKS=True)

@@ -1,3 +1,4 @@
+from active_learning.ALiPy_optimal_Query_Strategy import ALiPY_Optimal_Query_Strategy
 from active_learning.ALiPy_imitAL_Query_Strategy import ALiPY_ImitAL_Query_Strategy
 import json
 import os
@@ -69,6 +70,7 @@ strategy_id_mapping = {
             "PRE_SAMPLING_ARG": 1,
         },
     ),
+    14: (ALiPY_Optimal_Query_Strategy, {}),
     99: (
         ALiPY_ImitAL_Query_Strategy,
         {
@@ -77,8 +79,8 @@ strategy_id_mapping = {
         },
     ),  # only for local tests, because it can also be run locally, not only on slurm
 }
-# non_slurm_strategy_ids = [8, 9, 10, 99]
-non_slurm_strategy_ids = [0, 1, 2, 12]
+non_slurm_strategy_ids = [8, 9, 10, 99]
+# non_slurm_strategy_ids = [0, 1, 2, 12, 14]
 
 
 def get_config():
