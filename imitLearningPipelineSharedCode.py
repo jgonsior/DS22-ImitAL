@@ -130,12 +130,7 @@ def get_config():
 
     evaluation_arguments = {
         #  "DATASET_NAME": "synthetic",
-        "AMOUNT_OF_FEATURES": config.AMOUNT_OF_FEATURES,
         "CLASSIFIER": config.CLASSIFIER,
-        "VARIABLE_DATASET": config.VARIABLE_DATASET,
-        "NEW_SYNTHETIC_PARAMS": config.NEW_SYNTHETIC_PARAMS,
-        "HYPERCUBE": config.HYPERCUBE,
-        "GENERATE_NOISE": config.GENERATE_NOISE,
         **shared_arguments,
     }
     base_param_string = config.BASE_PARAM_STRING

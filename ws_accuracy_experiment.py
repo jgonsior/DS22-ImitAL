@@ -22,8 +22,6 @@ from active_learning.weak_supervision.BaseWeakSupervision import BaseWeakSupervi
 
 config: argparse.Namespace = get_active_config()  # type: ignore
 
-# python ws_accuracy_experiment.py --OUTPUT_PATH _experiment_resultss/tmp --DATASET_NAME synthetic --AMOUNT_OF_FEATURES -1 --RANDOM_SEED 0
-
 # -2 means that a true random seed is used, all other numbers use the provided CLI argument random_seed
 if config.RANDOM_SEED == -2:
     random_but_not_random = True
@@ -57,16 +55,9 @@ def evaluate_and_print_prediction(Y_pred, Y_true, title):
 
 df, synthetic_creation_args = load_synthetic(
     config.RANDOM_SEED,
-    config.NEW_SYNTHETIC_PARAMS,
-    config.VARIABLE_DATASET,
-    config.AMOUNT_OF_FEATURES,
-    config.HYPERCUBE,
-    config.GENERATE_NOISE,
 )
 
 data_storage: DataStorage = DataStorage(df=df, TEST_FRACTION=config.TEST_FRACTION)
-
-
 learner = get_classifier("RF", random_state=config.RANDOM_SEED)
 
 mask = data_storage.labeled_mask

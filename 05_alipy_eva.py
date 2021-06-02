@@ -68,11 +68,6 @@ print(DATASET_RANDOM_SEED)
 if DATASET_NAME == "synthetic":
     df, synthetic_creation_args = load_synthetic(
         DATASET_RANDOM_SEED,
-        NEW_SYNTHETIC_PARAMS=True,
-        VARIABLE_DATASET=True,
-        AMOUNT_OF_FEATURES=20,
-        HYPERCUBE=True,
-        GENERATE_NOISE=True,
     )
 elif DATASET_NAME == "dwtc":
     df, synthetic_creation_args = load_dwtc(

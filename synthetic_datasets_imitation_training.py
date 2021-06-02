@@ -130,11 +130,6 @@ if random_but_not_random:
 
 df, synthetic_creation_args = load_synthetic(
     config.RANDOM_SEED,
-    config.NEW_SYNTHETIC_PARAMS,
-    config.VARIABLE_DATASET,
-    config.AMOUNT_OF_FEATURES,
-    config.HYPERCUBE,
-    config.GENERATE_NOISE,
 )
 
 data_storage: DataStorage = DataStorage(df=df, TEST_FRACTION=config.TEST_FRACTION)
