@@ -66,7 +66,7 @@ learner.fit(data_storage.X[mask], data_storage.Y_merged_final[mask])
 
 ws_list: List[BaseWeakSupervision] = [
     SyntheticLabelingFunctions(X=data_storage.X, Y=data_storage.exp_Y)
-    for i in range(0, config.AMOUNT_OF_SYNTHETIC_LABELLING_FUNCTIONS)
+    for _ in range(0, config.AMOUNT_OF_SYNTHETIC_LABELLING_FUNCTIONS)
 ]  # type: ignore
 
 
@@ -125,7 +125,7 @@ def train_and_evaluate(title, original_data_storage, WEIGHTS=0, WS=True):
     learner.fit(
         data_storage.X[mask],
         data_storage.Y_merged_final[mask],
-        sample_weight=weights,
+        sample_weight=weights,  # type: ignore
     )
     Y_pred = learner.predict(data_storage.X[data_storage.test_mask])
 

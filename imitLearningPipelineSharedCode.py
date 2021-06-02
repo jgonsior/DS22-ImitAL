@@ -86,7 +86,6 @@ non_slurm_strategy_ids = [8, 9, 10, 99]
 def get_config():
     config, parser = get_active_config(
         [
-            (["--BASE_PARAM_STRING"], {"default": "default"}),
             (["--AMOUNT_OF_PEAKED_SAMPLES"], {"type": int, "default": 20}),
             (["--NR_LEARNING_SAMPLES"], {"type": int, "default": 1000}),
             (
@@ -133,14 +132,6 @@ def get_config():
         "CLASSIFIER": config.CLASSIFIER,
         **shared_arguments,
     }
-    base_param_string = config.BASE_PARAM_STRING
-
-    # only include config key if it is different from default
-    # for k, v in vars(config).items():
-    #    if v != parser.get_default(k):
-    #        base_param_string += str(v) + "_"
-
-    # base_param_string = base_param_string[-1]
 
     ann_arguments = {
         "STATE_DISTANCES_LAB": config.STATE_DISTANCES_LAB,
@@ -168,7 +159,6 @@ def get_config():
         evaluation_arguments,
         ann_arguments,
         PARENT_OUTPUT_PATH,
-        base_param_string,
     )
 
 

@@ -22,7 +22,6 @@ from sklearn.preprocessing import MinMaxScaler
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--OUTPUT_PATH")
-parser.add_argument("--BASE_PARAM_STRING")
 parser.add_argument(
     "--CLASSIFIER",
     default="RF",
@@ -70,7 +69,7 @@ if config.RANDOM_SEED != -1 and config.RANDOM_SEED != -2:
 # os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
-DATA_PATH = config.OUTPUT_PATH + "/" + config.BASE_PARAM_STRING
+DATA_PATH = config.OUTPUT_PATH
 states = pd.read_csv(DATA_PATH + "/01_state_encodings_X.csv")
 optimal_policies = pd.read_csv(DATA_PATH + "/01_expert_actions_Y.csv")
 
@@ -216,8 +215,6 @@ def get_clf(
     nr_hidden_neurons=20,
     kernel_initializer="glorot_uniform",
     loss="MeanSquaredError",
-    epochs=1,
-    batch_size=1,
 ):
     model = keras.models.Sequential()
     model.add(keras.layers.Input(shape=input_size))
@@ -320,8 +317,8 @@ if config.HYPER_SEARCH:
     gridsearch = RandomizedSearchCV(
         estimator=model,
         param_distributions=param_grid,
-        cv=5,
-        n_jobs=-1,
+        cv=config.N_ITER,
+        n_jobs=2,
         scoring=make_scorer(_evaluate_top_k, greater_is_better=True),
         verbose=1,
         n_iter=config.N_ITER,
@@ -336,15 +333,15 @@ if config.HYPER_SEARCH:
     fitted_model = gridsearch.fit(X, Y)
 
     fitted_model.best_estimator_.model_.save(
-        config.SAVE_DESTINATION + "/02_best_model.model"
+        config.OUTPUT_PATH + "/02_best_model.model"
     )
 
-    joblib.dump(scaler, config.SAVE_DESTINATION + "/scaler.gz")
+    joblib.dump(scaler, config.OUTPUT_PATH + "/scaler.gz")
 
-    with open(config.SAVE_DESTINATION + "/params.json", "w") as f:
+    with open(config.OUTPUT_PATH + "/params.json", "w") as f:
         json.dump({"TARGET_ENCODING": config.TARGET_ENCODING}, f)
 
-    with open(config.SAVE_DESTINATION + "/02_hyper_results.txt", "w") as handle:
+    with open(config.OUTPUT_PATH + "/02_hyper_results.txt", "w") as handle:
         handle.write(str(fitted_model.best_score_))
         handle.write(str(fitted_model.cv_results_))
         handle.write("\n" * 5)
@@ -365,7 +362,7 @@ else:
         nr_hidden_neurons=config.NR_HIDDEN_NEURONS,
         optimizer=config.OPTIMIZER,
         epochs=config.EPOCHS,
-        batch_size=config.BATCH_SIZE,
+        batch_size=config.ANN_BATCH_SIZE,
         callbacks=[
             EarlyStopping(monitor="val_loss", patience=5, verbose=0),
             ReduceLROnPlateau(monitor="val_loss", patience=3, verbose=0),

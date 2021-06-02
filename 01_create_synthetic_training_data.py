@@ -6,21 +6,18 @@ from imitLearningPipelineSharedCode import get_config, run_parallel_experiment
     _,
     ann_arguments,
     PARENT_OUTPUT_PATH,
-    base_param_string,
 ) = get_config()
 
 
-OUTPUT_FILE = PARENT_OUTPUT_PATH + base_param_string
+OUTPUT_FILE = PARENT_OUTPUT_PATH
 run_parallel_experiment(
     "Creating dataset",
-    OUTPUT_FILE=PARENT_OUTPUT_PATH
-    + base_param_string
-    + "/01_dataset_creation_stats.csv",
+    OUTPUT_FILE=PARENT_OUTPUT_PATH + "/01_dataset_creation_stats.csv",
     CLI_COMMAND="python synthetic_datasets_imitation_training.py",
     CLI_ARGUMENTS={
         "DATASETS_PATH": "../datasets",
         "CLASSIFIER": config.CLASSIFIER,
-        "OUTPUT_PATH": PARENT_OUTPUT_PATH + base_param_string,
+        "OUTPUT_PATH": PARENT_OUTPUT_PATH,
         "DATASET_NAME": "synthetic",
         "QUERY_STRATEGY": config.QUERY_STRATEGY,
         "AMOUNT_OF_PEAKED_OBJECTS": config.AMOUNT_OF_PEAKED_SAMPLES,

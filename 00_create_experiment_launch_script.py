@@ -153,7 +153,7 @@ def write_slurm_and_bash_file(OUTPUT_FILE: str, APPEND_OUTPUT=False, **kwargs):
     with open(config.EXPERIMENT_LAUNCH_SCRIPTS + "/" + OUTPUT_FILE + ".tmp", "w") as f:
         content = bash_mode_common_template.render(**kwargs)
         if APPEND_OUTPUT:
-            content += " " + config.LOCAL_OUTPUT_PATH
+            content += " " + config.LOCAL_OUTPUT_PATH + "/" + config.EXP_TITLE
         f.write(content)
 
 
@@ -186,8 +186,6 @@ if not config.ONLY_ALIPY:
         # p+ str(config.BATCH_MODE)
         + " --PRE_SAMPLING_METHOD "
         + str(config.PRE_SAMPLING_METHOD)
-        + " --BASE_PARAM_STRING "
-        + config.EXP_TITLE
         + " --PRE_SAMPLING_ARG "
         + str(config.PRE_SAMPLING_ARG)
         + " --TOTAL_BUDGET "
@@ -222,9 +220,7 @@ if config.WITH_HYPER_SEARCH:
         array=False,
         THREADS=24,
         MEMORY=5250,
-        CLI_ARGS="--BASE_PARAM_STRING "
-        + config.EXP_TITLE
-        + " --PERMUTATE_NN_TRAINING_INPUT "
+        CLI_ARGS="--PERMUTATE_NN_TRAINING_INPUT "
         + str(config.PERMUTATE_NN_TRAINING_INPUT)
         + " --STATE_ENCODING listwise --TARGET_ENCODING "
         + config.TARGET_ENCODING
@@ -247,9 +243,7 @@ if not config.ONLY_ALIPY:
         array=False,
         THREADS=20,
         MEMORY=5250,
-        CLI_ARGS="--BASE_PARAM_STRING "
-        + config.EXP_TITLE
-        + hypered_appendix
+        CLI_ARGS=hypered_appendix
         + " --PERMUTATE_NN_TRAINING_INPUT "
         + str(config.PERMUTATE_NN_TRAINING_INPUT)
         + " --TARGET_ENCODING "
@@ -325,6 +319,8 @@ with open(config.EXPERIMENT_LAUNCH_SCRIPTS + "/06_start_slurm_jobs.sh", "w") as 
             WITH_ALIPY=config.WITH_ALIPY,
         )
     )
+
+st = os.stat(config.EXPERIMENT_LAUNCH_SCRIPTS + "/06_start_slurm_jobs.sh")
 os.chmod(
     config.EXPERIMENT_LAUNCH_SCRIPTS + "/06_start_slurm_jobs.sh",
     st.st_mode | stat.S_IEXEC,
