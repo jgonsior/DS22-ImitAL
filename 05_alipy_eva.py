@@ -21,7 +21,7 @@ from active_learning.logger.logger import init_logger
 from imitLearningPipelineSharedCode import dataset_id_mapping, strategy_id_mapping
 
 
-init_logger("tmp.log")
+init_logger("log.txt")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--DATASETS_PATH", default="../datasets")

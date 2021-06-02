@@ -110,6 +110,8 @@ def get_config():
             (["--NR_ANN_HYPER_SEARCH_ITERATIONS"], {"default": 50}),
             (["--RANDOM_ID_OFFSET"], {"default": 0}),
             (["--PERMUTATE_NN_TRAINING_INPUT"], {"type": int, "default": 0}),
+            (["--STATE_ENCODING"], {"default": "listwise"}),
+            (["--TARGET_ENCODING"], {"default": "binary"}),
         ],
         return_parser=True,
     )  # type: ignore

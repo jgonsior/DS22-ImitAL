@@ -68,8 +68,8 @@ run_python_experiment(
     CLI_ARGUMENTS={
         "OUTPUT_PATH": config.OUTPUT_PATH,
         "BASE_PARAM_STRING": base_param_string,
-        "STATE_ENCODING": "listwise",
-        "TARGET_ENCODING": "binary",
+        "STATE_ENCODING": config.STATE_ENCODING,
+        "TARGET_ENCODING": config.TARGET_ENCODING,
         "SAVE_DESTINATION": config.OUTPUT_PATH
         + "/"
         + base_param_string

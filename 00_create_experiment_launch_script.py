@@ -252,6 +252,8 @@ if not config.ONLY_ALIPY:
         + hypered_appendix
         + " --PERMUTATE_NN_TRAINING_INPUT "
         + str(config.PERMUTATE_NN_TRAINING_INPUT)
+        + " --TARGET_ENCODING "
+        + config.TARGET_ENCODING
         + " --OUTPUT_PATH ",
         APPEND_OUTPUT=True,
     )
