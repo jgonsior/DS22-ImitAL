@@ -20,7 +20,12 @@ from collections import Counter
 from active_learning.weak_supervision import SyntheticLabelingFunctions
 from active_learning.weak_supervision.BaseWeakSupervision import BaseWeakSupervision
 
-config: argparse.Namespace = get_active_config()  # type: ignore
+config: argparse.Namespace = get_active_config(  # type: ignore
+    [
+        (["--AMOUNT_OF_FEATURES"], {"type": int, "default": 1}),
+    ],
+    return_parser=False,
+)
 
 # -2 means that a true random seed is used, all other numbers use the provided CLI argument random_seed
 if config.RANDOM_SEED == -2:
@@ -43,7 +48,7 @@ def evaluate_and_print_prediction(Y_pred, Y_true, title):
     c = Counter(Y_pred)
 
     print(
-        "{:<60} Acc: {:>6.2%} F1: {:>6.2%} MC: {:>3}-{:>4.1%}".format(
+        "{:<60} Acc: {:>6.2%} \t F1: {:>6.2%} \t MC: {:>3}-{:>4.1%}".format(
             title,
             acc,
             f1,
@@ -60,8 +65,10 @@ df, synthetic_creation_args = load_synthetic(
 data_storage: DataStorage = DataStorage(df=df, TEST_FRACTION=config.TEST_FRACTION)
 learner = get_classifier("RF", random_state=config.RANDOM_SEED)
 
-mask = data_storage.labeled_mask
-learner.fit(data_storage.X[mask], data_storage.Y_merged_final[mask])
+learner.fit(
+    data_storage.X[data_storage.labeled_mask],
+    data_storage.Y_merged_final[data_storage.labeled_mask],
+)
 
 
 ws_list: List[BaseWeakSupervision] = [
@@ -78,8 +85,16 @@ ws_list.append(SelfTraining(0.7, 0.7)) """
 
 # add label propagation
 
+"""print(data_storage.test_mask)
+print(data_storage.unlabeled_mask)
+print(data_storage.labeled_mask)
+print(len(data_storage.X))
+"""
+print("\n" * 5)
+print("Metrics when only using single LFs")
 for ws in ws_list:
     # calculate f1 and acc for ws on test AND train dataset
+    # it actually only get's computed on the test mask, not the train mask itself
     Y_pred = ws.get_labels(data_storage.test_mask, data_storage, learner)
     evaluate_and_print_prediction(
         data_storage.exp_Y[data_storage.test_mask], Y_pred, ws.identifier
@@ -91,11 +106,11 @@ data_storage.generate_weak_labels(learner, mask=data_storage.test_mask)
 
 # Only Majority Vote, no classifier
 print()
-Y_pred = data_storage.Y_merged_final[data_storage.test_mask]
 evaluate_and_print_prediction(
-    Y_pred, data_storage.exp_Y[data_storage.test_mask], "Majority Vote"
+    data_storage.Y_merged_final[data_storage.test_mask],
+    data_storage.exp_Y[data_storage.test_mask],
+    "Majority Vote",
 )
-
 
 # compute the 50/100/200/500 worst wrongly classified samples -> classify them correctly (aka. fake active learning) -> is there really room for improvement after falsely applyed WS??
 
@@ -148,7 +163,13 @@ def test_one_labeled_set(original_data_storage, label_strategy="start_set", para
             random_sample_ids, data_storage.exp_Y[random_sample_ids], "AL"
         )
     print()
-    print(label_strategy + ": ", len(data_storage.labeled_mask))
+    print(
+        label_strategy
+        + ": #lab: "
+        + str(len(data_storage.labeled_mask))
+        + "\t param: "
+        + str(param),
+    )
     train_and_evaluate("RF No WS", data_storage, WS=False)
     train_and_evaluate("RF No Weights", data_storage)
     train_and_evaluate("RF Weihgt 10", data_storage, WEIGHTS=10)
@@ -157,8 +178,12 @@ def test_one_labeled_set(original_data_storage, label_strategy="start_set", para
     train_and_evaluate("RF Weihgt 1000", data_storage, WEIGHTS=1000)
 
 
+print("\n" * 3)
+print("Combining WS functions using majority vote + random labeled correct samples")
+
 test_one_labeled_set(data_storage, label_strategy="start_set")
 test_one_labeled_set(data_storage, label_strategy="random", param=5)
+exit(-1)
 test_one_labeled_set(data_storage, label_strategy="random", param=10)
 test_one_labeled_set(data_storage, label_strategy="random", param=25)
 test_one_labeled_set(data_storage, label_strategy="random", param=50)

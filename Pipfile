@@ -26,6 +26,7 @@ data-science-types = "*"
 tensorflow = "*"
 scikeras = "*"
 prettytable = "*"
+ipython = "*"
 
 [requires]
 python_version = "3.6"
