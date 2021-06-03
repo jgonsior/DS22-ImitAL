@@ -1,3 +1,4 @@
+import csv
 import os
 from active_learning.merge_weak_supervision_label_strategies import (
     RandomLabelMergeStrategy,
@@ -13,20 +14,21 @@ import pandas as pd
 import random
 from sklearn.metrics import accuracy_score, f1_score
 from timeit import default_timer as timer
-from typing import List
+from typing import Any, Dict, List, Tuple
 from active_learning.config import get_active_config
 from active_learning.dataStorage import DataStorage
 from active_learning.datasets import load_synthetic
 from active_learning.logger import init_logger
 from collections import Counter
 from sklearn.model_selection import ParameterSampler
+from sklearn.datasets import make_classification
 
 from active_learning.weak_supervision import SyntheticLabelingFunctions
 from active_learning.weak_supervision.BaseWeakSupervision import BaseWeakSupervision
 
 import seaborn as sns
 import matplotlib.pyplot as plt
-from scipy.stats import uniform, truncnorm, randint
+from scipy.stats import uniform, randint
 
 sns.set_theme(style="whitegrid")
 
@@ -39,27 +41,32 @@ config: argparse.Namespace = get_active_config(  # type: ignore
     return_parser=False,
 )
 
-if config.STAGE == "WORKLOAD":
-    # create CSV containing the params to run the experiments on
-    """n_samples: int,
-    n_classes: int,
-    n_features: int,
-    dataset_hardness: float,
+
+def run_ws_plus_al_experiment(
+    dataset_random_generation_seed: int,
     amount_of_al_samples: int,
     al_samples_weight: int,
     merge_ws_sample_strategy: str,
     amount_of_lfs: int,
     al_sampling_strategy: str,
-    lf_quality: str,"""
+    lf_quality: str,
+) -> Dict[str, Any]:
+    df, synthetic_creation_args = load_synthetic(
+        dataset_random_generation_seed,
+    )
+
+    # tu irgendwas
+
+    synthetic_creation_args["f1"] = 0
+    synthetic_creation_args["acc"] = 0.5
+    return synthetic_creation_args
+
+
+if config.STAGE == "WORKLOAD":
+    # create CSV containing the params to run the experiments on
+
     param_grid = {
-        "n_samples": randint(100, 5000),
-        "n_classes": randint(1, 10),
-        "n_features": randint(2, 100),
-        "weights": uniform(0, 1),
-        "flip_y": uniform(
-            0, 0.2
-        ),  # (np.random.pareto(2.0) + 1) * 0.01,  # type: ignore
-        "class_sep": uniform(0, 10),
+        "dataset_random_generation_seed": randint(1, 1000000),
         "amount_of_al_samples": randint(5, 500),
         "al_samples_weight": randint(1, 100),
         "merge_ws_sample_strategy": [
@@ -90,11 +97,27 @@ if config.STAGE == "WORKLOAD":
     print("Workload generated")
     exit(0)
 elif config.STAGE == "JOB":
-    # use the JOB_ID cli argumen to take the jobs from the workload csv
+    # use the JOB_ID cli argument to take the jobs from the workload csv
     config.RANDOM_SEED = random.randint(0, 2147483647)
     np.random.seed(config.RANDOM_SEED)
     random.seed(config.RANDOM_SEED)
-    pass
+
+    df = pd.read_csv(
+        config.OUTPUT_PATH + "/workload.csv",
+        header=0,
+        nrows=config.JOB_ID + 1,
+    )
+    params = df.loc[config.JOB_ID]
+
+    result = run_ws_plus_al_experiment(**params)  # type: ignore
+    result.update(params.to_dict())
+    with open(config.OUTPUT_PATH + "/exp_results.csv", "a") as f:
+        w = csv.DictWriter(f, fieldnames=result.keys())
+        if len(open(config.OUTPUT_PATH + "/exp_results.csv").readlines()) == 0:
+            print("write header")
+            w.writeheader()
+        w.writerow(result)
+    exit(0)
 else:
     print("Beg your pardon?")
     exit(-1)
@@ -185,18 +208,3 @@ def test_one_labeled_set(original_data_storage, label_strategy="random", param=5
 - qualität der LFs (viele schlechte, viele mittelmäßige, viele wirklich gute, etc.)
 - verschiedene datasets (inkl. all ihrer Parameter)
 """
-
-
-def run_ws_plus_al_experiment(
-    n_samples: int,
-    n_classes: int,
-    n_features: int,
-    dataset_hardness: float,
-    amount_of_al_samples: int,
-    al_samples_weight: int,
-    merge_ws_sample_strategy: str,
-    amount_of_lfs: int,
-    al_sampling_strategy: str,
-    lf_quality: str,
-):
-    return None
