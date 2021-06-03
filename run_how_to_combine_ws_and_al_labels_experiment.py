@@ -1,3 +1,4 @@
+import os
 from active_learning.merge_weak_supervision_label_strategies import (
     RandomLabelMergeStrategy,
     SnorkelLabelMergeStrategy,
@@ -55,16 +56,18 @@ if config.STAGE == "WORKLOAD":
         "n_classes": randint(1, 10),
         "n_features": randint(2, 100),
         "weights": uniform(0, 1),
-        "flip_y": (np.random.pareto(2.0) + 1) * 0.01,  # type: ignore
+        "flip_y": uniform(
+            0, 0.2
+        ),  # (np.random.pareto(2.0) + 1) * 0.01,  # type: ignore
         "class_sep": uniform(0, 10),
-        "amount_of_al_samples": randint(5, 100),
+        "amount_of_al_samples": randint(5, 500),
         "al_samples_weight": randint(1, 100),
         "merge_ws_sample_strategy": [
-            MajorityVoteLabelMergeStrategy,
-            SnorkelLabelMergeStrategy,
-            RandomLabelMergeStrategy,
+            "MajorityVoteLabelMergeStrategy",
+            "SnorkelLabelMergeStrategy",
+            "RandomLabelMergeStrategy",
         ],
-        "amount_of_lfs": randint(1, 50),
+        "amount_of_lfs": randint(0, 50),
         "al_sampling_strategy": [
             "UncertaintyMaxMargin",
             "Random",
@@ -74,11 +77,18 @@ if config.STAGE == "WORKLOAD":
         ],
         "lf_quality": [1, 2, 3, 4, 5],
     }
-    rng = np.random.RandomState(config.RANDOM_SSED)
-    param_list = list(ParameterSampler(param_grid, n_iter=10, random_state=rng))
-    print(param_list)
-    print(5)
-    exit(-1)
+    rng = np.random.RandomState(config.RANDOM_SEED)
+    param_list = list(
+        ParameterSampler(param_grid, n_iter=config.WORKLOAD_AMOUNT, random_state=rng)
+    )
+    df = pd.DataFrame(param_list)
+    if not os.path.exists(config.OUTPUT_PATH):
+        os.makedirs(config.OUTPUT_PATH)
+
+    df.to_csv(config.OUTPUT_PATH + "/workload.csv", index=False)
+    print(df)
+    print("Workload generated")
+    exit(0)
 elif config.STAGE == "JOB":
     # use the JOB_ID cli argumen to take the jobs from the workload csv
     config.RANDOM_SEED = random.randint(0, 2147483647)
