@@ -1,36 +1,36 @@
 from collections import Counter, defaultdict
+import enum
+from math import floor
 from typing import Any, DefaultDict, Optional, Union, List
 from tabulate import tabulate
 import random
 
-# adapted version of https://github.com/DeborahHier/CuckooHash
+
 class Node:
     def __init__(self, key: int, value: Any):
         self.key = key
         self.value = value
-        self.data = value
 
     def __str__(self):
         return "(" + str(self.key) + ", " + str(self.value) + ")"
 
 
-for rs in range(0, 10):
-    # rs = 0
-    random.seed(rs)
+for seed in range(0, 9781):
+    # print(seed)
+    random.seed(seed)
 
     class CuckooHashing:
-        static_rehashing_counter: int
         maxLoop = 50
 
-        def __init__(self, max_hash_size: int) -> None:
-            self.max_hash_size = max_hash_size
-            self.bucket_size = 2 * max_hash_size
+        def __init__(self, bucket_size: int) -> None:
+            self.bucket_size = bucket_size
             self.current_size = 0
             self.bucket_1: List[Optional[Node]] = [None] * self.bucket_size
             self.bucket_2: List[Optional[Node]] = [None] * self.bucket_size
 
-            self.hash_parameter1 = 3
-            self.hash_parameter2 = 2
+            self.hash_func_params = [
+                random.randint(2, self.bucket_size) for _ in range(0, 4)
+            ]
 
             # solution:
             self.rehashing_counter = 0
@@ -38,88 +38,73 @@ for rs in range(0, 10):
 
         # h1(x) = x mod 17 + x mod 3
         def hash_func_1(self, key: int) -> int:
-            return ((key % 17) + (key % self.hash_parameter1)) % self.bucket_size
+            return (
+                (key % self.hash_func_params[0]) + (key % self.hash_func_params[1])
+            ) % self.bucket_size
 
         # h2(x) = x mod 19 + x mod 2
         def hash_func_2(self, key: int) -> int:
-            return ((key % 19) + (key % self.hash_parameter2)) % self.bucket_size
+            return (
+                (key % self.hash_func_params[2]) - (key % self.hash_func_params[3])
+            ) % self.bucket_size
 
         def insert(self, key: int, value: Any, iteration_level=0) -> bool:
-
             # we do not have to insert duplicates
             if self.retrieve(key) != None:
                 return False
 
-            node: Optional[Node] = Node(key, value)
-
-            pos1 = self.hash_func_1(key)
-            pos2 = self.hash_func_2(key)
-
-            # start loop with first bucket
-            current_position = pos1
-            current_bucket = self.bucket_1
-
             for _ in range(self.maxLoop):
-                # easy: bucket is empty at h1/h2, just insert it
-                if current_bucket[current_position] == None:
-                    current_bucket[current_position] = node
+                if self.bucket_1[self.hash_func_1(key)] == None:
+                    self.bucket_1[self.hash_func_1(key)] = Node(key, value)
                     return True
 
-                # apparently the position is occupied -> try to move the value which is already in place at this position to the other bucket
-                evicted_node = current_bucket[current_position]
+                # cuckoo
+                tmp: Node = self.bucket_1[self.hash_func_1(key)]
+                self.bucket_1[self.hash_func_1(key)] = Node(key, value)
+                key = tmp.key
+                value = tmp.value
+                self.evicted_nodes_counter[value] += 1
 
-                # lösung
-                self.evicted_nodes_counter[evicted_node.value] += 1
+                if self.bucket_2[self.hash_func_2(key)] == None:
+                    self.bucket_2[self.hash_func_2(key)] = Node(key, value)
+                    return True
 
-                current_bucket[
-                    current_position
-                ] = node  # store our node at the position we want it to be
-                node = (
-                    evicted_node  # try to insert the evicted node at the other position
-                )
+                # cuckoo
+                tmp: Node = self.bucket_2[self.hash_func_2(key)]
+                self.bucket_2[self.hash_func_2(key)] = Node(key, value)
+                key = tmp.key
+                value = tmp.value
+                self.evicted_nodes_counter[value] += 1
 
-                # in case we've checked bucket 1 before, we check now bucket 2 in the next iterationa
-                if current_position == pos1:
-                    pos1 = self.hash_func_1(node.key)
-                    pos2 = self.hash_func_2(node.key)
-                    current_position = pos2
-                    current_bucket = self.bucket_2
-                else:
-                    pos1 = self.hash_func_1(node.key)
-                    pos2 = self.hash_func_2(node.key)
-                    current_position = pos1
-                    current_bucket = self.bucket_1
-
-            # if we made it here we have to rehash everything an then just try to insert the evicted node again
-            self.rehash_buckets(iteration_level=iteration_level)
-
-            self.insert(node.key, node.value, iteration_level=iteration_level)
+            self.rehash_tables(iteration_level=iteration_level)
+            self.insert(key, value, iteration_level=iteration_level)
             return True
 
-        def rehash_buckets(self, iteration_level=0) -> None:
+        def rehash_tables(self, iteration_level=0) -> None:
+            # self.bucket_size *= 2
             # lösung
-            print("\t rehash ", iteration_level)
+            # print("\t rehash ", iteration_level)
             self.rehashing_counter += 1
-            CuckooHashing.static_rehashing_counter += 1
 
             # create new hash functions
-            self.hash_parameter1 += random.randint(1, 100)
-            self.hash_parameter2 += random.randint(1, 100)
+            self.hash_func_params = [
+                random.randint(2, self.bucket_size) for i in range(0, 4)
+            ]
 
-            tmp = CuckooHashing(self.max_hash_size)
+            # collect already existing nodes
+            nodes: List[Node] = []
+            for i in range(0, self.bucket_size):
+                if self.bucket_1[i] is not None:
+                    nodes.append(self.bucket_1[i])
 
-            for i in range(self.bucket_size):
-                n1 = self.bucket_1[i]
-                n2 = self.bucket_2[i]
+                if self.bucket_2[i] is not None:
+                    nodes.append(self.bucket_2[i])
 
-                if n1 != None:
-                    tmp.insert(n1.key, n1.value, iteration_level=iteration_level + 1)
+            self.bucket_1 = [None] * self.bucket_size
+            self.bucket_2 = [None] * self.bucket_size
 
-                if n2 != None:
-                    tmp.insert(n2.key, n2.value, iteration_level=iteration_level + 1)
-
-            self.bucket_1 = tmp.bucket_1
-            self.bucket_2 = tmp.bucket_2
+            for node in nodes:
+                self.insert(node.key, node.value, iteration_level=iteration_level + 1)
 
         def retrieve(self, key: int) -> Union[None, Any]:
             h1 = self.hash_func_1(key)
@@ -136,7 +121,9 @@ for rs in range(0, 10):
             else:
                 return None
 
-        def print_buckets(self) -> None:
+        def print_hash_tables(self) -> None:
+            # for i, (b1, b2) in enumerate(zip(self.bucket_1, self.bucket_2)):
+            #    print("{} {} {} ".format(i, b1, b2))
             print(
                 tabulate(
                     [
@@ -149,8 +136,7 @@ for rs in range(0, 10):
                 )
             )
 
-    test_hash_map = CuckooHashing(8)
-    CuckooHashing.static_rehashing_counter = 0
+    language_hash_tables = CuckooHashing(16)
 
     values_to_store = [
         "Ada",
@@ -185,19 +171,38 @@ for rs in range(0, 10):
 
     for i, value in enumerate(values_to_store):
         # lösung:
-        print("Insert " + value)
-        test_hash_map.insert(i, value)
+        # print("Insert " + value)
+        language_hash_tables.insert(i, value)
+        # language_hash_tables.print_hash_tables()
 
-    test_hash_map.print_buckets()
+    if sum(x is not None for x in language_hash_tables.bucket_2) > 5:
 
-    print("Wie oft wurde sondiert? (ohne Rekursion)", test_hash_map.rehashing_counter)
-    print(
-        "Wie oft wurde sondiert? (mit Rekursion)",
-        test_hash_map.static_rehashing_counter,
-    )
+        if language_hash_tables.rehashing_counter > 800:
+            print(seed)  # print(seed)
+            # print(language_hash_tables.bucket_2)
 
-    print(
-        "Welches Element wird am öftesten evicted?",
-        Counter(test_hash_map.evicted_nodes_counter).most_common(100),
-    )
-    # exit(-1)
+            language_hash_tables.print_hash_tables()
+
+            print(
+                "Wie oft wurden die hash funktionen ausgetauscht?",
+                language_hash_tables.rehashing_counter,
+            )
+
+            print(
+                "Welches Element wird am öftesten evicted?",
+                Counter(language_hash_tables.evicted_nodes_counter).most_common(100),
+            )
+
+            # test that our hashing algorithm worked
+
+            for i, programming_language in enumerate(values_to_store):
+                assert language_hash_tables.retrieve(i) == programming_language
+
+
+            irgendeine verständnisfrage a la "wofür benötigt man den hash überhaupt?"
+            --> welcher codeschnippsel kann verwendet werden, um zu überprüfen, dass die hashtabelle funktioniert?
+
+
+            ODER: implementiere eine einfache Löschfunktion -> lösche dann nach dem einfügen von den ersten 10 element 3 und 4 -> welches Element steht am Ende im bucket 2 an stelle 5??
+            --> dabei kann ja nicht soo viel anders gemacht werden (beim löschen, oder???!!!!)
+            (den code sollen sie dann bitteschön selber schreiben)
