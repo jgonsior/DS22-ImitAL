@@ -84,6 +84,7 @@ if config.STAGE == "WORKLOAD":
         ],
         "lf_quality": [1, 2, 3, 4, 5],
     }
+    include real datasets next to random ones!
     rng = np.random.RandomState(config.RANDOM_SEED)
     param_list = list(
         ParameterSampler(param_grid, n_iter=config.WORKLOAD_AMOUNT, random_state=rng)
