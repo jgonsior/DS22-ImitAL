@@ -1,3 +1,4 @@
+from math import ceil
 from active_learning.merge_weak_supervision_label_strategies.BaseMergeWeakSupervisionLabelStrategy import (
     BaseMergeWeakSupervisionLabelStrategy,
 )
@@ -73,9 +74,28 @@ def run_ws_plus_al_experiment(
         )
 
     data_storage: DataStorage = DataStorage(df=df, TEST_FRACTION=0.5)
-    learner = get_classifier("RF", random_state=DATASET_RANDOM_GENERATION_SEED)
+    learner: Learner = get_classifier("RF", random_state=DATASET_RANDOM_GENERATION_SEED)
 
     # 1. initially label some data
+    amount_of_samples_to_initially_label: int = ceil(
+        len(df) / 2 * FRACTION_OF_INITIALLY_LABELLED_SAMPLES
+    )
+    data_storage.label_samples(
+        data_storage.unlabeled_mask[:amount_of_samples_to_initially_label],
+        data_storage.exp_Y[
+            data_storage.unlabeled_mask[:amount_of_samples_to_initially_label]
+        ],
+        "I",
+    )
+
+    learner.fit(
+        data_storage.X[data_storage.labeled_mask],
+        data_storage.Y_merged_final[data_storage.labeled_mask],
+    )
+    Y_true = data_storage.exp_Y[data_storage.test_mask]
+    Y_pred = learner.predict(data_storage.X[data_storage.test_mask])
+    acc_initial = accuracy_score(Y_true, Y_pred)
+    f1_initial = f1_score(Y_true, Y_pred, average="weighted")
 
     # 2. now generate some labels via WS
     ws_list: List[BaseWeakSupervision] = [
@@ -98,6 +118,14 @@ def run_ws_plus_al_experiment(
     data_storage.set_weak_supervisions(ws_list, mergeStrategy)
     data_storage.generate_weak_labels(learner, mask=data_storage.test_mask)
 
+    learner.fit(
+        data_storage.X[data_storage.labeled_mask],
+        data_storage.Y_merged_final[data_storage.labeled_mask],
+    )
+    Y_true = data_storage.exp_Y[data_storage.test_mask]
+    Y_pred = learner.predict(data_storage.X[data_storage.test_mask])
+    acc_ws = accuracy_score(Y_true, Y_pred)
+    f1_ws = f1_score(Y_true, Y_pred, average="weighted")
     # 3. now add some labels by AL
 
     if AL_SAMPLING_STRATEGY == "UncertaintyMaxMargin":
@@ -111,7 +139,7 @@ def run_ws_plus_al_experiment(
     elif AL_SAMPLING_STRATEGY == "GreatestDisagreement":
         sampling_strategy = GreatestDisagreement()
 
-    # 4. evaluate
+    # 4. final evaluation
     weights = []
     for indice in data_storage.weakly_combined_mask:
         if indice in data_storage.labeled_mask:
@@ -126,11 +154,15 @@ def run_ws_plus_al_experiment(
     )
     Y_true = data_storage.exp_Y[data_storage.test_mask]
     Y_pred = learner.predict(data_storage.X[data_storage.test_mask])
-    acc = accuracy_score(Y_true, Y_pred)
-    f1 = f1_score(Y_true, Y_pred, average="weighted")
+    acc_ws_and_al = accuracy_score(Y_true, Y_pred)
+    f1_ws_and_al = f1_score(Y_true, Y_pred, average="weighted")
 
-    synthetic_creation_args["f1"] = f1
-    synthetic_creation_args["acc"] = acc
+    synthetic_creation_args["f1_initial"] = f1_initial
+    synthetic_creation_args["acc_initial"] = acc_initial
+    synthetic_creation_args["f1_ws"] = f1_ws
+    synthetic_creation_args["acc_ws"] = acc_ws
+    synthetic_creation_args["f1_ws_and_al"] = f1_ws_and_al
+    synthetic_creation_args["acc_ws_and_al"] = acc_ws_and_al
     return synthetic_creation_args
 
 
