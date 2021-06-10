@@ -15,7 +15,8 @@ class Node:
         return "(" + str(self.key) + ", " + str(self.value) + ")"
 
 
-for seed in range(0, 9781):
+# for seed in range(0, 9781):
+for seed in range(27, 28):
     # print(seed)
     random.seed(seed)
 
@@ -136,6 +137,19 @@ for seed in range(0, 9781):
                 )
             )
 
+        def delete(self, key) -> None:
+            h1 = self.hash_func_1(key)
+            h2 = self.hash_func_2(key)
+
+            # check both positions
+            value_at_h1 = self.bucket_1[h1]
+            value_at_h2 = self.bucket_2[h2]
+
+            if value_at_h1 != None and value_at_h1.key == key:
+                self.bucket_1[h1] = None
+            elif value_at_h2 != None and value_at_h2.key == key:
+                self.bucket_2[h2] = None
+
     language_hash_tables = CuckooHashing(16)
 
     values_to_store = [
@@ -193,16 +207,66 @@ for seed in range(0, 9781):
                 Counter(language_hash_tables.evicted_nodes_counter).most_common(100),
             )
 
+            for i, lang in enumerate(values_to_store):
+                print(
+                    "{:>3} - {:>10} {:>2} {:>2}".format(
+                        i,
+                        lang,
+                        language_hash_tables.hash_func_1(i),
+                        language_hash_tables.hash_func_2(i),
+                    )
+                )
+
+            # php ruby javascript
+            # delete stuff
+            language_hash_tables.delete(8)
+            language_hash_tables.delete(21)
+            language_hash_tables.delete(27)
+            language_hash_tables.print_hash_tables()
+
+            language_hash_tables.insert(8, "Erlang")
+            language_hash_tables.insert(27, "TypeScript")
+            language_hash_tables.insert(21, "Python")
+            language_hash_tables.print_hash_tables()
             # test that our hashing algorithm worked
 
-            for i, programming_language in enumerate(values_to_store):
-                assert language_hash_tables.retrieve(i) == programming_language
+        # verständnisfrage:
+        # a) (einfachster test, ganz klassisch)
+        for i, programming_language in enumerate(values_to_store):
+            assert language_hash_tables.retrieve(i) == programming_language
 
+        # b)
+        values_bucket_1 = [
+            n.value for n in language_hash_tables.bucket_1 if n is not None
+        ]
+        values_bucket_2 = [
+            n.value for n in language_hash_tables.bucket_2 if n is not None
+        ]
+        for programming_language in values_to_store:
+            assert (
+                programming_language in values_bucket_1
+                or programming_language in values_bucket_2
+            )
 
-            irgendeine verständnisfrage a la "wofür benötigt man den hash überhaupt?"
-            --> welcher codeschnippsel kann verwendet werden, um zu überprüfen, dass die hashtabelle funktioniert?
+        # c) -> hash_1 und hash_2 sind unten vertauscht, und da Ada zufälligerweise für hash1 und hash2 dieselben werte enthält funktioniert der code trotzdem
+        key_to_test = 0
+        value_to_test = "Ada"
+        hash_1 = language_hash_tables.hash_func_1(key_to_test)
+        hash_2 = language_hash_tables.hash_func_2(key_to_test)
+        assert (
+            language_hash_tables.bucket_1[hash_2].value == value_to_test
+            or language_hash_tables.bucket_2[hash_1].value == value_to_test
+        )
 
+        # d)
+        for i, node in enumerate(language_hash_tables.bucket_1):
+            if node is None:
+                pass
+            else:
+                assert i == language_hash_tables.hash_func_1(node.key)
 
-            ODER: implementiere eine einfache Löschfunktion -> lösche dann nach dem einfügen von den ersten 10 element 3 und 4 -> welches Element steht am Ende im bucket 2 an stelle 5??
-            --> dabei kann ja nicht soo viel anders gemacht werden (beim löschen, oder???!!!!)
-            (den code sollen sie dann bitteschön selber schreiben)
+        for i, node in enumerate(language_hash_tables.bucket_2):
+            if node is None:
+                pass
+            else:
+                assert i == language_hash_tables.hash_func_2(node.key)
