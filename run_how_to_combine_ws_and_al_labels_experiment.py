@@ -1,3 +1,7 @@
+from active_learning.merge_weak_supervision_label_strategies.BaseMergeWeakSupervisionLabelStrategy import (
+    BaseMergeWeakSupervisionLabelStrategy,
+)
+from active_learning.datasets.uci import load_uci
 import csv
 import os
 from active_learning.merge_weak_supervision_label_strategies import (
@@ -29,6 +33,11 @@ from active_learning.weak_supervision.BaseWeakSupervision import BaseWeakSupervi
 import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy.stats import uniform, randint
+from imitLearningPipelineSharedCode import dataset_id_mapping
+from active_learning.query_sampling_strategies import (
+    UncertaintyQuerySampler,
+    RandomQuerySampler,
+)
 
 sns.set_theme(style="whitegrid")
 
@@ -40,51 +49,119 @@ config: argparse.Namespace = get_active_config(  # type: ignore
     ],
     return_parser=False,
 )
+config.DATASETS_PATH = "~/datasets"
 
 
 def run_ws_plus_al_experiment(
-    dataset_random_generation_seed: int,
-    amount_of_al_samples: int,
-    al_samples_weight: int,
-    merge_ws_sample_strategy: str,
-    amount_of_lfs: int,
-    al_sampling_strategy: str,
-    lf_quality: str,
+    DATASET: str,
+    DATASET_RANDOM_GENERATION_SEED: int,
+    AMOUNT_OF_AL_SAMPLES: int,
+    AL_SAMPLES_WEIGHT: int,
+    MERGE_WS_SAMPLES_STRATEGY: str,
+    AMOUNT_OF_LFS: int,
+    AL_SAMPLING_STRATEGY: str,
+    LF_QUALITY: str,
+    FRACTION_OF_INITIALLY_LABELLED_SAMPLES: int,
 ) -> Dict[str, Any]:
-    df, synthetic_creation_args = load_synthetic(
-        dataset_random_generation_seed,
+    if DATASET == "synthetic":
+        df, synthetic_creation_args = load_synthetic(
+            DATASET_RANDOM_GENERATION_SEED,
+        )
+    else:
+        df, synthetic_creation_args = load_uci(
+            config.DATASETS_PATH, DATASET, DATASET_RANDOM_GENERATION_SEED
+        )
+
+    data_storage: DataStorage = DataStorage(df=df, TEST_FRACTION=0.5)
+    learner = get_classifier("RF", random_state=DATASET_RANDOM_GENERATION_SEED)
+
+    # 1. initially label some data
+
+    # 2. now generate some labels via WS
+    ws_list: List[BaseWeakSupervision] = [
+        SyntheticLabelingFunctions(
+            X=data_storage.X, Y=data_storage.exp_Y, lf_quality=LF_QUALITY
+        )
+        for _ in range(0, AMOUNT_OF_LFS)
+    ]  # type: ignore
+
+    mergeStrategy: BaseMergeWeakSupervisionLabelStrategy
+    if MERGE_WS_SAMPLES_STRATEGY == "MajorityVoteLabelMergeStrategy":
+        mergeStrategy = MajorityVoteLabelMergeStrategy()
+    elif MERGE_WS_SAMPLES_STRATEGY == "SnorkelLabelMergeStrategy":
+        mergeStrategy = SnorkelLabelMergeStrategy()
+    elif MERGE_WS_SAMPLES_STRATEGY == "RandomLabelMergeStrategy":
+        mergeStrategy = RandomLabelMergeStrategy()
+    else:
+        print("Misspelled Merge WS Labeling Strategy")
+        exit(-1)
+    data_storage.set_weak_supervisions(ws_list, mergeStrategy)
+    data_storage.generate_weak_labels(learner, mask=data_storage.test_mask)
+
+    # 3. now add some labels by AL
+
+    if AL_SAMPLING_STRATEGY == "UncertaintyMaxMargin":
+        sampling_strategy = UncertaintyQuerySampler()
+    elif AL_SAMPLING_STRATEGY == "Random":
+        sampling_strategy = RandomQuerySampler()
+    elif AL_SAMPLING_STRATEGY == "CoveredByLeastAmountOfLf":
+        sampling_strategy = CoveredByLeastAmountOfLF()
+    elif AL_SAMPLING_STRATEGY == "ClassificationIsMostWrong":
+        sampling_strategy = ClassificationIsMostWrong()
+    elif AL_SAMPLING_STRATEGY == "GreatestDisagreement":
+        sampling_strategy = GreatestDisagreement()
+
+    # 4. evaluate
+    weights = []
+    for indice in data_storage.weakly_combined_mask:
+        if indice in data_storage.labeled_mask:
+            weights.append(AL_SAMPLES_WEIGHT)
+        else:
+            weights.append(1)
+
+    learner.fit(
+        data_storage.X[data_storage.labeled_mask],
+        data_storage.Y_merged_final[data_storage.labeled_mask],
+        sample_weight=weights,  # type: ignore
     )
+    Y_true = data_storage.exp_Y[data_storage.test_mask]
+    Y_pred = learner.predict(data_storage.X[data_storage.test_mask])
+    acc = accuracy_score(Y_true, Y_pred)
+    f1 = f1_score(Y_true, Y_pred, average="weighted")
 
-    # tu irgendwas
-
-    synthetic_creation_args["f1"] = 0
-    synthetic_creation_args["acc"] = 0.5
+    synthetic_creation_args["f1"] = f1
+    synthetic_creation_args["acc"] = acc
     return synthetic_creation_args
 
 
 if config.STAGE == "WORKLOAD":
     # create CSV containing the params to run the experiments on
 
+    datasets = list(set([v[0] for v in dataset_id_mapping.values()]))
+    datasets.remove("synthetic_euc_cos_test")
+
     param_grid = {
-        "dataset_random_generation_seed": randint(1, 1000000),
+        "DATASET": datasets,
+        "DATASET_RANDOM_GENERATION_SEED": randint(1, 1000000),
         "amount_of_al_samples": randint(5, 500),
-        "al_samples_weight": randint(1, 100),
-        "merge_ws_sample_strategy": [
+        "AMOUNT_OF_AL_SAMPLES": randint(1, 100),
+        "MERGE_WS_SAMPLES_STRATEGY": [
             "MajorityVoteLabelMergeStrategy",
             "SnorkelLabelMergeStrategy",
             "RandomLabelMergeStrategy",
         ],
-        "amount_of_lfs": randint(0, 50),
-        "al_sampling_strategy": [
+        "AMOUNT_OF_LFS": randint(0, 50),
+        "AL_SAMPLING_STRATEGY": [
             "UncertaintyMaxMargin",
             "Random",
-            "CovereyByLeastAmountOfLf",
+            "CoveredByLeastAmountOfLf",
             "ClassificationIsMostWrong",
             "GreatestDisagreement",
         ],
-        "lf_quality": [1, 2, 3, 4, 5],
+        "LF_QUALITY": [1, 2, 3, 4, 5],
+        "FRACTION_OF_INITIALLY_LABELLED_SAMPLES": uniform(0, 1),
     }
-    include real datasets next to random ones!
+
     rng = np.random.RandomState(config.RANDOM_SEED)
     param_list = list(
         ParameterSampler(param_grid, n_iter=config.WORKLOAD_AMOUNT, random_state=rng)
