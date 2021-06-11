@@ -123,7 +123,7 @@ def run_ws_plus_al_experiment(
         print("Misspelled Merge WS Labeling Strategy")
         exit(-1)
     data_storage.set_weak_supervisions(ws_list, mergeStrategy)
-    data_storage.generate_weak_labels(learner, mask=data_storage.test_mask)
+    data_storage.generate_weak_labels(learner)
 
     learner.fit(
         data_storage.X[data_storage.labeled_mask],
