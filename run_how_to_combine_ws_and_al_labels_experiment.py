@@ -61,7 +61,9 @@ def run_ws_plus_al_experiment(
     MERGE_WS_SAMPLES_STRATEGY: str,
     AMOUNT_OF_LFS: int,
     AL_SAMPLING_STRATEGY: str,
-    LF_QUALITY: str,
+    ABSTAIN_THRESHOLD: float,
+    AMOUNT_OF_LF_FEATURES: int,
+    LF_CLASSIFIER: str,
     FRACTION_OF_INITIALLY_LABELLED_SAMPLES: int,
 ) -> Dict[str, Any]:
     if DATASET == "synthetic":
@@ -72,6 +74,7 @@ def run_ws_plus_al_experiment(
         df, synthetic_creation_args = load_uci(
             config.DATASETS_PATH, DATASET, DATASET_RANDOM_GENERATION_SEED
         )
+    print("Loaded " + DATASET)
 
     data_storage: DataStorage = DataStorage(df=df, TEST_FRACTION=0.5)
     learner: Learner = get_classifier("RF", random_state=DATASET_RANDOM_GENERATION_SEED)
@@ -100,7 +103,11 @@ def run_ws_plus_al_experiment(
     # 2. now generate some labels via WS
     ws_list: List[BaseWeakSupervision] = [
         SyntheticLabelingFunctions(
-            X=data_storage.X, Y=data_storage.exp_Y, lf_quality=LF_QUALITY
+            X=data_storage.X,
+            Y=data_storage.exp_Y,
+            ABSTAIN_THRESHOLD=ABSTAIN_THRESHOLD,
+            AMOUNT_OF_LF_FEATURES=AMOUNT_OF_LF_FEATURES,
+            LF_CLASSIFIER=LF_CLASSIFIER,
         )
         for _ in range(0, AMOUNT_OF_LFS)
     ]  # type: ignore
@@ -126,6 +133,7 @@ def run_ws_plus_al_experiment(
     Y_pred = learner.predict(data_storage.X[data_storage.test_mask])
     acc_ws = accuracy_score(Y_true, Y_pred)
     f1_ws = f1_score(Y_true, Y_pred, average="weighted")
+
     # 3. now add some labels by AL
 
     if AL_SAMPLING_STRATEGY == "UncertaintyMaxMargin":
@@ -175,14 +183,14 @@ if config.STAGE == "WORKLOAD":
     param_grid = {
         "DATASET": datasets,
         "DATASET_RANDOM_GENERATION_SEED": randint(1, 1000000),
-        "amount_of_al_samples": randint(5, 500),
-        "AMOUNT_OF_AL_SAMPLES": randint(1, 100),
+        "AMOUNT_OF_AL_SAMPLES": randint(5, 500),
+        "AL_SAMPLES_WEIGHT": randint(1, 100),
         "MERGE_WS_SAMPLES_STRATEGY": [
             "MajorityVoteLabelMergeStrategy",
             "SnorkelLabelMergeStrategy",
             "RandomLabelMergeStrategy",
         ],
-        "AMOUNT_OF_LFS": randint(0, 50),
+        "AMOUNT_OF_LFS": randint(0, 10),
         "AL_SAMPLING_STRATEGY": [
             "UncertaintyMaxMargin",
             "Random",
@@ -190,7 +198,9 @@ if config.STAGE == "WORKLOAD":
             "ClassificationIsMostWrong",
             "GreatestDisagreement",
         ],
-        "LF_QUALITY": [1, 2, 3, 4, 5],
+        "ABSTAIN_THRESHOLD": uniform(0, 1),
+        "AMOUNT_OF_LF_FEATURES": uniform(0, 1),
+        "LF_CLASSIFIER": ["dt", "lr", "knn"],
         "FRACTION_OF_INITIALLY_LABELLED_SAMPLES": uniform(0, 1),
     }
 
