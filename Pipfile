@@ -14,22 +14,21 @@ pycln = "*"
 [packages]
 pandas = "*"
 matplotlib = "*"
-sklearn = "*"
+klearn = "*"
 numpy = "*"
 json-tricks = "*"
 tabulate = "*"
 jupyter = "*"
 seaborn = "*"
 ipykernel = "*"
-# numba = "*"
 data-science-types = "*"
-tensorflow = "*"
 scikeras = "*"
 prettytable = "*"
 ipython = "*"
+tensorflow = "*"
 
 [requires]
-python_version = "3.6"
+python_version = "3.8"
 
 [pipenv]
 allow_prereleases = true

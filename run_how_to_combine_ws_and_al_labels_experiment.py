@@ -21,7 +21,7 @@ from sklearn.metrics import accuracy_score, f1_score
 from timeit import default_timer as timer
 from typing import Any, Dict, List, Tuple
 from active_learning.config import get_active_config
-from active_learning.dataStorage import DataStorage
+from active_learning.dataStorage import DataStorage, IndiceMask
 from active_learning.datasets import load_synthetic
 from active_learning.logger import init_logger
 from collections import Counter
@@ -51,6 +51,18 @@ config: argparse.Namespace = get_active_config(  # type: ignore
     return_parser=False,
 )
 config.DATASETS_PATH = "~/datasets"
+
+"""
+open problems: now I only have LFs of fixed size X
+-> prior to that I had everything UP TO X --> maybe save that as new parameteres in the output??!!
+-> and save in the result df also all the parameters from this experiment
+
+are the lfs even used? (thresholds, everything seems to be -1 now??)
+
+allow also more than one type of LF_classifiers -> categorical varibales aka "has_lf" "has_dt", "has_knn"
+
+synthetic datasets sem to be the same???
+"""
 
 
 def run_ws_plus_al_experiment(
@@ -136,16 +148,41 @@ def run_ws_plus_al_experiment(
 
     # 3. now add some labels by AL
 
-    if AL_SAMPLING_STRATEGY == "UncertaintyMaxMargin":
+    al_sampled_ids: IndiceMask
+    if AL_SAMPLING_STRATEGY == "UncertaintyMaxMargin_no_ws":
+        # select thos n samples based on uncertainty max margin
+        # first: based on trained RF without WS
+        # second variant based on RF trained using the weaklabelling functions
+        sampling_strategy = UncertaintyQuerySampler()
+        #al_sampled_ids =
+    elif AL_SAMPLING_STRATEGY == "UncertaintyMaxMargin_with_ws":
+        # select thos n samples based on uncertainty max margin
+        # first: based on trained RF without WS
+        # second variant based on RF trained using the weaklabelling functions
         sampling_strategy = UncertaintyQuerySampler()
     elif AL_SAMPLING_STRATEGY == "Random":
-        sampling_strategy = RandomQuerySampler()
+        # randomly select n samples
+        al_sampled_ids = np.random.choice(
+            data_storage.unlabeled_mask,
+            size=AMOUNT_OF_AL_SAMPLES,
+            replace=False,
+        )
     elif AL_SAMPLING_STRATEGY == "CoveredByLeastAmountOfLf":
+        # count for each sample how often -1 is present -> take the top-k samples
         sampling_strategy = CoveredByLeastAmountOfLF()
     elif AL_SAMPLING_STRATEGY == "ClassificationIsMostWrong":
+        al_selected_indices = []
+
+        # count for each samples how often the LFs are wrong, and choose then the top-k samples
         sampling_strategy = ClassificationIsMostWrong()
     elif AL_SAMPLING_STRATEGY == "GreatestDisagreement":
+        # count how many different labels I have per sample -> choose the top-k samples
         sampling_strategy = GreatestDisagreement()
+    else:
+        print("AL_SAMPLING_STRATEGY unkown, exiting")
+        exit(-1)
+
+    data_storage.label_samples(al_sampled_ids, data_storage.exp_Y[al_sampled_ids], "AL")
 
     # 4. final evaluation
     weights = []
@@ -156,8 +193,8 @@ def run_ws_plus_al_experiment(
             weights.append(1)
 
     learner.fit(
-        data_storage.X[data_storage.labeled_mask],
-        data_storage.Y_merged_final[data_storage.labeled_mask],
+        data_storage.X[data_storage.weakly_combined_mask],
+        data_storage.Y_merged_final[data_storage.weakly_combined_mask],
         sample_weight=weights,  # type: ignore
     )
     Y_true = data_storage.exp_Y[data_storage.test_mask]
@@ -192,7 +229,8 @@ if config.STAGE == "WORKLOAD":
         ],
         "AMOUNT_OF_LFS": randint(0, 10),
         "AL_SAMPLING_STRATEGY": [
-            "UncertaintyMaxMargin",
+            "UncertaintyMaxMargin_no_ws",
+            "UncertaintyMaxMargin_with_ws",
             "Random",
             "CoveredByLeastAmountOfLf",
             "ClassificationIsMostWrong",
@@ -228,6 +266,8 @@ elif config.STAGE == "JOB":
         nrows=config.JOB_ID + 1,
     )
     params = df.loc[config.JOB_ID]
+
+    print(params)
 
     result = run_ws_plus_al_experiment(**params)  # type: ignore
     result.update(params.to_dict())

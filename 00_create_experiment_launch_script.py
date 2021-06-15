@@ -111,6 +111,8 @@ slurm_common_template = Template(
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
 export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
 
+module load Python/3.8.6
+
 {% if array %}i=$(( {{ OFFSET }} + $SLURM_ARRAY_TASK_ID * {{ ITERATIONS_PER_BATCH }} )){% endif %}
 
 MPLCONFIGPATH={{HPC_WS_PATH}}/cache python3 -m pipenv run python {{HPC_WS_PATH}}/code/{{PYTHON_FILE}}.py {{ CLI_ARGS }} {% if APPEND_OUTPUT_PATH %} {{ OUTPUT_PATH }}/{{ EXP_TITLE }} {% endif %}
