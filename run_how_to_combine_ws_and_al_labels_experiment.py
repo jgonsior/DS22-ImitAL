@@ -68,7 +68,7 @@ synthetic datasets sem to be the same???
 def run_ws_plus_al_experiment(
     DATASET: str,
     DATASET_RANDOM_GENERATION_SEED: int,
-    AMOUNT_OF_AL_SAMPLES: int,
+    FRACTION_OF_LASTLY_AL_LABELLED_SAMPLES: int,
     AL_SAMPLES_WEIGHT: int,
     MERGE_WS_SAMPLES_STRATEGY: str,
     AMOUNT_OF_LFS: int,
@@ -87,18 +87,20 @@ def run_ws_plus_al_experiment(
             config.DATASETS_PATH, DATASET, DATASET_RANDOM_GENERATION_SEED
         )
     print("Loaded " + DATASET)
+    print(synthetic_creation_args)
 
     data_storage: DataStorage = DataStorage(df=df, TEST_FRACTION=0.5)
     learner: Learner = get_classifier("RF", random_state=DATASET_RANDOM_GENERATION_SEED)
 
     # 1. initially label some data
-    amount_of_samples_to_initially_label: int = ceil(
+    AMOUNT_OF_SAMPLES_TO_INITIALLY_LABEL: int = ceil(
         len(df) / 2 * FRACTION_OF_INITIALLY_LABELLED_SAMPLES
     )
+
     data_storage.label_samples(
-        data_storage.unlabeled_mask[:amount_of_samples_to_initially_label],
+        data_storage.unlabeled_mask[:AMOUNT_OF_SAMPLES_TO_INITIALLY_LABEL],
         data_storage.exp_Y[
-            data_storage.unlabeled_mask[:amount_of_samples_to_initially_label]
+            data_storage.unlabeled_mask[:AMOUNT_OF_SAMPLES_TO_INITIALLY_LABEL]
         ],
         "I",
     )
@@ -147,8 +149,9 @@ def run_ws_plus_al_experiment(
     f1_ws = f1_score(Y_true, Y_pred, average="weighted")
 
     # 3. now add some labels by AL
+    AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES = ceil(len(data_storage.unlabeled_mask)*FRACTION_OF_LASTLY_AL_LABELLED_SAMPLES)
 
-    al_sampled_ids: IndiceMask
+    al_selected_indices: IndiceMask
     if AL_SAMPLING_STRATEGY == "UncertaintyMaxMargin_no_ws":
         # select thos n samples based on uncertainty max margin
         # first: based on trained RF without WS
@@ -162,14 +165,18 @@ def run_ws_plus_al_experiment(
         sampling_strategy = UncertaintyQuerySampler()
     elif AL_SAMPLING_STRATEGY == "Random":
         # randomly select n samples
-        al_sampled_ids = np.random.choice(
+        al_selected_indices = np.random.choice(
             data_storage.unlabeled_mask,
-            size=AMOUNT_OF_AL_SAMPLES,
+            size=AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES,
             replace=False,
         )
     elif AL_SAMPLING_STRATEGY == "CoveredByLeastAmountOfLf":
         # count for each sample how often -1 is present -> take the top-k samples
-        sampling_strategy = CoveredByLeastAmountOfLF()
+        order = {v:i for i,v in enumerate(data_storage.unlabeled_mask)}
+        for i, weak_labels in zip(data_storage.unlabeled_mask, data_storage.ws_labels_list):
+            order[i] = np.count_nonzero(weak_labels == -1) # type: ignore
+
+        al_selected_indices = sorted(data_storage.unlabeled_mask, key=lambda x:order[x])[:AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES]
     elif AL_SAMPLING_STRATEGY == "ClassificationIsMostWrong":
         al_selected_indices = []
 
@@ -182,7 +189,7 @@ def run_ws_plus_al_experiment(
         print("AL_SAMPLING_STRATEGY unkown, exiting")
         exit(-1)
 
-    data_storage.label_samples(al_sampled_ids, data_storage.exp_Y[al_sampled_ids], "AL")
+    data_storage.label_samples(al_selected_indices, data_storage.exp_Y[al_selected_indices], "AL")
 
     # 4. final evaluation
     weights = []
@@ -208,6 +215,9 @@ def run_ws_plus_al_experiment(
     synthetic_creation_args["acc_ws"] = acc_ws
     synthetic_creation_args["f1_ws_and_al"] = f1_ws_and_al
     synthetic_creation_args["acc_ws_and_al"] = acc_ws_and_al
+    synthetic_creation_args["amount_of_initial_al_samples"] = AMOUNT_OF_SAMPLES_TO_INITIALLY_LABEL
+    synthetic_creation_args["amount_of_lastly_al_samples"] = AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES
+    print(sorted(synthetic_creation_args))
     return synthetic_creation_args
 
 
@@ -220,7 +230,7 @@ if config.STAGE == "WORKLOAD":
     param_grid = {
         "DATASET": datasets,
         "DATASET_RANDOM_GENERATION_SEED": randint(1, 1000000),
-        "AMOUNT_OF_AL_SAMPLES": randint(5, 500),
+        "FRACTION_OF_LASTLY_AL_LABELLED_SAMPLES": uniform(0,1),
         "AL_SAMPLES_WEIGHT": randint(1, 100),
         "MERGE_WS_SAMPLES_STRATEGY": [
             "MajorityVoteLabelMergeStrategy",
