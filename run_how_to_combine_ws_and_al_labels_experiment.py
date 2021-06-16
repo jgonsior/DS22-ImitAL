@@ -210,16 +210,15 @@ def run_ws_plus_al_experiment(
             # count for each samples how often the LFs are wrong, and choose then the top-k samples
             order = {v:i for i,v in enumerate(data_storage.unlabeled_mask)}
             for i, weak_labels in zip(data_storage.unlabeled_mask, data_storage.ws_labels_list):
-                print(weak_labels)
-                print(i)
-                print(data_storage.true_Y[i])
-                exit(-1)
-                order[i] = np.count_nonzero(weak_labels == -1) # type: ignore
+                order[i] = np.count_nonzero(weak_labels != data_storage.true_Y[i]) # type: ignore
 
             al_selected_indices = sorted(data_storage.unlabeled_mask, key=lambda x:order[x])[:AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES] # type: ignore
         elif AL_SAMPLING_STRATEGY == "GreatestDisagreement":
             # count how many different labels I have per sample -> choose the top-k samples
-            sampling_strategy = GreatestDisagreement()
+            order = {v:i for i,v in enumerate(data_storage.unlabeled_mask)}
+            for i, weak_labels in zip(data_storage.unlabeled_mask, data_storage.ws_labels_list):
+                order[i] = len(np.unique(weak_labels))
+            al_selected_indices = sorted(data_storage.unlabeled_mask, key=lambda x:order[x])[:AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES] # type: ignore
         else:
             print("AL_SAMPLING_STRATEGY unkown, exiting")
             exit(-1)
