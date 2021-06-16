@@ -54,11 +54,11 @@ config: argparse.Namespace = get_active_config(  # type: ignore
     ],
     return_parser=False,
 )
-config.DATASETS_PATH = "~/datasets"
 
 def run_ws_plus_al_experiment(
     DATASET: str,
     DATASET_RANDOM_GENERATION_SEED: int,
+    LF_RANDOM_SEED: int,
     FRACTION_OF_LASTLY_AL_LABELLED_SAMPLES: int,
     AL_SAMPLES_WEIGHT: int,
     MERGE_WS_SAMPLES_STRATEGY: str,
@@ -108,7 +108,7 @@ def run_ws_plus_al_experiment(
         SyntheticLabelingFunctions(
             X=data_storage.X,
             Y=data_storage.true_Y,
-            RANDOM_SEED = DATASET_RANDOM_GENERATION_SEED + i
+            RANDOM_SEED = LF_RANDOM_SEED + i
         )
         for i in range(0, ceil(AMOUNT_OF_LFS))
     ]  # type: ignore
@@ -265,10 +265,13 @@ if config.STAGE == "WORKLOAD":
 
     datasets = list(set([v[0] for v in dataset_id_mapping.values()]))
     datasets.remove("synthetic_euc_cos_test")
+    for _ in range(1,10):
+        datasets.append("synthetic")
 
     param_grid = {
         "DATASET": datasets,
         "DATASET_RANDOM_GENERATION_SEED": randint(1, 1000000),
+        "LF_RANDOM_SEED": randint(1,1000000),
         "FRACTION_OF_LASTLY_AL_LABELLED_SAMPLES": uniform(0,1),
         "AL_SAMPLES_WEIGHT": randint(1, 100),
         "MERGE_WS_SAMPLES_STRATEGY": [
