@@ -83,7 +83,7 @@ else:
 if "NN_BINARY_PATH" in strategy_id_mapping[STRATEGY_ID][1].keys():
     data_storage = DataStorage(df, TEST_FRACTION=0)
     X = data_storage.X
-    Y = data_storage.exp_Y
+    Y = data_storage.true_Y
 else:
     X = df[df.columns[:-1]].to_numpy()
     Y = df["label"].to_numpy()
@@ -121,7 +121,7 @@ unlabel_idx = [np.array(unlabel_idx)]  # type: ignore
 
 
 if "NN_BINARY_PATH" in strategy_id_mapping[STRATEGY_ID][1].keys():
-    data_storage.exp_Y = None  # type: ignore
+    data_storage.true_Y = None  # type: ignore
     data_storage.human_expert_Y = None  # type: ignore
     data_storage.Y_merged_final = None  # type: ignore
     # @TODO: previous could be important later for some state encodings??!

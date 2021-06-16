@@ -169,7 +169,7 @@ oracle: BaseOracle = FakeExperimentOracle()  # type: ignore
 
 if config.WS_MODE:
     ws_list: List[BaseWeakSupervision] = [
-        SyntheticLabelingFunctions(X=data_storage.X, Y=data_storage.exp_Y)
+        SyntheticLabelingFunctions(X=data_storage.X, Y=data_storage.true_Y)
         for i in range(0, config.AMOUNT_OF_SYNTHETIC_LABELLING_FUNCTIONS)
     ]  # type: ignore
 

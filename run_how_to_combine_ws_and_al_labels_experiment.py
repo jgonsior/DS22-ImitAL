@@ -62,6 +62,9 @@ are the lfs even used? (thresholds, everything seems to be -1 now??)
 allow also more than one type of LF_classifiers -> categorical varibales aka "has_lf" "has_dt", "has_knn"
 
 synthetic datasets sem to be the same???
+
+um die experimente zu vergleichen, müsste ich ALLE anderen Parameter festhalten, und nur einen verändern
+-> sprich, ich bräuchte grid, nicht randomized search, außerdem kann ich auf einmal gleich verschieden AL strategien am Ende auswerten, und muss nicht alles davor nochmal machen
 """
 
 
@@ -72,7 +75,7 @@ def run_ws_plus_al_experiment(
     AL_SAMPLES_WEIGHT: int,
     MERGE_WS_SAMPLES_STRATEGY: str,
     AMOUNT_OF_LFS: int,
-    AL_SAMPLING_STRATEGY: str,
+    #AL_SAMPLING_STRATEGY: str,
     ABSTAIN_THRESHOLD: float,
     AMOUNT_OF_LF_FEATURES: int,
     LF_CLASSIFIER: str,
@@ -99,7 +102,7 @@ def run_ws_plus_al_experiment(
 
     data_storage.label_samples(
         data_storage.unlabeled_mask[:AMOUNT_OF_SAMPLES_TO_INITIALLY_LABEL],
-        data_storage.exp_Y[
+        data_storage.true_Y[
             data_storage.unlabeled_mask[:AMOUNT_OF_SAMPLES_TO_INITIALLY_LABEL]
         ],
         "I",
@@ -109,8 +112,10 @@ def run_ws_plus_al_experiment(
         data_storage.X[data_storage.labeled_mask],
         data_storage.Y_merged_final[data_storage.labeled_mask],
     )
-    Y_true = data_storage.exp_Y[data_storage.test_mask]
+
+    Y_true = data_storage.true_Y[data_storage.test_mask]
     Y_pred = learner.predict(data_storage.X[data_storage.test_mask])
+
     acc_initial = accuracy_score(Y_true, Y_pred)
     f1_initial = f1_score(Y_true, Y_pred, average="weighted")
 
@@ -118,7 +123,7 @@ def run_ws_plus_al_experiment(
     ws_list: List[BaseWeakSupervision] = [
         SyntheticLabelingFunctions(
             X=data_storage.X,
-            Y=data_storage.exp_Y,
+            Y=data_storage.true_Y,
             ABSTAIN_THRESHOLD=ABSTAIN_THRESHOLD,
             AMOUNT_OF_LF_FEATURES=AMOUNT_OF_LF_FEATURES,
             LF_CLASSIFIER=LF_CLASSIFIER,
@@ -139,11 +144,12 @@ def run_ws_plus_al_experiment(
     data_storage.set_weak_supervisions(ws_list, mergeStrategy)
     data_storage.generate_weak_labels(learner)
 
+    learner = get_classifier("RF", random_state=DATASET_RANDOM_GENERATION_SEED)
     learner.fit(
         data_storage.X[data_storage.labeled_mask],
         data_storage.Y_merged_final[data_storage.labeled_mask],
     )
-    Y_true = data_storage.exp_Y[data_storage.test_mask]
+    Y_true = data_storage.true_Y[data_storage.test_mask]
     Y_pred = learner.predict(data_storage.X[data_storage.test_mask])
     acc_ws = accuracy_score(Y_true, Y_pred)
     f1_ws = f1_score(Y_true, Y_pred, average="weighted")
@@ -152,72 +158,103 @@ def run_ws_plus_al_experiment(
     AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES = ceil(len(data_storage.unlabeled_mask)*FRACTION_OF_LASTLY_AL_LABELLED_SAMPLES)
 
     al_selected_indices: IndiceMask
-    if AL_SAMPLING_STRATEGY == "UncertaintyMaxMargin_no_ws":
-        # select thos n samples based on uncertainty max margin
-        # first: based on trained RF without WS
-        # second variant based on RF trained using the weaklabelling functions
-        sampling_strategy = UncertaintyQuerySampler()
-        #al_sampled_ids =
-    elif AL_SAMPLING_STRATEGY == "UncertaintyMaxMargin_with_ws":
-        # select thos n samples based on uncertainty max margin
-        # first: based on trained RF without WS
-        # second variant based on RF trained using the weaklabelling functions
-        sampling_strategy = UncertaintyQuerySampler()
-    elif AL_SAMPLING_STRATEGY == "Random":
-        # randomly select n samples
-        al_selected_indices = np.random.choice(
-            data_storage.unlabeled_mask,
-            size=AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES,
-            replace=False,
-        )
-    elif AL_SAMPLING_STRATEGY == "CoveredByLeastAmountOfLf":
-        # count for each sample how often -1 is present -> take the top-k samples
-        order = {v:i for i,v in enumerate(data_storage.unlabeled_mask)}
-        for i, weak_labels in zip(data_storage.unlabeled_mask, data_storage.ws_labels_list):
-            order[i] = np.count_nonzero(weak_labels == -1) # type: ignore
+    acc_ws_and_al:Dict[str, float] = {}
+    f1_ws_and_al:Dict[str, float] = {}
+    original_data_storage = copy.deepcopy(data_storage)
+    for AL_SAMPLING_STRATEGY in ["UncertaintyMaxMargin_no_ws",
+            "UncertaintyMaxMargin_with_ws",
+            "Random",
+            "CoveredByLeastAmountOfLf",
+            "ClassificationIsMostWrong",
+            "GreatestDisagreement"]:
+        data_storage = copy.deepcopy(original_data_storage)
+        if AL_SAMPLING_STRATEGY == "UncertaintyMaxMargin_no_ws":
+            # select those n samples based on uncertainty max margin
+            Y_temp_proba = learner.predict_proba(
+                data_storage.X[data_storage.unlabeled_mask]
+            )
+            margin = np.partition(-Y_temp_proba, 1, axis=1)  # type: ignore
+            result = -np.abs(margin[:, 0] - margin[:, 1])
+            argsort = np.argsort(-result)  # type: ignore
+            query_indices = data_storage.unlabeled_mask[argsort]
+            al_selected_indices = query_indices[: AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES]
 
-        al_selected_indices = sorted(data_storage.unlabeled_mask, key=lambda x:order[x])[:AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES]
-    elif AL_SAMPLING_STRATEGY == "ClassificationIsMostWrong":
-        al_selected_indices = []
+        elif AL_SAMPLING_STRATEGY == "UncertaintyMaxMargin_with_ws":
+            learner.fit(
+                data_storage.X[data_storage.weakly_combined_mask],
+                data_storage.Y_merged_final[data_storage.weakly_combined_mask],
+            )
+            Y_temp_proba = learner.predict_proba(
+                data_storage.X[data_storage.unlabeled_mask]
+            )
+            margin = np.partition(-Y_temp_proba, 1, axis=1)  # type: ignore
+            result = -np.abs(margin[:, 0] - margin[:, 1])
+            argsort = np.argsort(-result)  # type: ignore
+            query_indices = data_storage.unlabeled_mask[argsort]
+            al_selected_indices = query_indices[: AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES]
+        elif AL_SAMPLING_STRATEGY == "Random":
+            # randomly select n samples
+            al_selected_indices = np.random.choice(
+                data_storage.unlabeled_mask,
+                size=AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES,
+                replace=False,
+            )
+        elif AL_SAMPLING_STRATEGY == "CoveredByLeastAmountOfLf":
+            # count for each sample how often -1 is present -> take the top-k samples
+            order = {v:i for i,v in enumerate(data_storage.unlabeled_mask)}
+            for i, weak_labels in zip(data_storage.unlabeled_mask, data_storage.ws_labels_list):
+                order[i] = np.count_nonzero(weak_labels == -1) # type: ignore
 
-        # count for each samples how often the LFs are wrong, and choose then the top-k samples
-        sampling_strategy = ClassificationIsMostWrong()
-    elif AL_SAMPLING_STRATEGY == "GreatestDisagreement":
-        # count how many different labels I have per sample -> choose the top-k samples
-        sampling_strategy = GreatestDisagreement()
-    else:
-        print("AL_SAMPLING_STRATEGY unkown, exiting")
-        exit(-1)
+            al_selected_indices = sorted(data_storage.unlabeled_mask, key=lambda x:order[x])[:AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES] # type: ignore
+        elif AL_SAMPLING_STRATEGY == "ClassificationIsMostWrong":
+            # count for each samples how often the LFs are wrong, and choose then the top-k samples
+            order = {v:i for i,v in enumerate(data_storage.unlabeled_mask)}
+            for i, weak_labels in zip(data_storage.unlabeled_mask, data_storage.ws_labels_list):
+                print(weak_labels)
+                print(i)
+                print(data_storage.true_Y[i])
+                exit(-1)
+                order[i] = np.count_nonzero(weak_labels == -1) # type: ignore
 
-    data_storage.label_samples(al_selected_indices, data_storage.exp_Y[al_selected_indices], "AL")
-
-    # 4. final evaluation
-    weights = []
-    for indice in data_storage.weakly_combined_mask:
-        if indice in data_storage.labeled_mask:
-            weights.append(AL_SAMPLES_WEIGHT)
+            al_selected_indices = sorted(data_storage.unlabeled_mask, key=lambda x:order[x])[:AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES] # type: ignore
+        elif AL_SAMPLING_STRATEGY == "GreatestDisagreement":
+            # count how many different labels I have per sample -> choose the top-k samples
+            sampling_strategy = GreatestDisagreement()
         else:
-            weights.append(1)
+            print("AL_SAMPLING_STRATEGY unkown, exiting")
+            exit(-1)
 
-    learner.fit(
-        data_storage.X[data_storage.weakly_combined_mask],
-        data_storage.Y_merged_final[data_storage.weakly_combined_mask],
-        sample_weight=weights,  # type: ignore
-    )
-    Y_true = data_storage.exp_Y[data_storage.test_mask]
-    Y_pred = learner.predict(data_storage.X[data_storage.test_mask])
-    acc_ws_and_al = accuracy_score(Y_true, Y_pred)
-    f1_ws_and_al = f1_score(Y_true, Y_pred, average="weighted")
+        data_storage.label_samples(al_selected_indices, data_storage.true_Y[al_selected_indices], "AL")
+
+        # 4. final evaluation
+        weights = []
+        for indice in data_storage.weakly_combined_mask:
+            if indice in data_storage.labeled_mask:
+                weights.append(AL_SAMPLES_WEIGHT)
+            else:
+                weights.append(1)
+
+        learner = get_classifier("RF", random_state=DATASET_RANDOM_GENERATION_SEED)
+        learner.fit(
+            data_storage.X[data_storage.weakly_combined_mask],
+            data_storage.Y_merged_final[data_storage.weakly_combined_mask],
+            sample_weight=weights,  # type: ignore
+        )
+        Y_true = data_storage.true_Y[data_storage.test_mask]
+        Y_pred = learner.predict(data_storage.X[data_storage.test_mask])
+        acc_ws_and_al[AL_SAMPLING_STRATEGY] = accuracy_score(Y_true, Y_pred)
+        f1_ws_and_al[AL_SAMPLING_STRATEGY] = f1_score(Y_true, Y_pred, average="weighted")
 
     synthetic_creation_args["f1_initial"] = f1_initial
     synthetic_creation_args["acc_initial"] = acc_initial
     synthetic_creation_args["f1_ws"] = f1_ws
     synthetic_creation_args["acc_ws"] = acc_ws
-    synthetic_creation_args["f1_ws_and_al"] = f1_ws_and_al
-    synthetic_creation_args["acc_ws_and_al"] = acc_ws_and_al
+    for k,v in acc_ws_and_al.items():
+        synthetic_creation_args["acc_ws_and_al_"+k] = v
+        synthetic_creation_args["f1_ws_and_al_"+k] = f1_ws_and_al[k]
     synthetic_creation_args["amount_of_initial_al_samples"] = AMOUNT_OF_SAMPLES_TO_INITIALLY_LABEL
     synthetic_creation_args["amount_of_lastly_al_samples"] = AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES
-    print(sorted(synthetic_creation_args))
+
     return synthetic_creation_args
 
 
@@ -237,15 +274,7 @@ if config.STAGE == "WORKLOAD":
             "SnorkelLabelMergeStrategy",
             "RandomLabelMergeStrategy",
         ],
-        "AMOUNT_OF_LFS": randint(0, 10),
-        "AL_SAMPLING_STRATEGY": [
-            "UncertaintyMaxMargin_no_ws",
-            "UncertaintyMaxMargin_with_ws",
-            "Random",
-            "CoveredByLeastAmountOfLf",
-            "ClassificationIsMostWrong",
-            "GreatestDisagreement",
-        ],
+        "AMOUNT_OF_LFS": randint(1, 10),
         "ABSTAIN_THRESHOLD": uniform(0, 1),
         "AMOUNT_OF_LF_FEATURES": uniform(0, 1),
         "LF_CLASSIFIER": ["dt", "lr", "knn"],
@@ -281,6 +310,7 @@ elif config.STAGE == "JOB":
 
     result = run_ws_plus_al_experiment(**params)  # type: ignore
     result.update(params.to_dict())
+    print(result)
     with open(config.OUTPUT_PATH + "/exp_results.csv", "a") as f:
         w = csv.DictWriter(f, fieldnames=result.keys())
         if len(open(config.OUTPUT_PATH + "/exp_results.csv").readlines()) == 0:
@@ -291,90 +321,3 @@ elif config.STAGE == "JOB":
 else:
     print("Beg your pardon?")
     exit(-1)
-
-
-def evaluate_and_print_prediction(Y_pred, Y_true, title):
-    acc = accuracy_score(Y_true, Y_pred)
-    f1 = f1_score(Y_true, Y_pred, average="weighted")
-    c = Counter(Y_pred)
-
-    return [
-        title,
-        acc,
-        f1,
-        c.most_common(1)[0][0],
-        c.most_common(1)[0][1] / len(Y_pred),
-    ]
-
-
-def train_and_evaluate(title, original_data_storage, WEIGHTS=0, WS=True):
-    data_storage = copy.deepcopy(original_data_storage)
-    learner = get_classifier("RF", random_state=config.RANDOM_SEED)
-    data_storage.generate_weak_labels(learner)
-
-    if WEIGHTS != 0:
-        weights = []
-        for indice in data_storage.weakly_combined_mask:
-            if indice in data_storage.labeled_mask:
-                weights.append(WEIGHTS)
-            else:
-                weights.append(1)
-    else:
-        weights = None
-    if WS:
-        mask = data_storage.weakly_combined_mask
-    else:
-        mask = data_storage.labeled_mask
-
-    learner.fit(
-        data_storage.X[mask],
-        data_storage.Y_merged_final[mask],
-        sample_weight=weights,  # type: ignore
-    )
-    Y_pred = learner.predict(data_storage.X[data_storage.test_mask])
-
-    Y_true = data_storage.exp_Y[data_storage.test_mask]
-
-    return evaluate_and_print_prediction(Y_pred, Y_true, title)
-
-
-def test_one_labeled_set(original_data_storage, label_strategy="random", param=5):
-    data_storage = copy.deepcopy(original_data_storage)
-
-    if label_strategy == "random":
-        random_sample_ids = np.random.choice(
-            data_storage.unlabeled_mask,
-            size=param,
-            replace=False,
-        )
-
-        data_storage.label_samples(
-            random_sample_ids, data_storage.exp_Y[random_sample_ids], "AL"
-        )
-
-    return [
-        train_and_evaluate("RF No WS", data_storage, WS=False)
-        + [label_strategy, param],
-        train_and_evaluate("RF No Weights", data_storage) + [label_strategy, param],
-        train_and_evaluate("RF Weights 10", data_storage, WEIGHTS=10)
-        + [label_strategy, param],
-        train_and_evaluate("RF Weights 50", data_storage, WEIGHTS=50)
-        + [label_strategy, param],
-        train_and_evaluate("RF Weights 100", data_storage, WEIGHTS=100)
-        + [label_strategy, param],
-        train_and_evaluate("RF Weights 1000", data_storage, WEIGHTS=1000)
-        + [label_strategy, param],
-    ]
-
-
-"""
-- Anzahl der Samples
-- Prozent initial gelabelter Daten bevor WS dazu kommt
-- Methode um verschiedene LFs zusammenzuführen (random, majority, snorkel)
-- AL Samples Weight
-- anzahl an LFs
-- AL query strategy (random, mm, labels who are covered by the least amount of LFs, samples where LF classification is the most wrong, greatest disagremment among lfs)
-- WS LF mit coverage + abstain betrachten
-- qualität der LFs (viele schlechte, viele mittelmäßige, viele wirklich gute, etc.)
-- verschiedene datasets (inkl. all ihrer Parameter)
-"""
