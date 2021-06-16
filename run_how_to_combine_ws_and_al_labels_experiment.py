@@ -1,10 +1,13 @@
 from math import ceil
+import typing
 from active_learning.merge_weak_supervision_label_strategies.BaseMergeWeakSupervisionLabelStrategy import (
     BaseMergeWeakSupervisionLabelStrategy,
 )
 from active_learning.datasets.uci import load_uci
 import csv
 import os
+import sys
+from joblib import Parallel, delayed, parallel_backend
 from active_learning.merge_weak_supervision_label_strategies import (
     RandomLabelMergeStrategy,
     SnorkelLabelMergeStrategy,
@@ -33,7 +36,7 @@ from active_learning.weak_supervision.BaseWeakSupervision import BaseWeakSupervi
 
 import seaborn as sns
 import matplotlib.pyplot as plt
-from scipy.stats import uniform, randint
+from scipy.stats import uniform, randint, loguniform
 from imitLearningPipelineSharedCode import dataset_id_mapping
 from active_learning.query_sampling_strategies import (
     UncertaintyQuerySampler,
@@ -47,26 +50,11 @@ config: argparse.Namespace = get_active_config(  # type: ignore
         (["--STAGE"], {}),
         (["--JOB_ID"], {"type": int, "default": -1}),
         (["--WORKLOAD_AMOUNT"], {"type": int, "default": 100}),
+        (["--N_TASKS"], {"type": int, "default": 1}),
     ],
     return_parser=False,
 )
 config.DATASETS_PATH = "~/datasets"
-
-"""
-open problems: now I only have LFs of fixed size X
--> prior to that I had everything UP TO X --> maybe save that as new parameteres in the output??!!
--> and save in the result df also all the parameters from this experiment
-
-are the lfs even used? (thresholds, everything seems to be -1 now??)
-
-allow also more than one type of LF_classifiers -> categorical varibales aka "has_lf" "has_dt", "has_knn"
-
-synthetic datasets sem to be the same???
-
-um die experimente zu vergleichen, müsste ich ALLE anderen Parameter festhalten, und nur einen verändern
--> sprich, ich bräuchte grid, nicht randomized search, außerdem kann ich auf einmal gleich verschieden AL strategien am Ende auswerten, und muss nicht alles davor nochmal machen
-"""
-
 
 def run_ws_plus_al_experiment(
     DATASET: str,
@@ -74,11 +62,7 @@ def run_ws_plus_al_experiment(
     FRACTION_OF_LASTLY_AL_LABELLED_SAMPLES: int,
     AL_SAMPLES_WEIGHT: int,
     MERGE_WS_SAMPLES_STRATEGY: str,
-    AMOUNT_OF_LFS: int,
-    #AL_SAMPLING_STRATEGY: str,
-    ABSTAIN_THRESHOLD: float,
-    AMOUNT_OF_LF_FEATURES: int,
-    LF_CLASSIFIER: str,
+    AMOUNT_OF_LFS:float,
     FRACTION_OF_INITIALLY_LABELLED_SAMPLES: int,
 ) -> Dict[str, Any]:
     if DATASET == "synthetic":
@@ -120,34 +104,38 @@ def run_ws_plus_al_experiment(
     f1_initial = f1_score(Y_true, Y_pred, average="weighted")
 
     # 2. now generate some labels via WS
-    ws_list: List[BaseWeakSupervision] = [
+    ws_list: List[SyntheticLabelingFunctions] = [
         SyntheticLabelingFunctions(
             X=data_storage.X,
             Y=data_storage.true_Y,
-            ABSTAIN_THRESHOLD=ABSTAIN_THRESHOLD,
-            AMOUNT_OF_LF_FEATURES=AMOUNT_OF_LF_FEATURES,
-            LF_CLASSIFIER=LF_CLASSIFIER,
+            RANDOM_SEED = DATASET_RANDOM_GENERATION_SEED + i
         )
-        for _ in range(0, AMOUNT_OF_LFS)
+        for i in range(0, ceil(AMOUNT_OF_LFS))
     ]  # type: ignore
+    ABSTAIN_THRESHOLDS = [ws.ABSTAIN_THRESHOLD for ws in ws_list]
+    LF_CLASSIFIERS = [ws.LF_CLASSIFIER_NAME for ws in ws_list]
+    AMOUNT_OF_LF_FEATURESSS = [ws.AMOUNT_OF_LF_FEATURESSS for ws in ws_list]
+    synthetic_creation_args["ABSTAIN_THRESHOLDS"] = ABSTAIN_THRESHOLDS
+    synthetic_creation_args["LF_CLASSIFIERS"] = LF_CLASSIFIERS
+    synthetic_creation_args["AMOUNT_OF_LF_FEATURESSS"] = AMOUNT_OF_LF_FEATURESSS
 
     mergeStrategy: BaseMergeWeakSupervisionLabelStrategy
     if MERGE_WS_SAMPLES_STRATEGY == "MajorityVoteLabelMergeStrategy":
         mergeStrategy = MajorityVoteLabelMergeStrategy()
     elif MERGE_WS_SAMPLES_STRATEGY == "SnorkelLabelMergeStrategy":
-        mergeStrategy = SnorkelLabelMergeStrategy()
+        mergeStrategy = SnorkelLabelMergeStrategy(cardinality = synthetic_creation_args['n_classes'], random_seed = DATASET_RANDOM_GENERATION_SEED)
     elif MERGE_WS_SAMPLES_STRATEGY == "RandomLabelMergeStrategy":
         mergeStrategy = RandomLabelMergeStrategy()
     else:
         print("Misspelled Merge WS Labeling Strategy")
         exit(-1)
-    data_storage.set_weak_supervisions(ws_list, mergeStrategy)
+    data_storage.set_weak_supervisions(typing.cast(List[BaseWeakSupervision], ws_list), mergeStrategy)
     data_storage.generate_weak_labels(learner)
 
     learner = get_classifier("RF", random_state=DATASET_RANDOM_GENERATION_SEED)
     learner.fit(
-        data_storage.X[data_storage.labeled_mask],
-        data_storage.Y_merged_final[data_storage.labeled_mask],
+        data_storage.X[data_storage.weakly_combined_mask],
+        data_storage.Y_merged_final[data_storage.weakly_combined_mask],
     )
     Y_true = data_storage.true_Y[data_storage.test_mask]
     Y_pred = learner.predict(data_storage.X[data_storage.test_mask])
@@ -160,6 +148,8 @@ def run_ws_plus_al_experiment(
     al_selected_indices: IndiceMask
     acc_ws_and_al:Dict[str, float] = {}
     f1_ws_and_al:Dict[str, float] = {}
+    acc_al_and_al:Dict[str, float] = {}
+    f1_al_and_al:Dict[str, float] = {}
     original_data_storage = copy.deepcopy(data_storage)
     for AL_SAMPLING_STRATEGY in ["UncertaintyMaxMargin_no_ws",
             "UncertaintyMaxMargin_with_ws",
@@ -244,6 +234,17 @@ def run_ws_plus_al_experiment(
         acc_ws_and_al[AL_SAMPLING_STRATEGY] = accuracy_score(Y_true, Y_pred)
         f1_ws_and_al[AL_SAMPLING_STRATEGY] = f1_score(Y_true, Y_pred, average="weighted")
 
+
+        learner = get_classifier("RF", random_state=DATASET_RANDOM_GENERATION_SEED)
+        learner.fit(
+            data_storage.X[data_storage.labeled_mask],
+            data_storage.Y_merged_final[data_storage.labeled_mask],
+        )
+        Y_true = data_storage.true_Y[data_storage.test_mask]
+        Y_pred = learner.predict(data_storage.X[data_storage.test_mask])
+        acc_al_and_al[AL_SAMPLING_STRATEGY] = accuracy_score(Y_true, Y_pred)
+        f1_al_and_al[AL_SAMPLING_STRATEGY] = f1_score(Y_true, Y_pred, average="weighted")
+
     synthetic_creation_args["f1_initial"] = f1_initial
     synthetic_creation_args["acc_initial"] = acc_initial
     synthetic_creation_args["f1_ws"] = f1_ws
@@ -251,6 +252,8 @@ def run_ws_plus_al_experiment(
     for k,v in acc_ws_and_al.items():
         synthetic_creation_args["acc_ws_and_al_"+k] = v
         synthetic_creation_args["f1_ws_and_al_"+k] = f1_ws_and_al[k]
+        synthetic_creation_args["acc_al_and_al_"+k] = acc_al_and_al[k]
+        synthetic_creation_args["f1_al_and_al_"+k] = f1_al_and_al[k]
     synthetic_creation_args["amount_of_initial_al_samples"] = AMOUNT_OF_SAMPLES_TO_INITIALLY_LABEL
     synthetic_creation_args["amount_of_lastly_al_samples"] = AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES
 
@@ -273,10 +276,7 @@ if config.STAGE == "WORKLOAD":
             "SnorkelLabelMergeStrategy",
             "RandomLabelMergeStrategy",
         ],
-        "AMOUNT_OF_LFS": randint(1, 10),
-        "ABSTAIN_THRESHOLD": uniform(0, 1),
-        "AMOUNT_OF_LF_FEATURES": uniform(0, 1),
-        "LF_CLASSIFIER": ["dt", "lr", "knn"],
+        "AMOUNT_OF_LFS": loguniform(1, 10),
         "FRACTION_OF_INITIALLY_LABELLED_SAMPLES": uniform(0, 1),
     }
 
@@ -305,11 +305,12 @@ elif config.STAGE == "JOB":
     )
     params = df.loc[config.JOB_ID]
 
-    print(params)
+    #print(params)
 
     result = run_ws_plus_al_experiment(**params)  # type: ignore
+    result["JOB_ID"] = config.JOB_ID
     result.update(params.to_dict())
-    print(result)
+    #print(result)
     with open(config.OUTPUT_PATH + "/exp_results.csv", "a") as f:
         w = csv.DictWriter(f, fieldnames=result.keys())
         if len(open(config.OUTPUT_PATH + "/exp_results.csv").readlines()) == 0:
@@ -317,6 +318,26 @@ elif config.STAGE == "JOB":
             w.writeheader()
         w.writerow(result)
     exit(0)
+elif config.STAGE == "MULTI_CORE_JOBS":
+    def run_code(i):
+        cli = (
+            "python run_how_to_combine_ws_and_al_labels_experiment.py --STAGE JOB --OUTPUT_PATH "
+            + config.OUTPUT_PATH
+            + " --JOB_ID "
+            + str(i)
+        )
+        print("#" * 100)
+        print(i)
+        print(cli)
+        print("#" * 100)
+        print("\n")
+        os.system(cli)
+
+
+    with parallel_backend("loky", n_jobs=-1):
+        Parallel()(delayed(run_code)(i) for i in range(config.N_TASKS))
+
+    pass
 else:
     print("Beg your pardon?")
     exit(-1)

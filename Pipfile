@@ -22,10 +22,10 @@ jupyter = "*"
 seaborn = "*"
 ipykernel = "*"
 data-science-types = "*"
-scikeras = "*"
 prettytable = "*"
 ipython = "*"
-tensorflow = "*"
+snorkel = "*"
+scikeras = "*"
 
 [requires]
 python_version = "3.8"
