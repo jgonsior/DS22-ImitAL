@@ -45,6 +45,7 @@ from active_learning.query_sampling_strategies import (
 
 sns.set_theme(style="whitegrid")
 
+
 config: argparse.Namespace = get_active_config(  # type: ignore
     [
         (["--STAGE"], {}),
@@ -55,6 +56,7 @@ config: argparse.Namespace = get_active_config(  # type: ignore
     return_parser=False,
 )
 
+
 def run_ws_plus_al_experiment(
     DATASET: str,
     DATASET_RANDOM_GENERATION_SEED: int,
@@ -62,7 +64,7 @@ def run_ws_plus_al_experiment(
     FRACTION_OF_LASTLY_AL_LABELLED_SAMPLES: int,
     AL_SAMPLES_WEIGHT: int,
     MERGE_WS_SAMPLES_STRATEGY: str,
-    AMOUNT_OF_LFS:float,
+    AMOUNT_OF_LFS: float,
     FRACTION_OF_INITIALLY_LABELLED_SAMPLES: int,
 ) -> Dict[str, Any]:
     if DATASET == "synthetic":
@@ -106,9 +108,7 @@ def run_ws_plus_al_experiment(
     # 2. now generate some labels via WS
     ws_list: List[SyntheticLabelingFunctions] = [
         SyntheticLabelingFunctions(
-            X=data_storage.X,
-            Y=data_storage.true_Y,
-            RANDOM_SEED = LF_RANDOM_SEED + i
+            X=data_storage.X, Y=data_storage.true_Y, RANDOM_SEED=LF_RANDOM_SEED + i
         )
         for i in range(0, ceil(AMOUNT_OF_LFS))
     ]  # type: ignore
@@ -123,13 +123,18 @@ def run_ws_plus_al_experiment(
     if MERGE_WS_SAMPLES_STRATEGY == "MajorityVoteLabelMergeStrategy":
         mergeStrategy = MajorityVoteLabelMergeStrategy()
     elif MERGE_WS_SAMPLES_STRATEGY == "SnorkelLabelMergeStrategy":
-        mergeStrategy = SnorkelLabelMergeStrategy(cardinality = synthetic_creation_args['n_classes'], random_seed = DATASET_RANDOM_GENERATION_SEED)
+        mergeStrategy = SnorkelLabelMergeStrategy(
+            cardinality=synthetic_creation_args["n_classes"],
+            random_seed=DATASET_RANDOM_GENERATION_SEED,
+        )
     elif MERGE_WS_SAMPLES_STRATEGY == "RandomLabelMergeStrategy":
         mergeStrategy = RandomLabelMergeStrategy()
     else:
         print("Misspelled Merge WS Labeling Strategy")
         exit(-1)
-    data_storage.set_weak_supervisions(typing.cast(List[BaseWeakSupervision], ws_list), mergeStrategy)
+    data_storage.set_weak_supervisions(
+        typing.cast(List[BaseWeakSupervision], ws_list), mergeStrategy
+    )
     data_storage.generate_weak_labels(learner)
 
     learner = get_classifier("RF", random_state=DATASET_RANDOM_GENERATION_SEED)
@@ -143,20 +148,24 @@ def run_ws_plus_al_experiment(
     f1_ws = f1_score(Y_true, Y_pred, average="weighted")
 
     # 3. now add some labels by AL
-    AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES = ceil(len(data_storage.unlabeled_mask)*FRACTION_OF_LASTLY_AL_LABELLED_SAMPLES)
+    AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES = ceil(
+        len(data_storage.unlabeled_mask) * FRACTION_OF_LASTLY_AL_LABELLED_SAMPLES
+    )
 
     al_selected_indices: IndiceMask
-    acc_ws_and_al:Dict[str, float] = {}
-    f1_ws_and_al:Dict[str, float] = {}
-    acc_al_and_al:Dict[str, float] = {}
-    f1_al_and_al:Dict[str, float] = {}
+    acc_ws_and_al: Dict[str, float] = {}
+    f1_ws_and_al: Dict[str, float] = {}
+    acc_al_and_al: Dict[str, float] = {}
+    f1_al_and_al: Dict[str, float] = {}
     original_data_storage = copy.deepcopy(data_storage)
-    for AL_SAMPLING_STRATEGY in ["UncertaintyMaxMargin_no_ws",
-            "UncertaintyMaxMargin_with_ws",
-            "Random",
-            "CoveredByLeastAmountOfLf",
-            "ClassificationIsMostWrong",
-            "GreatestDisagreement"]:
+    for AL_SAMPLING_STRATEGY in [
+        "UncertaintyMaxMargin_no_ws",
+        "UncertaintyMaxMargin_with_ws",
+        "Random",
+        "CoveredByLeastAmountOfLf",
+        "ClassificationIsMostWrong",
+        "GreatestDisagreement",
+    ]:
         data_storage = copy.deepcopy(original_data_storage)
         if AL_SAMPLING_STRATEGY == "UncertaintyMaxMargin_no_ws":
             # select those n samples based on uncertainty max margin
@@ -167,7 +176,7 @@ def run_ws_plus_al_experiment(
             result = -np.abs(margin[:, 0] - margin[:, 1])
             argsort = np.argsort(-result)  # type: ignore
             query_indices = data_storage.unlabeled_mask[argsort]
-            al_selected_indices = query_indices[: AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES]
+            al_selected_indices = query_indices[:AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES]
 
         elif AL_SAMPLING_STRATEGY == "UncertaintyMaxMargin_with_ws":
             learner.fit(
@@ -181,7 +190,7 @@ def run_ws_plus_al_experiment(
             result = -np.abs(margin[:, 0] - margin[:, 1])
             argsort = np.argsort(-result)  # type: ignore
             query_indices = data_storage.unlabeled_mask[argsort]
-            al_selected_indices = query_indices[: AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES]
+            al_selected_indices = query_indices[:AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES]
         elif AL_SAMPLING_STRATEGY == "Random":
             # randomly select n samples
             al_selected_indices = np.random.choice(
@@ -191,29 +200,37 @@ def run_ws_plus_al_experiment(
             )
         elif AL_SAMPLING_STRATEGY == "CoveredByLeastAmountOfLf":
             # count for each sample how often -1 is present -> take the top-k samples
-            order = {v:i for i,v in enumerate(data_storage.unlabeled_mask)}
-            for i, weak_labels in zip(data_storage.unlabeled_mask, data_storage.ws_labels_list):
-                order[i] = np.count_nonzero(weak_labels == -1) # type: ignore
+            order = {v: i for i, v in enumerate(data_storage.unlabeled_mask)}
+            for i, weak_labels in zip(
+                data_storage.unlabeled_mask, data_storage.ws_labels_list
+            ):
+                order[i] = np.count_nonzero(weak_labels == -1)  # type: ignore
 
-            al_selected_indices = sorted(data_storage.unlabeled_mask, key=lambda x:order[x])[:AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES] # type: ignore
+            al_selected_indices = sorted(data_storage.unlabeled_mask, key=lambda x: order[x])[:AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES]  # type: ignore
         elif AL_SAMPLING_STRATEGY == "ClassificationIsMostWrong":
             # count for each samples how often the LFs are wrong, and choose then the top-k samples
-            order = {v:i for i,v in enumerate(data_storage.unlabeled_mask)}
-            for i, weak_labels in zip(data_storage.unlabeled_mask, data_storage.ws_labels_list):
-                order[i] = np.count_nonzero(weak_labels != data_storage.true_Y[i]) # type: ignore
+            order = {v: i for i, v in enumerate(data_storage.unlabeled_mask)}
+            for i, weak_labels in zip(
+                data_storage.unlabeled_mask, data_storage.ws_labels_list
+            ):
+                order[i] = np.count_nonzero(weak_labels != data_storage.true_Y[i])  # type: ignore
 
-            al_selected_indices = sorted(data_storage.unlabeled_mask, key=lambda x:order[x])[:AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES] # type: ignore
+            al_selected_indices = sorted(data_storage.unlabeled_mask, key=lambda x: order[x])[:AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES]  # type: ignore
         elif AL_SAMPLING_STRATEGY == "GreatestDisagreement":
             # count how many different labels I have per sample -> choose the top-k samples
-            order = {v:i for i,v in enumerate(data_storage.unlabeled_mask)}
-            for i, weak_labels in zip(data_storage.unlabeled_mask, data_storage.ws_labels_list):
+            order = {v: i for i, v in enumerate(data_storage.unlabeled_mask)}
+            for i, weak_labels in zip(
+                data_storage.unlabeled_mask, data_storage.ws_labels_list
+            ):
                 order[i] = len(np.unique(weak_labels))
-            al_selected_indices = sorted(data_storage.unlabeled_mask, key=lambda x:order[x])[:AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES] # type: ignore
+            al_selected_indices = sorted(data_storage.unlabeled_mask, key=lambda x: order[x])[:AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES]  # type: ignore
         else:
             print("AL_SAMPLING_STRATEGY unkown, exiting")
             exit(-1)
 
-        data_storage.label_samples(al_selected_indices, data_storage.true_Y[al_selected_indices], "AL")
+        data_storage.label_samples(
+            al_selected_indices, data_storage.true_Y[al_selected_indices], "AL"
+        )
 
         # 4. final evaluation
         weights = []
@@ -232,8 +249,9 @@ def run_ws_plus_al_experiment(
         Y_true = data_storage.true_Y[data_storage.test_mask]
         Y_pred = learner.predict(data_storage.X[data_storage.test_mask])
         acc_ws_and_al[AL_SAMPLING_STRATEGY] = accuracy_score(Y_true, Y_pred)
-        f1_ws_and_al[AL_SAMPLING_STRATEGY] = f1_score(Y_true, Y_pred, average="weighted")
-
+        f1_ws_and_al[AL_SAMPLING_STRATEGY] = f1_score(
+            Y_true, Y_pred, average="weighted"
+        )
 
         learner = get_classifier("RF", random_state=DATASET_RANDOM_GENERATION_SEED)
         learner.fit(
@@ -243,19 +261,25 @@ def run_ws_plus_al_experiment(
         Y_true = data_storage.true_Y[data_storage.test_mask]
         Y_pred = learner.predict(data_storage.X[data_storage.test_mask])
         acc_al_and_al[AL_SAMPLING_STRATEGY] = accuracy_score(Y_true, Y_pred)
-        f1_al_and_al[AL_SAMPLING_STRATEGY] = f1_score(Y_true, Y_pred, average="weighted")
+        f1_al_and_al[AL_SAMPLING_STRATEGY] = f1_score(
+            Y_true, Y_pred, average="weighted"
+        )
 
     synthetic_creation_args["f1_initial"] = f1_initial
     synthetic_creation_args["acc_initial"] = acc_initial
     synthetic_creation_args["f1_ws"] = f1_ws
     synthetic_creation_args["acc_ws"] = acc_ws
-    for k,v in acc_ws_and_al.items():
-        synthetic_creation_args["acc_ws_and_al_"+k] = v
-        synthetic_creation_args["f1_ws_and_al_"+k] = f1_ws_and_al[k]
-        synthetic_creation_args["acc_al_and_al_"+k] = acc_al_and_al[k]
-        synthetic_creation_args["f1_al_and_al_"+k] = f1_al_and_al[k]
-    synthetic_creation_args["amount_of_initial_al_samples"] = AMOUNT_OF_SAMPLES_TO_INITIALLY_LABEL
-    synthetic_creation_args["amount_of_lastly_al_samples"] = AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES
+    for k, v in acc_ws_and_al.items():
+        synthetic_creation_args["acc_ws_and_al_" + k] = v
+        synthetic_creation_args["f1_ws_and_al_" + k] = f1_ws_and_al[k]
+        synthetic_creation_args["acc_al_and_al_" + k] = acc_al_and_al[k]
+        synthetic_creation_args["f1_al_and_al_" + k] = f1_al_and_al[k]
+    synthetic_creation_args[
+        "amount_of_initial_al_samples"
+    ] = AMOUNT_OF_SAMPLES_TO_INITIALLY_LABEL
+    synthetic_creation_args[
+        "amount_of_lastly_al_samples"
+    ] = AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES
 
     return synthetic_creation_args
 
@@ -265,14 +289,14 @@ if config.STAGE == "WORKLOAD":
 
     datasets = list(set([v[0] for v in dataset_id_mapping.values()]))
     datasets.remove("synthetic_euc_cos_test")
-    for _ in range(1,10):
+    for _ in range(1, 10):
         datasets.append("synthetic")
 
     param_grid = {
         "DATASET": datasets,
         "DATASET_RANDOM_GENERATION_SEED": randint(1, 1000000),
-        "LF_RANDOM_SEED": randint(1,1000000),
-        "FRACTION_OF_LASTLY_AL_LABELLED_SAMPLES": uniform(0,1),
+        "LF_RANDOM_SEED": randint(1, 1000000),
+        "FRACTION_OF_LASTLY_AL_LABELLED_SAMPLES": uniform(0, 1),
         "AL_SAMPLES_WEIGHT": randint(1, 100),
         "MERGE_WS_SAMPLES_STRATEGY": [
             "MajorityVoteLabelMergeStrategy",
@@ -308,12 +332,12 @@ elif config.STAGE == "JOB":
     )
     params = df.loc[config.JOB_ID]
 
-    #print(params)
+    # print(params)
 
     result = run_ws_plus_al_experiment(**params)  # type: ignore
     result["JOB_ID"] = config.JOB_ID
     result.update(params.to_dict())
-    #print(result)
+    # print(result)
     with open(config.OUTPUT_PATH + "/exp_results.csv", "a") as f:
         w = csv.DictWriter(f, fieldnames=result.keys())
         if len(open(config.OUTPUT_PATH + "/exp_results.csv").readlines()) == 0:
@@ -322,6 +346,7 @@ elif config.STAGE == "JOB":
         w.writerow(result)
     exit(0)
 elif config.STAGE == "MULTI_CORE_JOBS":
+
     def run_code(i):
         cli = (
             "python run_how_to_combine_ws_and_al_labels_experiment.py --STAGE JOB --OUTPUT_PATH "
@@ -335,7 +360,6 @@ elif config.STAGE == "MULTI_CORE_JOBS":
         print("#" * 100)
         print("\n")
         os.system(cli)
-
 
     with parallel_backend("loky", n_jobs=-1):
         Parallel()(delayed(run_code)(i) for i in range(config.N_TASKS))
