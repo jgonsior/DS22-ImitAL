@@ -43,6 +43,7 @@ from active_learning.query_sampling_strategies import (
     RandomQuerySampler,
 )
 
+
 sns.set_theme(style="whitegrid")
 
 
@@ -118,6 +119,17 @@ def run_ws_plus_al_experiment(
     synthetic_creation_args["ABSTAIN_THRESHOLDS"] = ABSTAIN_THRESHOLDS
     synthetic_creation_args["LF_CLASSIFIERS"] = LF_CLASSIFIERS
     synthetic_creation_args["AMOUNT_OF_LF_FEATURESSS"] = AMOUNT_OF_LF_FEATURESSS
+    synthetic_creation_args["acc_WS"] = []
+    synthetic_creation_args["f1_WS"] = []
+    # calculate accuracies of ws_s
+    for ws in ws_list:
+        Y_true = data_storage.true_Y[data_storage.test_mask]
+        Y_pred = ws.get_labels(data_storage.test_mask, data_storage, None)
+
+        synthetic_creation_args["acc_WS"].append(accuracy_score(Y_true, Y_pred))
+        synthetic_creation_args["f1_WS"].append(
+            f1_score(Y_true, Y_pred, average="weighted")
+        )
 
     mergeStrategy: BaseMergeWeakSupervisionLabelStrategy
     if MERGE_WS_SAMPLES_STRATEGY == "MajorityVoteLabelMergeStrategy":
