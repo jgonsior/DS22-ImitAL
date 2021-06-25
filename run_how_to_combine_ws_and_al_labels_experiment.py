@@ -333,16 +333,15 @@ if config.STAGE == "WORKLOAD":
     exit(0)
 elif config.STAGE == "JOB":
     # use the JOB_ID cli argument to take the jobs from the workload csv
-    config.RANDOM_SEED = random.randint(0, 2147483647)
-    np.random.seed(config.RANDOM_SEED)
-    random.seed(config.RANDOM_SEED)
-
     df = pd.read_csv(
         config.OUTPUT_PATH + "/workload.csv",
         header=0,
         nrows=config.JOB_ID + 1,
     )
     params = df.loc[config.JOB_ID]
+
+    np.random.seed(config.JOB_ID)
+    random.seed(config.JOB_ID)
 
     # print(params)
 
