@@ -33,7 +33,8 @@ from sklearn.datasets import make_classification
 
 from active_learning.weak_supervision import SyntheticLabelingFunctions
 from active_learning.weak_supervision.BaseWeakSupervision import BaseWeakSupervision
-
+from sklearn.neighbors import NearestCentroid
+from sklearn.cluster import AgglomerativeClustering
 import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy.stats import uniform, randint, loguniform
@@ -58,6 +59,23 @@ config: argparse.Namespace = get_active_config(  # type: ignore
 )
 
 
+def calculate_linkage_matrix(clusterer, X):
+    counts = np.zeros(clusterer.children_.shape[0])
+    n_samples = len(clusterer.labels_)
+    for i, merge in enumerate(clusterer.children_):
+        current_count = 0
+        for child_idx in merge:
+            if child_idx < n_samples:
+                current_count += 1  # leaf node
+            else:
+                current_count += counts[child_idx - n_samples]
+        counts[i] = current_count
+
+    return np.column_stack([clusterer.children_, clusterer.distances_, counts]).astype(
+        float
+    )
+
+
 def run_ws_plus_al_experiment(
     DATASET: str,
     DATASET_RANDOM_GENERATION_SEED: int,
@@ -67,6 +85,7 @@ def run_ws_plus_al_experiment(
     MERGE_WS_SAMPLES_STRATEGY: str,
     AMOUNT_OF_LFS: float,
     FRACTION_OF_INITIALLY_LABELLED_SAMPLES: int,
+    CLUSTERED_AL_WS_COMBINATION: bool,
 ) -> Dict[str, Any]:
     if DATASET == "synthetic":
         df, synthetic_creation_args = load_synthetic(
@@ -253,11 +272,30 @@ def run_ws_plus_al_experiment(
                 weights.append(1)
 
         learner = get_classifier("RF", random_state=DATASET_RANDOM_GENERATION_SEED)
-        learner.fit(
-            data_storage.X[data_storage.weakly_combined_mask],
-            data_storage.Y_merged_final[data_storage.weakly_combined_mask],
-            sample_weight=weights,  # type: ignore
-        )
+
+        if CLUSTERED_AL_WS_COMBINATION:
+            # create n medoids/centroids for WS labels
+            clusterer = AgglomerativeClustering(
+                n_clusters=AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES
+            )
+            clusters = clusterer.fit_predict(
+                data_storage.X[data_storage.only_weak_mask]
+            )
+
+            dendogram = calculate_linkage_matrix(
+                clusterer, data_storage.X[data_storage.only_weak_mask]
+            )
+            print(dendogram)
+            centroider = NearestCentroid()
+            centroider.fit(data_storage.X[data_storage.only_weak_mask], clusters)
+            learner.fit()
+            print(centroider.centroids_)
+        else:
+            learner.fit(
+                data_storage.X[data_storage.weakly_combined_mask],
+                data_storage.Y_merged_final[data_storage.weakly_combined_mask],
+                sample_weight=weights,  # type: ignore
+            )
         Y_true = data_storage.true_Y[data_storage.test_mask]
         Y_pred = learner.predict(data_storage.X[data_storage.test_mask])
         acc_ws_and_al[AL_SAMPLING_STRATEGY] = accuracy_score(Y_true, Y_pred)
@@ -317,6 +355,7 @@ if config.STAGE == "WORKLOAD":
         ],
         "AMOUNT_OF_LFS": loguniform(1, 10),
         "FRACTION_OF_INITIALLY_LABELLED_SAMPLES": uniform(0, 1),
+        "CLUSTERED_AL_WS_COMBINATION": [True, False],
     }
 
     rng = np.random.RandomState(config.RANDOM_SEED)
