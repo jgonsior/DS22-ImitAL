@@ -3,6 +3,8 @@ import typing
 from active_learning.merge_weak_supervision_label_strategies.BaseMergeWeakSupervisionLabelStrategy import (
     BaseMergeWeakSupervisionLabelStrategy,
 )
+from sklearn.cluster import KMeans
+
 from active_learning.datasets.uci import load_uci
 import csv
 import os
@@ -57,23 +59,6 @@ config: argparse.Namespace = get_active_config(  # type: ignore
     ],
     return_parser=False,
 )
-
-
-def calculate_linkage_matrix(clusterer, X):
-    counts = np.zeros(clusterer.children_.shape[0])
-    n_samples = len(clusterer.labels_)
-    for i, merge in enumerate(clusterer.children_):
-        current_count = 0
-        for child_idx in merge:
-            if child_idx < n_samples:
-                current_count += 1  # leaf node
-            else:
-                current_count += counts[child_idx - n_samples]
-        counts[i] = current_count
-
-    return np.column_stack([clusterer.children_, clusterer.distances_, counts]).astype(
-        float
-    )
 
 
 def run_ws_plus_al_experiment(
@@ -132,6 +117,17 @@ def run_ws_plus_al_experiment(
         )
         for i in range(0, ceil(AMOUNT_OF_LFS))
     ]  # type: ignore
+
+    # test generated WS functions
+    """Y_ws_counts = []
+    for ws in ws_list:
+        Y_ws = ws.get_labels(data_storage.unlabeled_mask, data_storage, learner)
+        print(Y_ws)
+        Y_ws_counts.append(dict(Counter(Y_ws)))
+    print(Y_ws_counts)
+    exit(-1)
+    """
+
     ABSTAIN_THRESHOLDS = [ws.ABSTAIN_THRESHOLD for ws in ws_list]
     LF_CLASSIFIERS = [ws.LF_CLASSIFIER_NAME for ws in ws_list]
     AMOUNT_OF_LF_FEATURESSS = [ws.AMOUNT_OF_LF_FEATURESSS for ws in ws_list]
@@ -140,6 +136,8 @@ def run_ws_plus_al_experiment(
     synthetic_creation_args["AMOUNT_OF_LF_FEATURESSS"] = AMOUNT_OF_LF_FEATURESSS
     synthetic_creation_args["acc_WS"] = []
     synthetic_creation_args["f1_WS"] = []
+    # print(synthetic_creation_args)
+
     # calculate accuracies of ws_s
     for ws in ws_list:
         Y_true = data_storage.true_Y[data_storage.test_mask]
@@ -177,6 +175,8 @@ def run_ws_plus_al_experiment(
     Y_pred = learner.predict(data_storage.X[data_storage.test_mask])
     acc_ws = accuracy_score(Y_true, Y_pred)
     f1_ws = f1_score(Y_true, Y_pred, average="weighted")
+
+    amount_of_ws_labelled_samples = len(data_storage.weakly_combined_mask)
 
     # 3. now add some labels by AL
     AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES = ceil(
@@ -274,22 +274,53 @@ def run_ws_plus_al_experiment(
         learner = get_classifier("RF", random_state=DATASET_RANDOM_GENERATION_SEED)
 
         if CLUSTERED_AL_WS_COMBINATION:
-            # create n medoids/centroids for WS labels
-            clusterer = AgglomerativeClustering(
-                n_clusters=AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES
-            )
-            clusters = clusterer.fit_predict(
-                data_storage.X[data_storage.only_weak_mask]
-            )
+            # reduce WS labels to medoids
+            # seeded k-means
+            seed_medoids = np.zeros(shape=data_storage.X.shape)
+            seed_medoids_counter = 0
+            Y_seed_medoids = []
 
-            dendogram = calculate_linkage_matrix(
-                clusterer, data_storage.X[data_storage.only_weak_mask]
+            for y_ws in data_storage.ws_labels_list:
+                for c in np.unique(y_ws):
+                    if c == -1:
+                        continue
+                    # calculate medoid
+                    medoid = np.mean(data_storage.X[np.where(y_ws == c)], axis=0)
+
+                    # only use medoids which have not been added before
+                    if not np.any(np.all(medoid == seed_medoids, axis=1)):
+                        seed_medoids[seed_medoids_counter] = medoid
+                        seed_medoids_counter += 1
+                        Y_seed_medoids.append(c)
+
+            seed_medoids = seed_medoids[: len(Y_seed_medoids)]
+
+            if len(seed_medoids) > len(al_selected_indices):
+                # cluster medoids
+                medoid_clusters = KMeans(n_clusters=len(al_selected_indices))
+                medoid_clusters.fit(seed_medoids)
+
+                # add
+                X_ws_medoids = medoid_clusters.cluster_centers_
+                print(X_ws_medoids)
+                print(Y_seed_medoids)
+
+                # classify medoids using WS functions, then merge them using the merge strategy to get Y_ws_medoid
+                # Y_ws_cluster =
+            else:
+                print("elsa")
+                X_ws_medoids = seed_medoids
+                Y_ws_medoids = np.array(Y_seed_medoids)
+            learner.fit(
+                np.append(
+                    X_ws_medoids, data_storage.X[data_storage.labeled_mask], axis=0
+                ),
+                np.append(
+                    Y_ws_medoids,
+                    data_storage.Y_merged_final[data_storage.labeled_mask],
+                    axis=0,
+                ),
             )
-            print(dendogram)
-            centroider = NearestCentroid()
-            centroider.fit(data_storage.X[data_storage.only_weak_mask], clusters)
-            learner.fit()
-            print(centroider.centroids_)
         else:
             learner.fit(
                 data_storage.X[data_storage.weakly_combined_mask],
@@ -330,6 +361,9 @@ def run_ws_plus_al_experiment(
     synthetic_creation_args[
         "amount_of_lastly_al_samples"
     ] = AMOUNT_OF_LASTLY_AL_LABELLED_SAMPLES
+    synthetic_creation_args[
+        "amount_of_ws_labelled_samples"
+    ] = amount_of_ws_labelled_samples
 
     return synthetic_creation_args
 
@@ -379,10 +413,11 @@ elif config.STAGE == "JOB":
     )
     params = df.loc[config.JOB_ID]
 
-    np.random.seed(config.JOB_ID)
-    random.seed(config.JOB_ID)
+    uiae = 31
+    np.random.seed(config.JOB_ID + uiae)
+    random.seed(config.JOB_ID + uiae)
 
-    # print(params)
+    print(params)
 
     result = run_ws_plus_al_experiment(**params)  # type: ignore
     result["JOB_ID"] = config.JOB_ID
