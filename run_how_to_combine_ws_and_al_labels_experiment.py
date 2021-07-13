@@ -141,7 +141,7 @@ def run_ws_plus_al_experiment(
     # calculate accuracies of ws_s
     for ws in ws_list:
         Y_true = data_storage.true_Y[data_storage.test_mask]
-        Y_pred = ws.get_labels(data_storage.test_mask, data_storage, None)
+        Y_pred = ws.get_labels(data_storage.X[data_storage.test_mask], None)
 
         synthetic_creation_args["acc_WS"].append(accuracy_score(Y_true, Y_pred))
         synthetic_creation_args["f1_WS"].append(
@@ -302,13 +302,19 @@ def run_ws_plus_al_experiment(
 
                 # add
                 X_ws_medoids = medoid_clusters.cluster_centers_
-                print(X_ws_medoids)
-                print(Y_seed_medoids)
 
                 # classify medoids using WS functions, then merge them using the merge strategy to get Y_ws_medoid
-                # Y_ws_cluster =
+                ws_labels_array = data_storage._classify_using_ws_and_merge(
+                    None, X_ws_medoids
+                )
+
+                ws_mask = []
+                for counter, l in enumerate(ws_labels_array):
+                    if l != -1:
+                        ws_mask.append(counter)
+                X_ws_medoids = X_ws_medoids[ws_mask]
+                Y_ws_medoids = ws_labels_array[ws_mask]
             else:
-                print("elsa")
                 X_ws_medoids = seed_medoids
                 Y_ws_medoids = np.array(Y_seed_medoids)
             learner.fit(
@@ -413,7 +419,7 @@ elif config.STAGE == "JOB":
     )
     params = df.loc[config.JOB_ID]
 
-    uiae = 31
+    uiae = 0
     np.random.seed(config.JOB_ID + uiae)
     random.seed(config.JOB_ID + uiae)
 

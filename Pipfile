@@ -14,7 +14,7 @@ pycln = "*"
 [packages]
 pandas = "*"
 matplotlib = "*"
-klearn = "*"
+sklearn = "*"
 numpy = "*"
 json-tricks = "*"
 tabulate = "*"
@@ -27,6 +27,7 @@ ipython = "*"
 snorkel = "*"
 scikeras = "*"
 black = "*"
+tensorflow = "*"
 
 [requires]
 python_version = "3.8"
