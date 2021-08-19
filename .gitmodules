@@ -1,6 +1,7 @@
 [submodule "active_learning"]
-	path = active_learning
-	url = git@gitlab.hrz.tu-chemnitz.de:ddsg/aergia/active_learning.git
+    path = active_learning
+    url = git@github.com:jgonsior/Active-Learning-Base-Module.git
+	; url = git@gitlab.hrz.tu-chemnitz.de:ddsg/aergia/active_learning.git
 [submodule "ALiPy"]
 	path = ALiPy
 	url = git@github.com:jgonsior/ALiPy.git
