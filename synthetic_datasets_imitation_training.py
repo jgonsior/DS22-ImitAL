@@ -1,4 +1,6 @@
 import argparse
+import datetime
+from random_dataset import random_ml_datagen, random_sklearn
 import numpy as np
 import os
 import pandas as pd
@@ -33,7 +35,12 @@ from active_learning.stopping_criterias import ALCyclesStoppingCriteria
 from active_learning.weak_supervision import SyntheticLabelingFunctions
 from active_learning.weak_supervision.BaseWeakSupervision import BaseWeakSupervision
 
-config: argparse.Namespace = get_active_config()  # type: ignore
+config: argparse.Namespace = get_active_config(
+    additional_parameters=[
+        (["--ANDREAS_SKLEARN_GENERATION"], {"action": "store_true"}),
+        (["--ANDREAS_ML_DATASET_GENERATION"], {"action": "store_true"}),
+    ]
+)  # type: ignore
 
 if not os.path.isfile(config.OUTPUT_PATH + "/01_state_encodings_X.csv"):
     if not config.BATCH_MODE:
@@ -128,9 +135,23 @@ if random_but_not_random:
     np.random.seed(config.RANDOM_SEED)
     random.seed(config.RANDOM_SEED)
 
-df, synthetic_creation_args = load_synthetic(
-    config.RANDOM_SEED,
-)
+
+if config.ANDREAS_ML_DATASET_GENERATION:
+    ts = datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
+
+    dataset, labels = random_ml_datagen(
+        config.RANDOM_SEED, config.OUTPUT_PATH + "/" + ts + "_andreas.log"
+    )
+elif config.ANDREAS_SKLEARN_GENERATION:
+    ts = datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
+    dataset, labels = random_sklearn(
+        config.RANDOM_SEED, config.OUTPUT_PATH + "/" + ts + "_andreas.log"
+    )
+
+else:
+    df, synthetic_creation_args = load_synthetic(
+        config.RANDOM_SEED,
+    )
 
 data_storage: DataStorage = DataStorage(df=df, TEST_FRACTION=config.TEST_FRACTION)
 

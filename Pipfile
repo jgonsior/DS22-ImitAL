@@ -28,6 +28,7 @@ snorkel = "*"
 scikeras = "*"
 black = "*"
 tensorflow = "*"
+tqdm = "*"
 
 [requires]
 python_version = "3.8"
