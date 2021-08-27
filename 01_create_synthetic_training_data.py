@@ -22,6 +22,7 @@ run_parallel_experiment(
         "QUERY_STRATEGY": config.QUERY_STRATEGY,
         "AMOUNT_OF_PEAKED_OBJECTS": config.AMOUNT_OF_PEAKED_SAMPLES,
         "STOP_AFTER_MAXIMUM_ACCURACY_REACHED": config.STOP_AFTER_MAXIMUM_ACCURACY_REACHED,
+        "ANDREAS": config.ANDREAS,
         **ann_arguments,
         **shared_arguments,
     },

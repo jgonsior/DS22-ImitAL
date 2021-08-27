@@ -48,6 +48,7 @@ parser.add_argument("--EVA_DATASET_IDS", nargs="*", default=[0])
 parser.add_argument("--EVA_STRATEGY_IDS", nargs="*", default=[0, 1, 2, 12])
 parser.add_argument("--PERMUTATE_NN_TRAINING_INPUT", type=int, default=0)
 parser.add_argument("--TARGET_ENCODING", default="binary")
+parser.add_argument("--ANDREAS", default="None")
 
 # parser.add_argument("--BATCH_MODE", action="store_true")
 parser.add_argument(
@@ -175,6 +176,7 @@ if config.WS_MODE:
 if not config.ONLY_ALIPY:
     START = 0
     END = int(config.TRAIN_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
+
     write_slurm_and_bash_file(
         OUTPUT_FILE="01_create_synthetic_training_data",
         HPC_WS_PATH=config.HPC_WS_PATH,
@@ -207,6 +209,8 @@ if not config.ONLY_ALIPY:
         + " ".join(["--" + sa for sa in config.STATE_ARGS])
         + WS_CONFIG_OPTIONS
         + " --RANDOM_ID_OFFSET $i"
+        + " --ANDREAS "
+        + config.ANDREAS
         + " --DISTANCE_METRIC "
         + str(config.DISTANCE_METRIC)
         + " --OUTPUT_PATH ",

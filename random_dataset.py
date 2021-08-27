@@ -8,7 +8,7 @@ from tqdm import tqdm
 import ml_datagen
 
 
-def random_ml_datagen(random_state: int, path: str = None):
+def random_ml_datagen(random_state: int, path):
     random.seed(random_state)
     np.random.seed(random_state)
 
@@ -29,22 +29,32 @@ def random_ml_datagen(random_state: int, path: str = None):
     if path is not None:
         Path(path).parent.mkdir(exist_ok=True, parents=True)
         with open(path, "a+") as save_file:
-            dic = {random_state: {
-                "shape": "cubes",
-                "n": n_samples,
-                "__n_features": n_features,
-                "m_rel": n_informative,
-                "m_red": n_redundant,
-                "m_irr": n_repeated,
-                "q": n_classes,
-                "random_state": rs
-            }}
+            dic = {
+                random_state: {
+                    "shape": "cubes",
+                    "n": n_samples,
+                    "__n_features": n_features,
+                    "m_rel": n_informative,
+                    "m_red": n_redundant,
+                    "m_irr": n_repeated,
+                    "q": n_classes,
+                    "random_state": rs,
+                }
+            }
             print(dic, file=save_file)
 
-    dataset, labels, _ = ml_datagen.generate(shape="cubes", m_rel=n_informative, m_irr=n_repeated, m_red=n_redundant,
-                                             q=n_classes, n=n_samples, singlelabel=True, random_state=rs)
+    dataset, labels, _ = ml_datagen.generate(
+        shape="cubes",
+        m_rel=n_informative,
+        m_irr=n_repeated,
+        m_red=n_redundant,
+        q=n_classes,
+        n=n_samples,
+        singlelabel=True,
+        random_state=rs,
+    )
 
-    return dataset, labels
+    return dataset, labels, dic
 
 
 def random_sklearn(random_state: int, path: str = None):
@@ -75,21 +85,32 @@ def random_sklearn(random_state: int, path: str = None):
     if path is not None:
         Path(path).parent.mkdir(exist_ok=True, parents=True)
         with open(path, "a+") as save_file:
-            dic = {random_state: {
-                "n_samples": n_samples,
-                "n_features": n_features,
-                "n_informative": n_informative,
-                "n_redundant": n_redundant,
-                "n_repeated": n_repeated,
-                "n_classes": n_classes,
-                "n_clusters_per_class": n_clusters_per_class,
-                "random_state": rs
-            }}
+            dic = {
+                random_state: {
+                    "n_samples": n_samples,
+                    "n_features": n_features,
+                    "n_informative": n_informative,
+                    "n_redundant": n_redundant,
+                    "n_repeated": n_repeated,
+                    "n_classes": n_classes,
+                    "n_clusters_per_class": n_clusters_per_class,
+                    "random_state": rs,
+                }
+            }
             print(dic, file=save_file)
 
-    return make_classification(n_samples=n_samples, n_features=n_features, n_informative=n_informative,
-                               n_redundant=n_redundant, n_repeated=n_repeated, n_classes=n_classes,
-                               n_clusters_per_class=n_clusters_per_class, random_state=rs)
+    a, b = make_classification(
+        n_samples=n_samples,
+        n_features=n_features,
+        n_informative=n_informative,
+        n_redundant=n_redundant,
+        n_repeated=n_repeated,
+        n_classes=n_classes,
+        n_clusters_per_class=n_clusters_per_class,
+        random_state=rs,
+    )
+
+    return a, b, dic
 
 
 if __name__ == "__main__":

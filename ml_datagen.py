@@ -536,7 +536,7 @@ def generate(
     n: int,
     max_r: float = None,
     min_r: float = None,
-    noise_levels: [float] = None,
+    noise_levels: List[float] = None,
     name: str = "Dataset test",
     random_state: int = None,
     points_distribution: str = None,
