@@ -442,7 +442,7 @@ def plot_evaluation_ranking_table(
 
 
 def read_experiment_results(path: str) -> pd.DataFrame:
-    print(path)
+    print("Reading ", path)
     df = pd.read_csv(
         path + "/05_alipy_results.csv",
         index_col=None,
@@ -450,6 +450,11 @@ def read_experiment_results(path: str) -> pd.DataFrame:
 
     # only extract the experiment results
     for baseline in baseline_names_mapping.keys():
+        if (
+            baseline
+            == "<class 'active_learning.ALiPy_optimal_Query_Strategy.ALiPY_Optimal_Query_Strategy'>{}"
+        ):
+            continue
         df = df[df["strategy"] != baseline]
 
     # merge strategies based on NN_BINARY_PATH
@@ -474,8 +479,13 @@ def read_experiment_results(path: str) -> pd.DataFrame:
 
 concat_dfs = []
 for exp_path in config.EXP_PATHS:
+    # print(exp_path)
     if os.path.exists(exp_path + "/05_alipy_results.csv"):
         concat_dfs.append(read_experiment_results(exp_path))
+    else:
+        print(exp_path + "/05_alipy_results.csv" + " does not exists")
+
+print(concat_dfs)
 
 if config.BASELINES_PATH:
     baselines_df = pd.read_csv(
@@ -490,7 +500,7 @@ if config.BASELINES_PATH:
 
     baselines_df["strategy"] = baselines_df["strategy"].map(baseline_names_mapping)  # type: ignore
     concat_dfs.append(baselines_df)
-    # print(baselines_df)
+    print(baselines_df)
 
 # exit(-1)
 df_joined = pd.concat(concat_dfs)  # type: ignore

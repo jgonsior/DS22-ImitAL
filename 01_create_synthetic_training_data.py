@@ -23,6 +23,7 @@ run_parallel_experiment(
         "AMOUNT_OF_PEAKED_OBJECTS": config.AMOUNT_OF_PEAKED_SAMPLES,
         "STOP_AFTER_MAXIMUM_ACCURACY_REACHED": config.STOP_AFTER_MAXIMUM_ACCURACY_REACHED,
         "ANDREAS": config.ANDREAS,
+        "ANDREAS_NUMBER": config.ANDREAS_NUMBER,
         **ann_arguments,
         **shared_arguments,
     },

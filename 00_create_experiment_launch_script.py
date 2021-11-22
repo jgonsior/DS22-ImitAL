@@ -49,6 +49,7 @@ parser.add_argument("--EVA_STRATEGY_IDS", nargs="*", default=[0, 1, 2, 12])
 parser.add_argument("--PERMUTATE_NN_TRAINING_INPUT", type=int, default=0)
 parser.add_argument("--TARGET_ENCODING", default="binary")
 parser.add_argument("--ANDREAS", default="None")
+parser.add_argument("--ANDREAS_NUMBER", type=int, default=-1)
 
 # parser.add_argument("--BATCH_MODE", action="store_true")
 parser.add_argument(
@@ -95,7 +96,7 @@ config.EXPERIMENT_LAUNCH_SCRIPTS = (
 )
 
 slurm_common_template = Template(
-    """#!/bin/bash{% if array %}{% set THREADS = 1 %}{% set MEMORY = 2583 %}{% endif %}
+    """#!/bin/bash{% if array %}{% set THREADS = 4 %}{% set MEMORY = 2583 %}{% endif %}
 #SBATCH --time=23:59:59   # walltime
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -115,6 +116,7 @@ export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
 module load Python/3.8.6
 
 {% if array %}i=$(( {{ OFFSET }} + $SLURM_ARRAY_TASK_ID * {{ ITERATIONS_PER_BATCH }} )){% endif %}
+module load Python/3.8.6
 
 MPLCONFIGPATH={{HPC_WS_PATH}}/cache python3 -m pipenv run python {{HPC_WS_PATH}}/code/{{PYTHON_FILE}}.py {{ CLI_ARGS }} {% if APPEND_OUTPUT_PATH %} {{ OUTPUT_PATH }}/{{ EXP_TITLE }} {% endif %}
 exit 0
@@ -128,6 +130,7 @@ submit_jobs = Template(
 cd {{ HPC_WS_PATH }}/code
 export LC_ALL=en_US.utf-8
 export LANG=en_US.utf-8
+module load Python/3.8.6
 create_synthetic_training_data_id=$(sbatch --parsable {{HPC_WS_PATH}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/01_create_synthetic_training_data.slurm)
 {%if WITH_HYPER_SEARCH %}hyper_search_id=$(sbatch --parsable --dependency=afterok:$create_synthetic_training_data_id {{HPC_WS_PATH}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/02_hyper_search.slurm){% endif %}
 train_imital_id=$(sbatch --parsable --dependency=afterok:$create_synthetic_training_data_id{%if WITH_HYPER_SEARCH %}:$hyper_search_id{% endif %} {{HPC_WS_PATH}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/03_train_imital.slurm)
@@ -211,6 +214,8 @@ if not config.ONLY_ALIPY:
         + " --RANDOM_ID_OFFSET $i"
         + " --ANDREAS "
         + config.ANDREAS
+        + " --ANDREAS_NUMBER "
+        + str(config.ANDREAS_NUMBER)
         + " --DISTANCE_METRIC "
         + str(config.DISTANCE_METRIC)
         + " --OUTPUT_PATH ",
@@ -298,7 +303,7 @@ python 04_alipy_init_seeds.py --EXP_OUTPUT_PATH {{ EXP_OUTPUT_PATH }} --OUTPUT_P
         array=True,
         START="0",
         END="XXX",
-        THREADS=2,
+        THREADS=4,
         MEMORY=2583,
         ITERATIONS_PER_BATCH=1,
         OFFSET=0,
@@ -415,7 +420,10 @@ with open(
 # start experiment there
 {{ EXPERIMENT_LAUNCH_SCRIPTS }}/04_alipy_init_seeds.sh
 rsync -avz -P {{ LOCAL_CODE_PATH }} {{ HPC_SSH_LOGIN }}:{{ SLURM_PATH }}
-ssh {{ HPC_SSH_LOGIN }} '{{ SLURM_PATH}}/code/{{ EXPERIMENT_LAUNCH_SCRIPTS }}/06_start_slurm_jobs.sh'
+ssh {{ HPC_SSH_LOGIN }} << EOF
+   module load Python/3.8.6;
+   {{ SLURM_PATH}}/code/{{ EXPERIMENT_LAUNCH_SCRIPTS }}/06_start_slurm_jobs.sh
+EOF
     """
         ).render(
             EXPERIMENT_LAUNCH_SCRIPTS=config.EXPERIMENT_LAUNCH_SCRIPTS,

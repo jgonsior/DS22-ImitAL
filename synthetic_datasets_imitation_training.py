@@ -1,6 +1,17 @@
 import argparse
 import datetime
-from random_dataset import random_ml_datagen, random_sklearn
+from random_dataset import (
+    exp_1_random_ml_datagen,
+    exp_2_random_ml_datagen,
+    exp_3_random_ml_datagen,
+    exp_4_random_ml_datagen,
+    exp_5_random_ml_datagen,
+    exp_6_random_ml_datagen,
+    exp_7_random_ml_datagen,
+    exp_8_random_ml_datagen,
+    exp_9_random_ml_datagen,
+    random_sklearn,
+)
 import numpy as np
 import os
 import pandas as pd
@@ -134,17 +145,52 @@ if random_but_not_random:
 if config.ANDREAS == "ML_DATASET":
     ts = datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
 
-    dataset, labels, synthetic_creation_args = random_ml_datagen(
-        config.RANDOM_SEED, config.OUTPUT_PATH + "/" + ts + "_andreas.log"
-    )
-    df = pd.DataFrame(dataset)
-    df["label"] = labels
-    synthetic_creation_args = synthetic_creation_args[config.RANDOM_SEED]
-elif config.ANDREAS == "SKLEARN":
-    ts = datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
-    dataset, labels, synthetic_creation_args = random_sklearn(
-        config.RANDOM_SEED, config.OUTPUT_PATH + "/" + ts + "_andreas.log"
-    )
+    number = config.ANDREAS_NUMBER
+
+    if number == 0:
+        dataset, labels, synthetic_creation_args = random_sklearn(
+            config.RANDOM_SEED, ts + "/ds.txt"
+        )
+    elif number == 1:
+        dataset, labels, synthetic_creation_args = exp_1_random_ml_datagen(
+            config.RANDOM_SEED, ts + "/ds.txt"
+        )
+    elif number == 2:
+        dataset, labels, synthetic_creation_args = exp_2_random_ml_datagen(
+            config.RANDOM_SEED, ts + "/ds.txt"
+        )
+    elif number == 3:
+        dataset, labels, synthetic_creation_args = exp_3_random_ml_datagen(
+            config.RANDOM_SEED, ts + "/ds.txt"
+        )
+    elif number == 4:
+        dataset, labels, synthetic_creation_args = exp_4_random_ml_datagen(
+            config.RANDOM_SEED, ts + "/ds.txt"
+        )
+    elif number == 5:
+        dataset, labels, synthetic_creation_args = exp_5_random_ml_datagen(
+            config.RANDOM_SEED, ts + "/ds.txt"
+        )
+
+    elif number == 6:
+        dataset, labels, synthetic_creation_args = exp_6_random_ml_datagen(
+            config.RANDOM_SEED, ts + "/ds.txt"
+        )
+
+    elif number == 7:
+        dataset, labels, synthetic_creation_args = exp_7_random_ml_datagen(
+            config.RANDOM_SEED, ts + "/ds.txt"
+        )
+
+    elif number == 8:
+        dataset, labels, synthetic_creation_args = exp_8_random_ml_datagen(
+            config.RANDOM_SEED, ts + "/ds.txt"
+        )
+
+    elif number == 9:
+        dataset, labels, synthetic_creation_args = exp_9_random_ml_datagen(
+            config.RANDOM_SEED, ts + "/ds.txt"
+        )
     df = pd.DataFrame(dataset)
     df["label"] = labels
     synthetic_creation_args = synthetic_creation_args[config.RANDOM_SEED]
