@@ -32,6 +32,7 @@ parser.add_argument("--WITH_CLASSICS", action="store_true")
 parser.add_argument("--WITH_PLOTS", action="store_true")
 parser.add_argument("--WITH_TUD_EVAL", action="store_true")
 parser.add_argument("--WITH_ALIPY", action="store_true")
+parser.add_argument("--NO_TRAINING", action="store_true")
 parser.add_argument("--ONLY_ALIPY", action="store_true")
 parser.add_argument("--PRE_SAMPLING_HYBRID_UNCERT", type=float, default=0.2)
 parser.add_argument("--PRE_SAMPLING_HYBRID_FURTHEST", type=float, default=0.2)
@@ -50,6 +51,7 @@ parser.add_argument("--PERMUTATE_NN_TRAINING_INPUT", type=int, default=0)
 parser.add_argument("--TARGET_ENCODING", default="binary")
 parser.add_argument("--ANDREAS", default="None")
 parser.add_argument("--ANDREAS_NUMBER", type=int, default=-1)
+parser.add_argument("--SCALE_TEST", type=int, default=-1)
 
 # parser.add_argument("--BATCH_MODE", action="store_true")
 parser.add_argument(
@@ -131,7 +133,8 @@ cd {{ HPC_WS_PATH }}/code
 export LC_ALL=en_US.utf-8
 export LANG=en_US.utf-8
 module load Python/3.8.6
-create_synthetic_training_data_id=$(sbatch --parsable {{HPC_WS_PATH}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/01_create_synthetic_training_data.slurm)
+
+{%if WITH_TRAINING_DATA_CREATION %}create_synthetic_training_data_id=$(sbatch --parsable {{HPC_WS_PATH}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/01_create_synthetic_training_data.slurm){% else %}create_synthetic_training_data_id=1{% endif %}
 {%if WITH_HYPER_SEARCH %}hyper_search_id=$(sbatch --parsable --dependency=afterok:$create_synthetic_training_data_id {{HPC_WS_PATH}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/02_hyper_search.slurm){% endif %}
 train_imital_id=$(sbatch --parsable --dependency=afterok:$create_synthetic_training_data_id{%if WITH_HYPER_SEARCH %}:$hyper_search_id{% endif %} {{HPC_WS_PATH}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/03_train_imital.slurm)
 alipy_eva=$(sbatch --parsable --dependency=afterok:$create_synthetic_training_data_id:$train_imital_id {{HPC_WS_PATH}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/05_alipy_eva.slurm)
@@ -176,7 +179,9 @@ if config.WS_MODE:
         WS_CONFIG_OPTIONS += " --USE_WS_LABELS_CONTINOUSLY"
 
 
-if not config.ONLY_ALIPY:
+if config.ONLY_ALIPY or config.NO_TRAINING:
+    pass
+else:
     START = 0
     END = int(config.TRAIN_NR_LEARNING_SAMPLES / config.ITERATIONS_PER_BATCH) - 1
 
@@ -247,6 +252,10 @@ else:
     hypered_appendix = ""
 
 if not config.ONLY_ALIPY:
+    if config.SCALE_TEST != -1:
+        SCALE_TEST_STRING = " --MAX_NUM_TRAINING_DATA " + str(config.SCALE_TEST)
+    else:
+        SCALE_TEST_STRING = ""
     write_slurm_and_bash_file(
         OUTPUT_FILE="03_train_imital",
         HPC_WS_PATH=config.HPC_WS_PATH,
@@ -260,6 +269,7 @@ if not config.ONLY_ALIPY:
         + str(config.PERMUTATE_NN_TRAINING_INPUT)
         + " --TARGET_ENCODING "
         + config.TARGET_ENCODING
+        + SCALE_TEST_STRING
         + " --OUTPUT_PATH ",
         APPEND_OUTPUT=True,
     )
@@ -322,6 +332,9 @@ python 04_alipy_init_seeds.py --EXP_OUTPUT_PATH {{ EXP_OUTPUT_PATH }} --OUTPUT_P
 
 
 with open(config.EXPERIMENT_LAUNCH_SCRIPTS + "/06_start_slurm_jobs.sh", "w") as f:
+    WITH_TRAINING_DATA_GENERATION = True
+    if config.ONLY_ALIPY or config.NO_TRAINING:
+        WITH_TRAINING_DATA_GENERATION = False
     f.write(
         submit_jobs.render(
             HPC_WS_PATH=config.HPC_WS_PATH,
@@ -329,6 +342,7 @@ with open(config.EXPERIMENT_LAUNCH_SCRIPTS + "/06_start_slurm_jobs.sh", "w") as 
             TITLE=config.EXP_TITLE,
             WITH_HYPER_SEARCH=config.WITH_HYPER_SEARCH,
             WITH_ALIPY=config.WITH_ALIPY,
+            WITH_TRAINING_DATA_GENERATION=WITH_TRAINING_DATA_GENERATION,
         )
     )
 
@@ -347,6 +361,10 @@ sort_order = {
     "04_alipy_init_seeds.tmp": 3,
     "05_alipy_eva.tmp": 4,
 }
+
+if config.ONLY_ALIPY or config.NO_TRAINING:
+    del sort_order["01_create_synthetic_training_data.tmp"]
+
 for tmp_file in sorted(
     list(glob.glob(str(config.EXPERIMENT_LAUNCH_SCRIPTS) + "/*.tmp")),
     key=lambda v: sort_order[v.split("/")[-1]],
@@ -419,7 +437,7 @@ with open(
 # updates taurus
 # start experiment there
 {{ EXPERIMENT_LAUNCH_SCRIPTS }}/04_alipy_init_seeds.sh
-rsync -avz -P {{ LOCAL_CODE_PATH }} {{ HPC_SSH_LOGIN }}:{{ SLURM_PATH }}
+rsync -avz -P {{ LOCAL_CODE_PATH }} {{ HPC_SSH_LOGIN }}:{{ SLURM_PATH }} --exclude '.git/' --exclude '.mypy_cache/'
 ssh {{ HPC_SSH_LOGIN }} << EOF
    module load Python/3.8.6;
    {{ SLURM_PATH}}/code/{{ EXPERIMENT_LAUNCH_SCRIPTS }}/06_start_slurm_jobs.sh

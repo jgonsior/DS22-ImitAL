@@ -111,6 +111,7 @@ def get_config():
             (["--PERMUTATE_NN_TRAINING_INPUT"], {"type": int, "default": 0}),
             (["--STATE_ENCODING"], {"default": "listwise"}),
             (["--TARGET_ENCODING"], {"default": "binary"}),
+            (["--MAX_NUM_TRAINING_DATA"], {"default": None}),
         ],
         return_parser=True,
     )  # type: ignore
@@ -214,12 +215,12 @@ def run_python_experiment(
                 CLI_COMMAND += " --" + k
             else:
                 CLI_COMMAND += " --" + k + " " + str(v)
+        print(CLI_COMMAND)
 
         if SAVE_ARGUMENT_JSON:
             with open(OUTPUT_FILE + "_params.json", "w") as f:
                 json.dump({"CLI_COMMAND": CLI_COMMAND, **CLI_ARGUMENTS}, f)
 
-        print(CLI_COMMAND)
         os.system(CLI_COMMAND)
 
     run_code_experiment(

@@ -33,17 +33,18 @@ parser.add_argument(
 )
 parser.add_argument("--TEST_FRACTION", type=float, default=0.5)
 parser.add_argument("--LOG_FILE", type=str, default="log.txt")
-parser.add_argument("--REGULAR_DROPOUT_RATE", type=float, default=0.3)
-parser.add_argument("--NR_HIDDEN_NEURONS", type=int, default=40)
-parser.add_argument("--OPTIMIZER", type=str, default="RMSprop")
-parser.add_argument("--NR_HIDDEN_LAYERS", type=int, default=4)
+parser.add_argument("--REGULAR_DROPOUT_RATE", type=float, default=0.2)
+parser.add_argument("--NR_HIDDEN_NEURONS", type=int, default=1100)
+parser.add_argument("--OPTIMIZER", type=str, default="Nadam")
+parser.add_argument("--NR_HIDDEN_LAYERS", type=int, default=2)
 parser.add_argument("--LOSS", type=str, default="MeanSquaredError")
-parser.add_argument("--EPOCHS", type=int, default=1000)
-parser.add_argument("--ANN_BATCH_SIZE", type=int, default=32)
-parser.add_argument("--N_ITER", type=int, default=100)
+parser.add_argument("--EPOCHS", type=int, default=10000)
+parser.add_argument("--ANN_BATCH_SIZE", type=int, default=128)
+parser.add_argument("--MAX_NUM_TRAINING_DATA", type=int, default=None)
 parser.add_argument("--ACTIVATION", type=str, default="elu")
 parser.add_argument("--HYPER_SEARCH", action="store_true")
 parser.add_argument("--BATCH_SIZE", type=int, default=5)
+parser.add_argument("--MAX_NUMBER", type=int, default=5)
 parser.add_argument(
     "--STATE_ENCODING",
     type=str,
@@ -70,9 +71,12 @@ if config.RANDOM_SEED != -1 and config.RANDOM_SEED != -2:
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 DATA_PATH = config.OUTPUT_PATH
-states = pd.read_csv(DATA_PATH + "/01_state_encodings_X.csv")
-optimal_policies = pd.read_csv(DATA_PATH + "/01_expert_actions_Y.csv")
-
+states = pd.read_csv(
+    DATA_PATH + "/01_state_encodings_X.csv", nrows=config.MAX_NUM_TRAINING_DATA
+)
+optimal_policies = pd.read_csv(
+    DATA_PATH + "/01_expert_actions_Y.csv", nrows=config.MAX_NUM_TRAINING_DATA
+)
 
 #  states = states[0:100]
 #  optimal_policies = optimal_policies[0:100]
@@ -128,6 +132,7 @@ if config.STATE_ENCODING == "listwise":
     # congrats, the states are already in the correct form
     pass
 elif config.STATE_ENCODING == "pointwise":
+    print("Not yet implemented")
     states.to_csv(DATA_PATH + "/states_pointwise.csv", index=False)
     exit(-1)
 elif config.STATE_ENCODING == "pairwise":
@@ -211,11 +216,12 @@ def get_clf(
     activation="relu",
     regular_dropout_rate=0.2,
     optimizer="Adam",
-    nr_hidden_layers=3,
-    nr_hidden_neurons=20,
+    nr_hidden_layers=2,
+    nr_hidden_neurons=1100,
     kernel_initializer="glorot_uniform",
     loss="MeanSquaredError",
 ):
+
     model = keras.models.Sequential()
     model.add(keras.layers.Input(shape=input_size))
     for _ in range(0, nr_hidden_layers):
@@ -227,7 +233,7 @@ def get_clf(
             )
         )
         model.add(keras.layers.Dropout(regular_dropout_rate))
-    model.add(keras.layers.Dense(output_size, activation="softmax"))
+    model.add(keras.layers.Dense(output_size, activation="sigmoid"))
     return model
 
 
@@ -353,7 +359,7 @@ else:
         model=get_clf,
         input_size=X.shape[1:],
         output_size=np.shape(Y)[1],  # type: ignore
-        verbose=0,
+        verbose=1,
         activation=config.ACTIVATION,
         validation_split=0.3,
         loss=config.LOSS,

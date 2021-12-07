@@ -48,6 +48,7 @@ else:
 
 # prevent retraining!
 if os.path.isfile(PARENT_OUTPUT_PATH + "/03_imital_trained_ann.model/saved_model.pb"):
+    print("not training again, NN already exists")
     exit(0)
     # pass
 
@@ -71,5 +72,6 @@ run_python_experiment(
         "ACTIVATION": ANN_HYPER_PARAMS["ACTIVATION"],
         "RANDOM_SEED": 1,
         "PERMUTATE_NN_TRAINING_INPUT": config.PERMUTATE_NN_TRAINING_INPUT,
+        "MAX_NUM_TRAINING_DATA": config.MAX_NUM_TRAINING_DATA,
     },
 )
