@@ -56,6 +56,18 @@ parser.add_argument(
 )
 parser.add_argument("--SAVE_DESTINATION", type=str)
 parser.add_argument("--PERMUTATE_NN_TRAINING_INPUT", type=int, default=0)
+parser.add_argument("--STATE_DIFF_PROBAS", action="store_true")
+parser.add_argument("--STATE_ARGFIRST_PROBAS", action="store_true")
+parser.add_argument("--STATE_ARGSECOND_PROBAS", action="store_true")
+parser.add_argument("--STATE_ARGTHIRD_PROBAS", action="store_true")
+parser.add_argument("--STATE_DISTANCES_LAB", action="store_true")
+parser.add_argument("--STATE_DISTANCES_UNLAB", action="store_true")
+parser.add_argument("--STATE_PREDICTED_CLASS", action="store_true")
+parser.add_argument("--STATE_PREDICTED_UNITY", action="store_true")
+parser.add_argument("--STATE_DISTANCES", action="store_true")
+parser.add_argument("--STATE_UNCERTAINTIES", action="store_true")
+parser.add_argument("--STATE_INCLUDE_NR_FEATURES", action="store_true")
+parser.add_argument("--None", action="store_true")
 
 config = parser.parse_args()
 
@@ -74,6 +86,41 @@ DATA_PATH = config.OUTPUT_PATH
 states = pd.read_csv(
     DATA_PATH + "/01_state_encodings_X.csv", nrows=config.MAX_NUM_TRAINING_DATA
 )
+
+
+# remove columns which are not interesting according to state
+# state in this case menas removing, for the other files it menas adding, don't ask why…
+
+if config.STATE_DISTANCES_LAB:
+    states = states.loc[:, ~states.columns.str.endswith("avg_dist_lab")]
+if config.STATE_DISTANCES_UNLAB:
+    states = states.loc[:, ~states.columns.str.endswith("avg_dist_unlab")]
+if config.STATE_PREDICTED_CLASS:
+    print("not implemented yet")
+    exit(-1)
+if config.STATE_PREDICTED_UNITY:
+    print("not implemented yet")
+    exit(-1)
+if config.STATE_ARGFIRST_PROBAS:
+    states = states.loc[:, ~states.columns.str.endswith("proba_argfirst")]
+if config.STATE_ARGSECOND_PROBAS:
+    states = states.loc[:, ~states.columns.str.endswith("proba_argsecond")]
+if config.STATE_ARGTHIRD_PROBAS:
+    states = states.loc[:, ~states.columns.str.endswith("proba_argthird")]
+if config.STATE_DIFF_PROBAS:
+    print("not implemented yet")
+    exit(-1)
+if config.STATE_DISTANCES:
+    print("not implemented yet")
+    exit(-1)
+if config.STATE_UNCERTAINTIES:
+    print("not implemented yet")
+    exit(-1)
+if config.STATE_INCLUDE_NR_FEATURES:
+    print("not implemented yet")
+    exit(-1)
+
+
 optimal_policies = pd.read_csv(
     DATA_PATH + "/01_expert_actions_Y.csv", nrows=config.MAX_NUM_TRAINING_DATA
 )
@@ -375,6 +422,7 @@ else:
         ],
         #  random_state=config.RANDOM_SEED,
     )
+    print(np.shape(X))
 
     reg.fit(X, Y)
 

@@ -7,7 +7,7 @@ from imitLearningPipelineSharedCode import get_config, run_python_experiment
     config,
     _,
     _,
-    _,
+    ann_arguments,
     PARENT_OUTPUT_PATH,
 ) = get_config()
 
@@ -45,13 +45,41 @@ else:
             "ACTIVATION": "elu",
         }
 
-
 # prevent retraining!
 if os.path.isfile(PARENT_OUTPUT_PATH + "/03_imital_trained_ann.model/saved_model.pb"):
     print("not training again, NN already exists")
     exit(0)
     # pass
 
+STATE_APPENDIX = ""
+
+if config.STATE_DISTANCES_LAB:
+    STATE_APPENDIX += " --STATE_DISTANCES_LAB"
+if config.STATE_DISTANCES_UNLAB:
+    STATE_APPENDIX += " --STATE_DISTANCES_UNLAB"
+if config.STATE_PREDICTED_CLASS:
+    STATE_APPENDIX += " --STATE_PREDICTED_CLASS"
+if config.STATE_PREDICTED_UNITY:
+    STATE_APPENDIX += " --STATE_PREDICTED_UNITY"
+if config.STATE_ARGFIRST_PROBAS:
+    STATE_APPENDIX += " --STATE_ARGFIRST_PROBAS"
+if config.STATE_ARGSECOND_PROBAS:
+    STATE_APPENDIX += " --STATE_ARGSECOND_PROBAS"
+if config.STATE_ARGTHIRD_PROBAS:
+    STATE_APPENDIX += " --STATE_ARGTHIRD_PROBAS"
+if config.STATE_DIFF_PROBAS:
+    STATE_APPENDIX += " --STATE_DIFF_PROBAS"
+if config.STATE_DISTANCES:
+    STATE_APPENDIX += " --STATE_DISTANCES"
+if config.STATE_UNCERTAINTIES:
+    STATE_APPENDIX += " --STATE_UNCERTAINTIES"
+if config.STATE_INCLUDE_NR_FEATURES:
+    STATE_APPENDIX += " --STATE_INCLUDE_NR_FEATURES"
+
+if STATE_APPENDIX == "":
+    STATE_APPENDIX = "None"
+else:
+    STATE_APPENDIX = STATE_APPENDIX[3:]
 
 run_python_experiment(
     "Train ANN",
@@ -73,5 +101,6 @@ run_python_experiment(
         "RANDOM_SEED": 1,
         "PERMUTATE_NN_TRAINING_INPUT": config.PERMUTATE_NN_TRAINING_INPUT,
         "MAX_NUM_TRAINING_DATA": config.MAX_NUM_TRAINING_DATA,
+        STATE_APPENDIX: True,
     },
 )

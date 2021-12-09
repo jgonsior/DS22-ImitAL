@@ -174,7 +174,7 @@ al = AlExperiment(
     label_idx=label_idx,
     unlabel_idx=unlabel_idx,
 )
-
+print("batch: ", str(config.BATCH_SIZE))
 al.set_query_strategy(strategy=QUERY_STRATEGY[0], **QUERY_STRATEGY[1])
 
 #  al.set_performance_metric("accuracy_score")
@@ -214,7 +214,7 @@ if stateio.initial_point is not None:
 for state in stateio:
     # print(state.get_value("select_index"))
     metric_values.append(state.get_value("performance"))
-
+print(metric_values)
 f1_auc = auc([i for i in range(0, len(metric_values))], metric_values) / (
     len(metric_values) - 1
 )
@@ -230,6 +230,8 @@ res["duration"] = end - start
 res["f1_auc"] = f1_auc
 res = {**res, **synthetic_creation_args}
 print(res["f1_auc"])
+
+exit(-1)
 
 with open(config.OUTPUT_PATH + "/05_alipy_results.csv", "a") as f:
     w = csv.DictWriter(f, fieldnames=res.keys())

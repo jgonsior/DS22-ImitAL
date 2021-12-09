@@ -269,6 +269,9 @@ if not config.ONLY_ALIPY:
         + str(config.PERMUTATE_NN_TRAINING_INPUT)
         + " --TARGET_ENCODING "
         + config.TARGET_ENCODING
+        + " "
+        + " ".join(["--" + sa for sa in config.STATE_ARGS])
+        + " "
         + SCALE_TEST_STRING
         + " --OUTPUT_PATH ",
         APPEND_OUTPUT=True,
