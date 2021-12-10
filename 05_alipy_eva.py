@@ -231,8 +231,6 @@ res["f1_auc"] = f1_auc
 res = {**res, **synthetic_creation_args}
 print(res["f1_auc"])
 
-exit(-1)
-
 with open(config.OUTPUT_PATH + "/05_alipy_results.csv", "a") as f:
     w = csv.DictWriter(f, fieldnames=res.keys())
     if len(open(config.OUTPUT_PATH + "/05_alipy_results.csv").readlines()) == 0:

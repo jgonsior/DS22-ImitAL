@@ -54,16 +54,13 @@ parser.add_argument("--ANDREAS_NUMBER", type=int, default=-1)
 parser.add_argument("--SCALE_TEST", type=int, default=-1)
 
 # parser.add_argument("--BATCH_MODE", action="store_true")
-parser.add_argument(
-    "--STATE_ARGS",
-    nargs="*",
-    default=[
+parser.add_argument("--STATE_ARGS", nargs="*", default=list())
+"""
         "STATE_ARGSECOND_PROBAS",
         "STATE_ARGTHIRD_PROBAS",
         "STATE_DISTANCES_LAB",
         "STATE_DISTANCES_UNLAB",
-    ],
-)
+    ],"""
 parser.add_argument("--DISTANCE_METRIC", default="euclidean")
 parser.add_argument("--PRE_SAMPLING_METHOD", default="furthest")
 
@@ -98,8 +95,9 @@ config.EXPERIMENT_LAUNCH_SCRIPTS = (
 )
 
 slurm_common_template = Template(
-    """#!/bin/bash{% if array %}{% set THREADS = 4 %}{% set MEMORY = 2583 %}{% endif %}
-#SBATCH --time=23:59:59   # walltime
+    """#!/bin/bash{% if array %}{% set THREADS = 1 %}{% set MEMORY = 1875 %}{% endif %}
+#SBATCH --partition=haswell,romeo
+#SBATCH --time=0:59:59   # walltime
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --tasks-per-node=1
@@ -136,7 +134,7 @@ module load Python/3.8.6
 
 {%if WITH_TRAINING_DATA_CREATION %}create_synthetic_training_data_id=$(sbatch --parsable {{HPC_WS_PATH}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/01_create_synthetic_training_data.slurm){% else %}create_synthetic_training_data_id=1{% endif %}
 {%if WITH_HYPER_SEARCH %}hyper_search_id=$(sbatch --parsable --dependency=afterok:$create_synthetic_training_data_id {{HPC_WS_PATH}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/02_hyper_search.slurm){% endif %}
-train_imital_id=$(sbatch --parsable --dependency=afterok:$create_synthetic_training_data_id{%if WITH_HYPER_SEARCH %}:$hyper_search_id{% endif %} {{HPC_WS_PATH}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/03_train_imital.slurm)
+{%if WITH_TRAINING %}train_imital_id=$(sbatch --parsable --dependency=afterok:$create_synthetic_training_data_id{%if WITH_HYPER_SEARCH %}:$hyper_search_id{% endif %} {{HPC_WS_PATH}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/03_train_imital.slurm){% else %}train_imital_id=1{% endif %}
 alipy_eva=$(sbatch --parsable --dependency=afterok:$create_synthetic_training_data_id:$train_imital_id {{HPC_WS_PATH}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/05_alipy_eva.slurm)
 exit 0
 """
@@ -227,6 +225,9 @@ else:
         APPEND_OUTPUT=True,
     )
 
+    print("STATE ARGS DO NOT FUNCTION PROPERLY ANYMORE")
+    exit(-1)
+
 
 if config.WITH_HYPER_SEARCH:
     write_slurm_and_bash_file(
@@ -236,7 +237,7 @@ if config.WITH_HYPER_SEARCH:
         PYTHON_FILE="02_hyper_search_or_train_imital",
         array=False,
         THREADS=24,
-        MEMORY=5250,
+        MEMORY=3995,
         CLI_ARGS="--PERMUTATE_NN_TRAINING_INPUT "
         + str(config.PERMUTATE_NN_TRAINING_INPUT)
         + " --STATE_ENCODING listwise --TARGET_ENCODING "
@@ -255,15 +256,15 @@ if not config.ONLY_ALIPY:
     if config.SCALE_TEST != -1:
         SCALE_TEST_STRING = " --MAX_NUM_TRAINING_DATA " + str(config.SCALE_TEST)
     else:
-        SCALE_TEST_STRING = ""
+        SCALE_TEST_STRING = "1000000000000000"
     write_slurm_and_bash_file(
         OUTPUT_FILE="03_train_imital",
         HPC_WS_PATH=config.HPC_WS_PATH,
         TITLE=config.EXP_TITLE,
         PYTHON_FILE="03_train_imital",
         array=False,
-        THREADS=20,
-        MEMORY=5250,
+        THREADS=4,
+        MEMORY=1875,
         CLI_ARGS=hypered_appendix
         + " --PERMUTATE_NN_TRAINING_INPUT "
         + str(config.PERMUTATE_NN_TRAINING_INPUT)
@@ -316,8 +317,8 @@ python 04_alipy_init_seeds.py --EXP_OUTPUT_PATH {{ EXP_OUTPUT_PATH }} --OUTPUT_P
         array=True,
         START="0",
         END="XXX",
-        THREADS=4,
-        MEMORY=2583,
+        THREADS=2,
+        MEMORY=2582,
         ITERATIONS_PER_BATCH=1,
         OFFSET=0,
         CLI_ARGS=" "
@@ -346,6 +347,7 @@ with open(config.EXPERIMENT_LAUNCH_SCRIPTS + "/06_start_slurm_jobs.sh", "w") as 
             WITH_HYPER_SEARCH=config.WITH_HYPER_SEARCH,
             WITH_ALIPY=config.WITH_ALIPY,
             WITH_TRAINING_DATA_GENERATION=WITH_TRAINING_DATA_GENERATION,
+            WITH_TRAINING=not config.ONLY_ALIPY,
         )
     )
 
