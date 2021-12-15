@@ -25,10 +25,10 @@ data-science-types = "*"
 prettytable = "*"
 ipython = "*"
 snorkel = "*"
-scikeras = "*"
 black = "*"
 tensorflow = "*"
 tqdm = "*"
+scikeras = "*"
 
 [requires]
 python_version = "3"

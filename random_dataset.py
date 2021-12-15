@@ -14,7 +14,7 @@ def exp_1_random_ml_datagen(random_state: int, path: str = None):
     np.random.seed(random_state)
 
     rs = random.randint(0, 100000)
-    n_samples = random.randrange(100, 50001, 50)
+    n_samples = random.randrange(100, 5001, 50)
     n_features = random.randrange(2, 61, 1)
     if int(n_features / 3) < 1:
         n_redundant = 0
@@ -65,7 +65,7 @@ def exp_2_random_ml_datagen(random_state: int, path: str = None):
     np.random.seed(random_state)
 
     rs = random.randint(0, 100000)
-    n_samples = random.randrange(100, 50001, 50)
+    n_samples = random.randrange(100, 5001, 50)
     n_features = random.randrange(2, 61, 1)
     if int(n_features / 3) < 1:
         n_redundant = 0
@@ -116,7 +116,7 @@ def exp_3_random_ml_datagen(random_state: int, path: str = None):
     np.random.seed(random_state)
 
     rs = random.randint(0, 100000)
-    n_samples = random.randrange(100, 50001, 50)
+    n_samples = random.randrange(100, 5001, 50)
     n_features = random.randrange(2, 61, 1)
     if int(n_features / 3) < 1:
         n_redundant = 0
@@ -167,7 +167,7 @@ def exp_4_random_ml_datagen(random_state: int, path: str = None):
     np.random.seed(random_state)
 
     rs = random.randint(0, 100000)
-    n_samples = random.randrange(100, 50001, 50)
+    n_samples = random.randrange(100, 5001, 50)
     n_features = random.randrange(2, 61, 1)
     if int(n_features / 3) < 1:
         n_redundant = 0
@@ -218,7 +218,7 @@ def exp_5_random_ml_datagen(random_state: int, path: str = None):
     np.random.seed(random_state)
 
     rs = random.randint(0, 100000)
-    n_samples = random.randrange(100, 50001, 50)
+    n_samples = random.randrange(100, 5001, 50)
     n_features = random.randrange(2, 61, 1)
     if int(n_features / 3) < 1:
         n_redundant = 0
@@ -271,7 +271,7 @@ def exp_6_random_ml_datagen(random_state: int, path: str = None):
     np.random.seed(random_state)
 
     rs = random.randint(0, 100000)
-    n_samples = int(np.random.normal(15000, 6000, 1)[0])
+    n_samples = int(np.random.normal(1500, 600, 1)[0])
     n_samples = n_samples if n_samples > 100 else 100
     n_informative = int(np.random.normal(20, 10, 1)[0])
     n_informative = n_informative if n_informative > 3 else 3
@@ -318,7 +318,7 @@ def exp_7_random_ml_datagen(random_state: int, path: str = None):
     np.random.seed(random_state)
 
     rs = random.randint(0, 100000)
-    n_samples = int(np.random.normal(15000, 6000, 1)[0])
+    n_samples = int(np.random.normal(1500, 600, 1)[0])
     n_samples = n_samples if n_samples > 100 else 100
     n_informative = int(np.random.normal(20, 10, 1)[0])
     n_informative = n_informative if n_informative > 3 else 3
@@ -378,7 +378,7 @@ def exp_8_random_ml_datagen(random_state: int, path: str = None):
     np.random.seed(random_state)
 
     rs = random.randint(0, 100000)
-    n_samples = int(np.random.normal(15000, 6000, 1)[0])
+    n_samples = int(np.random.normal(1500, 600, 1)[0])
     n_samples = n_samples if n_samples > 100 else 100
     n_informative = int(np.random.normal(20, 10, 1)[0])
     n_informative = n_informative if n_informative > 3 else 3
@@ -448,7 +448,7 @@ def exp_9_random_ml_datagen(random_state: int, path: str = None):
     np.random.seed(random_state)
 
     rs = random.randint(0, 100000)
-    n_samples = random.randrange(100, 50001, 50)
+    n_samples = random.randrange(100, 5001, 50)
     n_features = random.randrange(2, 61, 1)
     if int(n_features / 3) < 1:
         n_redundant = 0
@@ -514,7 +514,7 @@ def random_sklearn(random_state: int, path: str = None):
     np.random.seed(random_state)
 
     rs = random.randint(0, 100000)
-    n_samples = random.randrange(100, 50001, 50)
+    n_samples = random.randrange(100, 5001, 50)
     n_features = random.randrange(2, 61, 1)
     if int(n_features / 3) < 1:
         n_redundant = 0

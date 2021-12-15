@@ -24,6 +24,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--EXP_TITLE")
 parser.add_argument("--TEST_NR_LEARNING_SAMPLES", default=1000, type=int)
 parser.add_argument("--TRAIN_NR_LEARNING_SAMPLES", default=1000, type=int)
+parser.add_argument("--TRAIN_LEARNER_MODEL", default="MLP")
 parser.add_argument("--ITERATIONS_PER_BATCH", default=10, type=int)
 parser.add_argument("--N_JOBS", default=4, type=int)
 parser.add_argument("--EXPERIMENT_LAUNCH_SCRIPTS", default="_experiment_launch_scripts")
@@ -54,13 +55,17 @@ parser.add_argument("--ANDREAS_NUMBER", type=int, default=-1)
 parser.add_argument("--SCALE_TEST", type=int, default=-1)
 
 # parser.add_argument("--BATCH_MODE", action="store_true")
-parser.add_argument("--STATE_ARGS", nargs="*", default=list())
-"""
+parser.add_argument("--EXCLUDING_STATE_ARGS", nargs="*", default=list())
+parser.add_argument(
+    "--TRAINING_DATA_GENERATION_STATE_ARGS",
+    nargs="*",
+    default=[
         "STATE_ARGSECOND_PROBAS",
         "STATE_ARGTHIRD_PROBAS",
         "STATE_DISTANCES_LAB",
         "STATE_DISTANCES_UNLAB",
-    ],"""
+    ],
+)
 parser.add_argument("--DISTANCE_METRIC", default="euclidean")
 parser.add_argument("--PRE_SAMPLING_METHOD", default="furthest")
 
@@ -97,7 +102,7 @@ config.EXPERIMENT_LAUNCH_SCRIPTS = (
 slurm_common_template = Template(
     """#!/bin/bash{% if array %}{% set THREADS = 1 %}{% set MEMORY = 1875 %}{% endif %}
 #SBATCH --partition=haswell,romeo
-#SBATCH --time=0:59:59   # walltime
+#SBATCH --time={{TIME_LIMIT}}   # walltime
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --tasks-per-node=1
@@ -132,7 +137,7 @@ export LC_ALL=en_US.utf-8
 export LANG=en_US.utf-8
 module load Python/3.8.6
 
-{%if WITH_TRAINING_DATA_CREATION %}create_synthetic_training_data_id=$(sbatch --parsable {{HPC_WS_PATH}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/01_create_synthetic_training_data.slurm){% else %}create_synthetic_training_data_id=1{% endif %}
+{%if WITH_TRAINING_DATA_GENERATION %}create_synthetic_training_data_id=$(sbatch --parsable {{HPC_WS_PATH}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/01_create_synthetic_training_data.slurm){% else %}create_synthetic_training_data_id=1{% endif %}
 {%if WITH_HYPER_SEARCH %}hyper_search_id=$(sbatch --parsable --dependency=afterok:$create_synthetic_training_data_id {{HPC_WS_PATH}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/02_hyper_search.slurm){% endif %}
 {%if WITH_TRAINING %}train_imital_id=$(sbatch --parsable --dependency=afterok:$create_synthetic_training_data_id{%if WITH_HYPER_SEARCH %}:$hyper_search_id{% endif %} {{HPC_WS_PATH}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/03_train_imital.slurm){% else %}train_imital_id=1{% endif %}
 alipy_eva=$(sbatch --parsable --dependency=afterok:$create_synthetic_training_data_id:$train_imital_id {{HPC_WS_PATH}}/code/{{EXPERIMENT_LAUNCH_SCRIPTS}}/05_alipy_eva.slurm)
@@ -191,6 +196,7 @@ else:
         array=True,
         START=START,
         END=END,
+        TIME_LIMIT="1:59:59",
         ITERATIONS_PER_BATCH=config.ITERATIONS_PER_BATCH,
         OFFSET=0,
         CLI_ARGS=" "
@@ -203,6 +209,8 @@ else:
         + str(config.TOTAL_BUDGET)
         + " --NR_LEARNING_SAMPLES "
         + str(config.ITERATIONS_PER_BATCH)
+        + " --CLASSIFIER "
+        + str(config.TRAIN_LEARNER_MODEL)
         + " --PRE_SAMPLING_HYBRID_UNCERT "
         + str(config.PRE_SAMPLING_HYBRID_UNCERT)
         + " --PRE_SAMPLING_HYBRID_PRED_UNITY "
@@ -212,7 +220,7 @@ else:
         + " --PRE_SAMPLING_HYBRID_FURTHEST_LAB "
         + str(config.PRE_SAMPLING_HYBRID_FURTHEST_LAB)
         + " "
-        + " ".join(["--" + sa for sa in config.STATE_ARGS])
+        + " ".join(["--" + sa for sa in config.TRAINING_DATA_GENERATION_STATE_ARGS])
         + WS_CONFIG_OPTIONS
         + " --RANDOM_ID_OFFSET $i"
         + " --ANDREAS "
@@ -225,9 +233,6 @@ else:
         APPEND_OUTPUT=True,
     )
 
-    print("STATE ARGS DO NOT FUNCTION PROPERLY ANYMORE")
-    exit(-1)
-
 
 if config.WITH_HYPER_SEARCH:
     write_slurm_and_bash_file(
@@ -238,10 +243,14 @@ if config.WITH_HYPER_SEARCH:
         array=False,
         THREADS=24,
         MEMORY=3995,
+        TIME_LIMIT="23:59:59",
         CLI_ARGS="--PERMUTATE_NN_TRAINING_INPUT "
         + str(config.PERMUTATE_NN_TRAINING_INPUT)
         + " --STATE_ENCODING listwise --TARGET_ENCODING "
         + config.TARGET_ENCODING
+        + " "
+        + " ".join(["--EXCLUDING_" + sa for sa in config.EXCLUDING_STATE_ARGS])
+        + " "
         + " --HYPER_SEARCH --N_ITER 100 "
         + " --OUTPUT_PATH ",
         APPEND_OUTPUT=True,
@@ -256,7 +265,7 @@ if not config.ONLY_ALIPY:
     if config.SCALE_TEST != -1:
         SCALE_TEST_STRING = " --MAX_NUM_TRAINING_DATA " + str(config.SCALE_TEST)
     else:
-        SCALE_TEST_STRING = "1000000000000000"
+        SCALE_TEST_STRING = ""
     write_slurm_and_bash_file(
         OUTPUT_FILE="03_train_imital",
         HPC_WS_PATH=config.HPC_WS_PATH,
@@ -265,13 +274,14 @@ if not config.ONLY_ALIPY:
         array=False,
         THREADS=4,
         MEMORY=1875,
+        TIME_LIMIT="3:59:59",
         CLI_ARGS=hypered_appendix
         + " --PERMUTATE_NN_TRAINING_INPUT "
         + str(config.PERMUTATE_NN_TRAINING_INPUT)
         + " --TARGET_ENCODING "
         + config.TARGET_ENCODING
         + " "
-        + " ".join(["--" + sa for sa in config.STATE_ARGS])
+        + " ".join(["--EXCLUDING_" + sa for sa in config.EXCLUDING_STATE_ARGS])
         + " "
         + SCALE_TEST_STRING
         + " --OUTPUT_PATH ",
@@ -309,6 +319,11 @@ python 04_alipy_init_seeds.py --EXP_OUTPUT_PATH {{ EXP_OUTPUT_PATH }} --OUTPUT_P
         st.st_mode | stat.S_IEXEC,
     )
 
+    if len(config.EXCLUDING_STATE_ARGS) > 0:
+        excluding_appendix = " --EXCLUDING "
+    else:
+        excluding_appendix = " "
+
     write_slurm_and_bash_file(
         OUTPUT_FILE="05_alipy_eva",
         HPC_WS_PATH=config.HPC_WS_PATH,
@@ -319,6 +334,7 @@ python 04_alipy_init_seeds.py --EXP_OUTPUT_PATH {{ EXP_OUTPUT_PATH }} --OUTPUT_P
         END="XXX",
         THREADS=2,
         MEMORY=2582,
+        TIME_LIMIT="0:45:00",
         ITERATIONS_PER_BATCH=1,
         OFFSET=0,
         CLI_ARGS=" "
@@ -328,6 +344,10 @@ python 04_alipy_init_seeds.py --EXP_OUTPUT_PATH {{ EXP_OUTPUT_PATH }} --OUTPUT_P
         + config.HPC_OUTPUT_PATH
         + "/"
         + config.EXP_TITLE
+        + excluding_appendix
+        + " "
+        + " ".join(["--EXCLUDING_" + sa for sa in config.EXCLUDING_STATE_ARGS])
+        + " "
         + " --RANDOM_SEEDS_INPUT_FILE "
         + config.EXPERIMENT_LAUNCH_SCRIPTS
         + "/04_random_seeds__slurm.csv --INDEX $SLURM_ARRAY_TASK_ID"
@@ -339,6 +359,7 @@ with open(config.EXPERIMENT_LAUNCH_SCRIPTS + "/06_start_slurm_jobs.sh", "w") as 
     WITH_TRAINING_DATA_GENERATION = True
     if config.ONLY_ALIPY or config.NO_TRAINING:
         WITH_TRAINING_DATA_GENERATION = False
+
     f.write(
         submit_jobs.render(
             HPC_WS_PATH=config.HPC_WS_PATH,
@@ -384,6 +405,12 @@ for tmp_file in sorted(
             )
 
         if tmp_file.endswith("05_alipy_eva.tmp"):
+
+            if len(config.EXCLUDING_STATE_ARGS) > 0:
+                excluding_appendix = " --EXCLUDING "
+            else:
+                excluding_appendix = " "
+
             submit_content += (
                 "python 05_ali_bash_parallel_runner_script.py --OUTPUT_PATH "
                 + config.LOCAL_OUTPUT_PATH
@@ -391,6 +418,10 @@ for tmp_file in sorted(
                 + config.EXP_TITLE
                 + " --N_PARALLEL_JOBS "
                 + str(config.N_JOBS)
+                + excluding_appendix
+                + " "
+                + " ".join(["--EXCLUDING_" + sa for sa in config.EXCLUDING_STATE_ARGS])
+                + " "
                 + " --DATASETS_PATH "
                 + config.LOCAL_DATASETS_PATH
                 + " --RANDOM_SEEDS_PATH "

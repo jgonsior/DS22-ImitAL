@@ -33,6 +33,19 @@ parser.add_argument("--OUTPUT_PATH", default="../datasets/ali")
 parser.add_argument("--RANDOM_SEEDS_INPUT_FILE")
 parser.add_argument("--BATCH_SIZE", type=int, default=5)
 
+parser.add_argument("--EXCLUDING", action="store_true")
+parser.add_argument("--EXCLUDING_STATE_DIFF_PROBAS", action="store_true")
+parser.add_argument("--EXCLUDING_STATE_ARGFIRST_PROBAS", action="store_true")
+parser.add_argument("--EXCLUDING_STATE_ARGSECOND_PROBAS", action="store_true")
+parser.add_argument("--EXCLUDING_STATE_ARGTHIRD_PROBAS", action="store_true")
+parser.add_argument("--EXCLUDING_STATE_DISTANCES_LAB", action="store_true")
+parser.add_argument("--EXCLUDING_STATE_DISTANCES_UNLAB", action="store_true")
+parser.add_argument("--EXCLUDING_STATE_PREDICTED_CLASS", action="store_true")
+parser.add_argument("--EXCLUDING_STATE_PREDICTED_UNITY", action="store_true")
+parser.add_argument("--EXCLUDING_STATE_DISTANCES", action="store_true")
+parser.add_argument("--EXCLUDING_STATE_UNCERTAINTIES", action="store_true")
+parser.add_argument("--EXCLUDING_STATE_INCLUDE_NR_FEATURES", action="store_true")
+
 config = parser.parse_args()
 
 if len(sys.argv[:-1]) == 0:
@@ -58,6 +71,9 @@ STRATEGY_ID = 2
 
 DATASET_RANDOM_SEED = 0
 """
+
+
+DATASET_RANDOM_SEED += 100000
 np.random.seed(DATASET_RANDOM_SEED)
 random.seed(DATASET_RANDOM_SEED)
 DATASET_NAME = dataset_id_mapping[DATASET_ID][0]
@@ -99,6 +115,7 @@ X = scaler.fit_transform(X)
 scaler = MinMaxScaler()
 X = scaler.fit_transform(X)
 
+
 # fancy ALiPy train/test split
 test_ratio = 0.5
 indices = [i for i in range(0, len(Y))]
@@ -121,6 +138,7 @@ unlabel_idx = [np.array(unlabel_idx)]  # type: ignore
 
 
 if "NN_BINARY_PATH" in strategy_id_mapping[STRATEGY_ID][1].keys():
+    data_storage.X = X
     data_storage.true_Y = None  # type: ignore
     data_storage.human_expert_Y = None  # type: ignore
     data_storage.Y_merged_final = None  # type: ignore
@@ -154,8 +172,30 @@ if "NN_BINARY_PATH" in strategy_id_mapping[STRATEGY_ID][1].keys():
             config.OUTPUT_PATH + "/03_imital_trained_ann.model"
         )
         QUERY_STRATEGY[1]["data_storage"] = data_storage
-    test = ALiPY_ImitAL_Query_Strategy(X=X, Y=Y, **QUERY_STRATEGY[1])
 
+    if config.EXCLUDING:
+        excluding_args = {
+            "EXCLUDING_STATE_DIFF_PROBAS": config.EXCLUDING_STATE_DIFF_PROBAS,
+            "EXCLUDING_STATE_ARGFIRST_PROBAS": config.EXCLUDING_STATE_ARGFIRST_PROBAS,
+            "EXCLUDING_STATE_ARGSECOND_PROBAS": config.EXCLUDING_STATE_ARGSECOND_PROBAS,
+            "EXCLUDING_STATE_ARGTHIRD_PROBAS": config.EXCLUDING_STATE_ARGTHIRD_PROBAS,
+            "EXCLUDING_STATE_DISTANCES_LAB": config.EXCLUDING_STATE_DISTANCES_LAB,
+            "EXCLUDING_STATE_DISTANCES_UNLAB": config.EXCLUDING_STATE_DISTANCES_UNLAB,
+            "EXCLUDING_STATE_PREDICTED_CLASS": config.EXCLUDING_STATE_PREDICTED_CLASS,
+            "EXCLUDING_STATE_PREDICTED_UNITY": config.EXCLUDING_STATE_PREDICTED_UNITY,
+            "EXCLUDING_STATE_DISTANCES": config.EXCLUDING_STATE_DISTANCES,
+            "EXCLUDING_STATE_UNCERTAINTIES": config.EXCLUDING_STATE_UNCERTAINTIES,
+            "EXCLUDING_STATE_INCLUDE_NR_FEATURES": config.EXCLUDING_STATE_INCLUDE_NR_FEATURES,
+        }
+    else:
+        excluding_args = {}
+
+    test = ALiPY_ImitAL_Query_Strategy(X=X, Y=Y, **excluding_args, **QUERY_STRATEGY[1])
+
+if "NN_BINARY_PATH" in strategy_id_mapping[STRATEGY_ID][1].keys():
+    properties = {**excluding_args, **QUERY_STRATEGY[1]}
+else:
+    properties = QUERY_STRATEGY[1]
 # print("num_of_queries", dataset_id_mapping[DATASET_ID][1] / config.BATCH_SIZE)
 # print("stopping ", dataset_id_mapping[DATASET_ID][1] / config.BATCH_SIZE)
 
@@ -175,7 +215,8 @@ al = AlExperiment(
     unlabel_idx=unlabel_idx,
 )
 print("batch: ", str(config.BATCH_SIZE))
-al.set_query_strategy(strategy=QUERY_STRATEGY[0], **QUERY_STRATEGY[1])
+
+al.set_query_strategy(strategy=QUERY_STRATEGY[0], **properties)
 
 #  al.set_performance_metric("accuracy_score")
 al.set_performance_metric("f1_score")
@@ -187,6 +228,21 @@ end = timer()
 # trained_model = al._model
 
 r = al.get_experiment_result()
+
+stateio = r[0]
+metric_values = []
+if stateio.initial_point is not None:
+    metric_values.append(stateio.initial_point)
+for state in stateio:
+    print(state.get_value("select_index"))
+    metric_values.append(state.get_value("performance"))
+
+print(metric_values)
+f1_auc = auc([i for i in range(0, len(metric_values))], metric_values) / (
+    len(metric_values) - 1
+)
+print(f1_auc)
+print("fertig")
 
 """ for i in range(0, int(dataset_id_mapping[DATASET_ID][1] / config.BATCH_SIZE)):
     print()
